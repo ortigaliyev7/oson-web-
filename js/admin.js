@@ -198,8 +198,8 @@ const Admin = {
         <div class="stat-grid">
           ${this.statCard(I.inbox, 'Jami arizalar', s.total||0, 'var(--green-600)', 'var(--green-50)')}
           ${this.statCard(I.clock, 'Bugun', s.todayCount||0, '#1E40AF', '#DBEAFE')}
-          ${this.statCard(I.wallet, 'Tushum', fmtSom(s.totalRevenue||0), 'var(--gold)', 'var(--gold-l)')}
-          ${this.statCard(I.chart, 'Daromad', fmtSom(s.totalIncome||0), '#6B21A8', '#F3E8FF')}
+          ${this.statCard(I.wallet, 'Tushum', s.totalRevenue||0, 'var(--gold)', 'var(--gold-l)', true)}
+          ${this.statCard(I.chart, 'Daromad', s.totalIncome||0, '#6B21A8', '#F3E8FF', true)}
         </div>
 
         <div class="adm-card">
@@ -215,16 +215,35 @@ const Admin = {
           <div class="day-chart">${this.renderDayChart(s.byDay)}</div>
         </div>` : ''}`;
       this.root.innerHTML = this.shell('dashboard', content);
+      this.animateCounts();
     } catch (e) {
       this.root.innerHTML = this.shell('dashboard', this.errorBlock(e.message));
     }
   },
-  statCard(ic, label, value, color, bg) {
+  statCard(ic, label, value, color, bg, isCurrency) {
+    const shown = isCurrency ? fmtSom(value) : value;
     return `<div class="stat-card">
       <div class="sc-ic" style="background:${bg};color:${color}">${ic}</div>
-      <div class="sc-val">${value}</div>
+      <div class="sc-val" data-target="${value}" data-cur="${isCurrency?1:0}">${shown}</div>
       <div class="sc-lab">${label}</div>
     </div>`;
+  },
+  animateCounts() {
+    if (window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+    document.querySelectorAll('.sc-val[data-target]').forEach(el => {
+      const target = parseFloat(el.getAttribute('data-target')) || 0;
+      if (target <= 0) return;
+      const cur = el.getAttribute('data-cur') === '1';
+      const dur = 850, start = performance.now();
+      const step = (now) => {
+        const p = Math.min((now - start) / dur, 1);
+        const eased = 1 - Math.pow(1 - p, 3);
+        const val = Math.round(target * eased);
+        el.textContent = cur ? fmtSom(val) : val.toLocaleString('ru-RU');
+        if (p < 1) requestAnimationFrame(step);
+      };
+      requestAnimationFrame(step);
+    });
   },
   renderStatusBars(byStatus, total) {
     const order = ['new','in_review','approved','payment_pending','paid','policy_ready','completed','rejected'];
@@ -241,12 +260,12 @@ const Admin = {
   },
   renderDayChart(byDay) {
     const max = Math.max(...byDay.map(d => d.count || d.total || 0), 1);
-    return byDay.slice(-14).map(d => {
+    return byDay.slice(-14).map((d, i) => {
       const v = d.count || d.total || 0;
       const h = Math.round((v/max)*100);
       const label = (d.date || d.day || '').slice(5);
       return `<div class="dc-col">
-        <div class="dc-bar-wrap"><div class="dc-bar" style="height:${Math.max(h,4)}%" title="${v}"></div></div>
+        <div class="dc-bar-wrap"><div class="dc-bar" style="height:${Math.max(h,4)}%;animation-delay:${i*45}ms" title="${v}"></div></div>
         <div class="dc-label">${label}</div>
       </div>`;
     }).join('');
@@ -257,6 +276,8 @@ const Admin = {
   // ============================================================
   async viewApps() {
     document.body.className = 'admin-body';
+    this._animateApps = true;
+    this._appsSig = null;
     if (!document.querySelector('.adm-layout')) {
       this.root.innerHTML = this.shell('apps', `
         <div class="adm-apps-head">
@@ -311,7 +332,7 @@ const Admin = {
         ${f.lab}${counts[f.k]?`<span class="fc-count">${counts[f.k]}</span>`:''}
       </button>`).join('');
   },
-  setFilter(f) { this.filter = f; this.renderFilters(); this.renderApps(); },
+  setFilter(f) { this.filter = f; this._animateApps = true; this.renderFilters(); this.renderApps(); },
 
   renderApps() {
     const box = document.getElementById('admAppsList');
@@ -319,19 +340,27 @@ const Admin = {
     let list = this.apps.slice();
     if (this.filter !== 'all') list = list.filter(a => a.status === this.filter);
     list.sort((a,b)=> new Date(b.created_at||b.createdAt||0) - new Date(a.created_at||a.createdAt||0));
+    // Aqlli render: ma'lumot o'zgarmagan bo'lsa qayta chizmaymiz (poll'da miltilamasligi uchun)
+    const sig = this.filter + '|' + list.map(a => `${a.id||a._id}:${a.status}:${a.updated_at||a.updatedAt||''}`).join(',');
+    if (sig === this._appsSig && box.querySelector('.adm-app-grid')) return;
+    this._appsSig = sig;
     if (!list.length) {
       box.innerHTML = this.emptyBlock(I.inbox, 'Arizalar yo\'q', 'Bu turkumda ariza topilmadi');
       return;
     }
-    box.innerHTML = `<div class="adm-app-grid">${list.map(a => this.adminAppCard(a)).join('')}</div>`;
+    // Animatsiya faqat foydalanuvchi harakatida (sahifa ochish/filtr), poll'da emas
+    const anim = this._animateApps ? ' anim' : '';
+    this._animateApps = false;
+    box.innerHTML = `<div class="adm-app-grid${anim}">${list.map((a,i) => this.adminAppCard(a, i)).join('')}</div>`;
   },
-  adminAppCard(a) {
+  adminAppCard(a, i) {
     const st = a.status || 'new';
     const vehicleName = (VEHICLES.find(v=>v.id===a.vehicle)||{}).name || a.vehicle || '';
     const num = a.app_number || a.number || ('#'+String(a.id||a._id||'').slice(-5));
     const name = a.client_name || 'Mijoz';
+    const delay = (typeof i === 'number' && i < 14) ? ` style="animation-delay:${i*35}ms"` : '';
     return `
-      <div class="adm-app-card" onclick="Admin.go('/app/${a.id||a._id}')">
+      <div class="adm-app-card"${delay} onclick="Admin.go('/app/${a.id||a._id}')">
         <div class="aac-top">
           <span class="aac-num">${esc(String(num))}</span>
           ${statusBadge(st)}
