@@ -40,6 +40,9 @@ const App = {
     const hash = (location.hash || '#/').slice(1);
     const [path, ...rest] = hash.split('/').filter(Boolean);
 
+    // Login sahifasidan chiqilsa — Telegram session pollingni to'xtatish
+    if (path !== 'login') this.stopSessionPoll();
+
     // Himoyalangan sahifalar
     const protectedViews = ['dashboard','new','apps','status','profile','notifications','chat'];
     if (protectedViews.includes(path) && !this.isAuthed()) {
@@ -233,13 +236,14 @@ const App = {
   viewLogin() {
     document.body.className = '';
     this.loginPhone = this.loginPhone || '';
+    this.stopSessionPoll();
     this.root.innerHTML = `
     <div class="auth-page">
       <div class="auth-visual">
         <div class="logo"><div class="logo-mark">${logoMarkSVG()}</div>Oson Sug'urtam</div>
         <div class="auth-visual-mid">
           <h2>Sug'urta endi<br>oson va tez</h2>
-          <p>Telefon raqamingiz orqali kiring va bir necha daqiqada polisingizni rasmiylashtiring.</p>
+          <p>Telegram orqali bir tugma bilan kiring va bir necha daqiqada polisingizni rasmiylashtiring.</p>
         </div>
         <div style="position:relative;z-index:2;font-size:13px;opacity:.7">© 2026 «EVAZ» MChJ</div>
         <div class="auth-shield">${I.shield}</div>
@@ -248,13 +252,37 @@ const App = {
         <div class="auth-box" id="authBox">${this.loginPhoneStep()}</div>
       </div>
     </div>`;
-    setTimeout(() => { const i = document.getElementById('phoneInput'); if (i) i.focus(); }, 100);
+    this.prepTelegramLogin();
   },
 
   loginPhoneStep() {
     return `
-      <div class="app-back" onclick="App.go('/')" style="margin-bottom:24px">${I.arrowLeft}<span>Bosh sahifa</span></div>
+      <div class="app-back" onclick="App.go('/')" style="margin-bottom:20px">${I.arrowLeft}<span>Bosh sahifa</span></div>
       <h1>Tizimga kirish</h1>
+      <p class="sub">Telegram orqali bir tugma bilan tez va xavfsiz kiring</p>
+
+      <div class="tg-login-hero">
+        <div class="tg-login-logo">${telegramLogoSVG()}</div>
+        <h3>Telegram orqali kirish</h3>
+        <p>Raqamingizni Telegram'da ulang — tasdiqlash kodi darrov shu yerga keladi. SMS kutish shart emas.</p>
+      </div>
+
+      <a class="btn btn-tg btn-block btn-lg tg-login-btn disabled" id="tgLoginBtn" target="_blank" rel="noopener"
+         onclick="App.onTgLoginClick(event)">
+        ${telegramLogoSVG()} <span>Telegram orqali kirish</span>
+      </a>
+
+      <div class="login-or"><span>yoki</span></div>
+
+      <button class="btn btn-ghost btn-block" onclick="App.showPhoneEntry()">${I.phone} Telefon raqami bilan kirish</button>`;
+  },
+
+  showPhoneEntry() {
+    this.stopSessionPoll();
+    const box = document.getElementById('authBox');
+    box.innerHTML = `
+      <div class="app-back" onclick="App.viewLogin()" style="margin-bottom:20px">${I.arrowLeft}<span>Orqaga</span></div>
+      <h1>Telefon bilan kirish</h1>
       <p class="sub">Telefon raqamingizni kiriting — tasdiqlash kodi yuboramiz</p>
       <div class="field">
         <label class="label">Telefon raqam</label>
@@ -268,11 +296,96 @@ const App = {
         <div class="tg-info-ic">${telegramLogoSVG()}</div>
         <div class="tg-info-txt">
           <b>Kod Telegram orqali keladi</b>
-          <span>Tasdiqlash kodi Telegram ilovangizga yuboriladi — SMS kutish shart emas</span>
+          <span>Avval Telegram'da raqamingizni ulagan bo'lsangiz, kod darrov keladi</span>
         </div>
       </div>
       <button class="btn btn-primary btn-block btn-lg" id="sendBtn" onclick="App.sendCode()">Kod olish ${I.arrowRight}</button>`;
+    setTimeout(() => { const i = document.getElementById('phoneInput'); if (i) i.focus(); }, 100);
   },
+
+  // === TELEGRAM SESSION (bir tugma bilan kirish) ===
+  async prepTelegramLogin() {
+    try {
+      const r = await ClientAPI.startSession();
+      this.sessionToken = r.token;
+      const btn = document.getElementById('tgLoginBtn');
+      if (btn) {
+        btn.href = `${BOT_LINK}?start=${r.token}`;
+        btn.classList.remove('disabled');
+      }
+    } catch (e) { /* tugma onclick orqali zaxira yo'l bilan ishlaydi */ }
+  },
+
+  onTgLoginClick(e) {
+    if (!this.sessionToken) {
+      // session hali tayyor emas — yaratamiz va ochamiz
+      e.preventDefault();
+      this.startTelegramLoginFallback();
+      return;
+    }
+    // <a href> Telegram'ni ochadi; biz kutish ekranini ko'rsatamiz va so'rov boshlaymiz
+    setTimeout(() => this.renderTelegramWaiting(), 80);
+    this.pollSession();
+  },
+
+  async startTelegramLoginFallback() {
+    try {
+      const r = await ClientAPI.startSession();
+      this.sessionToken = r.token;
+      window.open(`${BOT_LINK}?start=${r.token}`, '_blank');
+      this.renderTelegramWaiting();
+      this.pollSession();
+    } catch (e) {
+      toast('Xatolik yuz berdi, qaytadan urinib ko\'ring', 'error');
+    }
+  },
+
+  renderTelegramWaiting() {
+    const box = document.getElementById('authBox');
+    if (!box) return;
+    box.innerHTML = `
+      <div class="app-back" onclick="App.cancelTelegramLogin()" style="margin-bottom:20px">${I.arrowLeft}<span>Bekor qilish</span></div>
+      <div class="tg-deliver tg">
+        <div class="tg-badge">
+          <span class="tg-ring"></span><span class="tg-ring"></span><span class="tg-ring"></span>
+          <div class="tg-logo">${telegramLogoSVG()}</div>
+        </div>
+        <h1 class="tg-title">Telegram ochildi</h1>
+        <p class="tg-sub">Telegram ilovasida quyidagi 2 qadamni bajaring</p>
+      </div>
+      <div class="tg-steps">
+        <div class="tg-step"><span class="tg-step-n">1</span><div><b>"Boshlash"</b> (Start) tugmasini bosing</div></div>
+        <div class="tg-step"><span class="tg-step-n">2</span><div><b>"📱 Raqamni ulash"</b> tugmasini bosing</div></div>
+      </div>
+      <div class="tg-waiting"><span class="spinner"></span><span>Telegram javobini kutyapmiz...</span></div>
+      <a class="btn btn-tg btn-block" href="${BOT_LINK}?start=${this.sessionToken}" target="_blank" rel="noopener">
+        ${telegramLogoSVG()} <span>Telegram'ni qayta ochish</span>
+      </a>`;
+  },
+
+  pollSession() {
+    this.stopSessionPoll();
+    let elapsed = 0;
+    this.sessionPoll = setInterval(async () => {
+      elapsed += 3;
+      if (elapsed > 600) { this.stopSessionPoll(); return; }
+      try {
+        const s = await ClientAPI.checkSession(this.sessionToken);
+        if (s && s.ready && s.phone) {
+          this.stopSessionPoll();
+          this.loginFullPhone = s.phone;
+          this.renderOtpStep('telegram');
+          toast('Raqam ulandi! Kodni kiriting', 'ok');
+        } else if (s && s.expired) {
+          this.stopSessionPoll();
+          toast('Vaqt tugadi, qaytadan urinib ko\'ring', 'error');
+          this.viewLogin();
+        }
+      } catch (e) { /* keyingi urinishda */ }
+    }, 3000);
+  },
+  stopSessionPoll() { if (this.sessionPoll) { clearInterval(this.sessionPoll); this.sessionPoll = null; } },
+  cancelTelegramLogin() { this.stopSessionPoll(); this.viewLogin(); },
 
   onPhoneInput(el) {
     el.value = el.value.replace(/\D/g, '').slice(0, 9);

@@ -36,6 +36,8 @@ async function req(path, { method = 'GET', body = null, token = null, isForm = f
 const ClientAPI = {
   sendCode: (phone) => req('/user-auth/send-code', { method:'POST', body:{ phone } }),
   verify:   (phone, code) => req('/user-auth/verify', { method:'POST', body:{ phone, code } }),
+  startSession: () => req('/user-auth/start-session', { method:'POST', body:{} }),
+  checkSession: (token) => req('/user-auth/session/' + encodeURIComponent(token)),
   me:       () => req('/user-auth/me', { token: clientToken() }),
   updateMe: (data) => req('/user-auth/me', { method:'PATCH', body:data, token: clientToken() }),
 

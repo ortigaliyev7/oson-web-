@@ -811,3 +811,36 @@ body.no-scroll{overflow:hidden}
 @media (prefers-reduced-motion: reduce){
   .tg-logo,.tg-ring,.tg-check,.tg-deliver,.tg-info{animation:none!important}
 }
+
+/* ════════════════════════════════════════════════
+   TELEGRAM BIR-TUGMA LOGIN
+   ════════════════════════════════════════════════ */
+.tg-login-hero{text-align:center;padding:24px 20px;margin:8px 0 20px;
+  background:linear-gradient(160deg,#EAF6FD,#F2FAFF);border:1px solid #CFE9F9;border-radius:var(--r-lg);
+  animation:tgFadeUp .5s ease}
+.tg-login-logo{width:72px;height:72px;margin:0 auto 16px;border-radius:22px;
+  background:linear-gradient(135deg,#2AABEE,#229ED9);display:flex;align-items:center;justify-content:center;
+  box-shadow:0 12px 30px rgba(34,158,217,.4);animation:tgFloat 3s ease-in-out infinite}
+.tg-login-logo svg{width:42px;height:42px;margin-left:-2px}
+.tg-login-hero h3{font-size:19px;color:var(--ink);margin-bottom:8px}
+.tg-login-hero p{font-size:14px;color:var(--ink-2);line-height:1.55}
+
+.tg-login-btn{text-decoration:none}
+.tg-login-btn svg{width:22px;height:22px}
+.tg-login-btn.disabled{opacity:.6;pointer-events:none}
+.btn-tg{background:#229ED9;color:#fff}
+.btn-tg:hover{background:#1d8bc0}
+
+.login-or{display:flex;align-items:center;gap:14px;margin:20px 0;color:var(--muted);font-size:13px}
+.login-or::before,.login-or::after{content:'';flex:1;height:1px;background:var(--line)}
+
+/* Kutish ekrani qadamlari */
+.tg-steps{display:flex;flex-direction:column;gap:12px;margin-bottom:20px}
+.tg-step{display:flex;align-items:center;gap:14px;padding:14px 16px;background:var(--card);
+  border:1px solid var(--line);border-radius:var(--r);font-size:14.5px;color:var(--ink)}
+.tg-step b{font-weight:700}
+.tg-step-n{width:30px;height:30px;border-radius:50%;background:#229ED9;color:#fff;
+  display:flex;align-items:center;justify-content:center;font-weight:700;font-size:14px;flex-shrink:0}
+.tg-waiting{display:flex;align-items:center;justify-content:center;gap:10px;padding:14px;margin-bottom:16px;
+  background:#EAF6FD;border-radius:var(--r);color:#1d8bc0;font-size:14px;font-weight:600}
+.tg-waiting .spinner{width:18px;height:18px;border-width:2.5px;border-color:#BBDEF5;border-top-color:#229ED9}
