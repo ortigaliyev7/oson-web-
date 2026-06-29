@@ -263,7 +263,13 @@ const App = {
           <input id="phoneInput" type="tel" inputmode="numeric" maxlength="9" placeholder="90 123 45 67"
             value="${this.loginPhone}" oninput="App.onPhoneInput(this)">
         </div>
-        <div class="hint">Kod SMS yoki Telegram orqali yuboriladi</div>
+      </div>
+      <div class="tg-info">
+        <div class="tg-info-ic">${telegramLogoSVG()}</div>
+        <div class="tg-info-txt">
+          <b>Kod Telegram orqali keladi</b>
+          <span>Tasdiqlash kodi Telegram ilovangizga yuboriladi — SMS kutish shart emas</span>
+        </div>
       </div>
       <button class="btn btn-primary btn-block btn-lg" id="sendBtn" onclick="App.sendCode()">Kod olish ${I.arrowRight}</button>`;
   },
@@ -291,24 +297,50 @@ const App = {
 
   renderOtpStep(via) {
     const box = document.getElementById('authBox');
-    const viaLabel = via === 'sms' ? 'SMS orqali' : (via === 'telegram' ? 'Telegram orqali' : '');
-    // Telegram orqali kelmagan/ulanmagan bo'lsa — botni ochish taklifi
-    const botHelp = (via !== 'sms') ? `
+    const isSms = via === 'sms';
+    const delivered = (via === 'sms' || via === 'telegram_gateway' || via === 'telegram');
+    const logo = isSms ? smsLogoSVG() : telegramLogoSVG();
+    const heroTitle = isSms ? 'Kod SMS orqali yuborildi' : "Kod Telegram'ga yuborildi";
+    const heroSub = isSms
+      ? `<b>${esc(fmtPhone(this.loginFullPhone))}</b> raqamiga<br>6 xonali tasdiqlash kodi yuborildi`
+      : `<b>${esc(fmtPhone(this.loginFullPhone))}</b> raqamli Telegram'ingizga<br>6 xonali kod yuborildi — ilovangizni tekshiring`;
+
+    const hero = delivered ? `
+      <div class="tg-deliver ${isSms?'sms':'tg'}">
+        <div class="tg-badge">
+          <span class="tg-ring"></span><span class="tg-ring"></span><span class="tg-ring"></span>
+          <div class="tg-logo">${logo}</div>
+          <div class="tg-check">${I.check}</div>
+        </div>
+        <h1 class="tg-title">${heroTitle}</h1>
+        <p class="tg-sub">${heroSub}</p>
+      </div>` : `
+      <div class="tg-deliver wait">
+        <div class="tg-badge">
+          <span class="tg-ring"></span><span class="tg-ring"></span>
+          <div class="tg-logo">${telegramLogoSVG()}</div>
+        </div>
+        <h1 class="tg-title">Kodni kiriting</h1>
+        <p class="tg-sub"><b>${esc(fmtPhone(this.loginFullPhone))}</b> raqamiga yuborilgan<br>6 xonali kodni kiriting</p>
+      </div>`;
+
+    // Kod yetkazilmagan bo'lsa (telegram_id yo'q, gateway/SMS sozlanmagan) — botni ochish taklifi
+    const botHelp = !delivered ? `
       <div class="bot-help">
         <p>Kod kelmadimi? Telegram bot orqali oling:</p>
         <a class="btn btn-tg btn-block" href="${BOT_LINK}" target="_blank" rel="noopener">
-          ${I.send} Telegram botni ochish
+          ${telegramLogoSVG()} Telegram botni ochish
         </a>
         <span class="bot-help-note">Botda "Boshlash" tugmasini bosing va telefon raqamingizni ulashing — kod avtomatik keladi</span>
       </div>` : '';
+
     box.innerHTML = `
-      <div class="app-back" onclick="App.viewLogin()" style="margin-bottom:24px">${I.arrowLeft}<span>Raqamni o'zgartirish</span></div>
-      <h1>Kodni kiriting</h1>
-      <p class="sub">${esc(fmtPhone(this.loginFullPhone))} raqamiga yuborilgan 6 xonali kodni kiriting${viaLabel?' ('+viaLabel+')':''}</p>
+      <div class="app-back" onclick="App.viewLogin()" style="margin-bottom:20px">${I.arrowLeft}<span>Raqamni o'zgartirish</span></div>
+      ${hero}
       <div class="otp-row" id="otpRow">
         ${[0,1,2,3,4,5].map(i => `<input class="otp-cell" type="tel" inputmode="numeric" maxlength="1" data-i="${i}" oninput="App.onOtpInput(this)" onkeydown="App.onOtpKey(event,this)">`).join('')}
       </div>
-      <div class="hint" style="margin-bottom:20px">Kod kelmadimi? <a style="color:var(--green-700);font-weight:600;cursor:pointer" onclick="App.sendCode()">Qayta yuborish</a></div>
+      <div class="hint resend-hint">Kod kelmadimi? <a id="resendLink" onclick="App.sendCode()">Qayta yuborish</a></div>
       <button class="btn btn-primary btn-block btn-lg" id="verifyBtn" onclick="App.verifyCode()">Tasdiqlash ${I.check}</button>
       ${botHelp}`;
     setTimeout(() => { const c = box.querySelector('.otp-cell'); if (c) c.focus(); }, 100);
@@ -316,6 +348,7 @@ const App = {
 
   onOtpInput(el) {
     el.value = el.value.replace(/\D/g, '');
+    el.classList.toggle('filled', !!el.value);
     if (el.value && el.nextElementSibling) el.nextElementSibling.focus();
     // To'lganda avtomatik tasdiqlash
     const cells = [...document.querySelectorAll('.otp-cell')];
@@ -324,6 +357,7 @@ const App = {
   onOtpKey(e, el) {
     if (e.key === 'Backspace' && !el.value && el.previousElementSibling) {
       el.previousElementSibling.focus();
+      el.previousElementSibling.classList.remove('filled');
     }
   },
 

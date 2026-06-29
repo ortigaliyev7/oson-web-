@@ -134,3 +134,22 @@ function closeModal() {
   const m = document.getElementById('modal-root');
   if (m) { m.classList.remove('show'); m.innerHTML = ''; }
 }
+
+// Telegram rasmiy logosi (oq qog'oz samolyot, ko'k doirada ishlatish uchun)
+function telegramLogoSVG() {
+  return `<svg viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <path d="M43.95 6.27L3.78 21.77c-1.65.64-1.64 3 .02 3.62l9.9 3.7 3.83 12.3c.43 1.4 2.18 1.85 3.23.82l5.5-5.4 9.86 7.26c1.13.83 2.74.22 3.02-1.15l6.55-32.4c.33-1.62-1.27-2.97-2.78-2.27z" fill="white"/>
+    <path d="M19.53 33.4l-.6 7.6c.86 0 1.24-.37 1.69-.81l4.06-3.92-5.15-2.87z" fill="#B5D9F0"/>
+    <path d="M20.1 35.6l13.5-11.85c.45-.4-.1-.6-.7-.24L16.2 33.05l-.07.04 1.55 4.97c.18.5.06 1.96.06 1.96l.7-7.4c.05-.5 1.66 3.0 1.66 3.0z" fill="#DCEBF7"/>
+  </svg>`;
+}
+
+// SMS / xabar logosi (oq, rangli doirada ishlatish uchun)
+function smsLogoSVG() {
+  return `<svg viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <path d="M10 12h28a3 3 0 013 3v15a3 3 0 01-3 3H20l-8 7v-7h-2a3 3 0 01-3-3V15a3 3 0 013-3z" fill="white"/>
+    <circle cx="18" cy="22.5" r="2" fill="#229ED9"/>
+    <circle cx="24" cy="22.5" r="2" fill="#229ED9"/>
+    <circle cx="30" cy="22.5" r="2" fill="#229ED9"/>
+  </svg>`;
+}

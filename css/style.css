@@ -247,13 +247,13 @@ img, svg { display:block; max-width:100%; }
 .auth-visual-mid p { color:rgba(255,255,255,.8); font-size:17px; max-width:380px; }
 .auth-shield { width:200px; opacity:.16; position:absolute; bottom:-20px; right:40px; }
 .auth-form-side { display:grid; place-items:center; padding:40px; }
-.auth-box { width:100%; max-width:400px; }
+.auth-box { width:100%; max-width:400px; min-width:0; }
 .auth-box h1 { font-size:30px; margin-bottom:8px; }
 .auth-box .sub { color:var(--ink-2); margin-bottom:32px; font-size:15.5px; }
 
 /* OTP inputlar */
 .otp-row { display:flex; gap:10px; justify-content:space-between; margin-bottom:8px; }
-.otp-cell { width:54px; height:64px; text-align:center; font-size:26px; font-weight:700; font-family:'Sora'; border:1.5px solid var(--line-2); border-radius:var(--r-sm); transition:border .18s, box-shadow .18s; }
+.otp-cell { flex:1 1 0; min-width:0; width:auto; height:64px; text-align:center; font-size:26px; font-weight:700; font-family:'Sora'; border:1.5px solid var(--line-2); border-radius:var(--r-sm); transition:border .18s, box-shadow .18s; }
 .otp-cell:focus { outline:none; border-color:var(--green-500); box-shadow:0 0 0 4px var(--green-100); }
 
 /* Telefon input prefiks */
@@ -465,6 +465,8 @@ img, svg { display:block; max-width:100%; }
 }
 @media (max-width: 560px) {
   .wrap { padding:0 18px; }
+  .auth-form-side { padding:24px 18px; }
+  .otp-row { gap:8px; }
   .steps-rail { grid-template-columns:1fr; }
   .choice-grid { grid-template-columns:1fr; }
   .tiles { grid-template-columns:1fr 1fr; }
@@ -734,12 +736,78 @@ body.no-scroll{overflow:hidden}
 .btn-tg svg{width:20px;height:20px}
 .bot-help-note{display:block;font-size:12px;color:var(--muted);margin-top:10px;line-height:1.5}
 
-/* Juda kichik telefonlar uchun (≤360px) */
+/* Juda kichik telefonlar uchun (≤380px) */
 @media (max-width:380px){
   .wrap{padding:0 14px}
+  .auth-form-side{padding:20px 14px}
   .flow-q{font-size:21px}
   .hero h1{font-size:32px}
-  .otp-cell{width:42px;height:52px;font-size:22px}
+  .otp-cell{height:54px;font-size:22px}
+  .otp-row{gap:6px}
   .tiles{gap:10px}
   .stat-grid{gap:10px}
+  .tg-title{font-size:21px}
+}
+
+/* ════════════════════════════════════════════════
+   TELEGRAM YETKAZISH — chiroyli animatsiyali (login)
+   ════════════════════════════════════════════════ */
+
+/* Telefon qadamidagi info kartasi */
+.tg-info{display:flex;align-items:center;gap:14px;padding:16px;margin:20px 0;
+  background:linear-gradient(135deg,#EAF6FD,#F0FAFF);border:1px solid #CFE9F9;border-radius:var(--r-lg);
+  animation:tgFadeUp .5s ease}
+.tg-info-ic{width:48px;height:48px;border-radius:14px;flex-shrink:0;
+  background:linear-gradient(135deg,#2AABEE,#229ED9);display:flex;align-items:center;justify-content:center;
+  box-shadow:0 6px 16px rgba(34,158,217,.35)}
+.tg-info-ic svg{width:30px;height:30px}
+.tg-info-txt b{display:block;font-size:14.5px;color:var(--ink);margin-bottom:2px}
+.tg-info-txt span{font-size:12.5px;color:var(--ink-2);line-height:1.45}
+
+/* OTP qadamidagi yetkazish hero */
+.tg-deliver{text-align:center;margin-bottom:26px;animation:tgFadeUp .55s ease}
+.tg-badge{position:relative;width:104px;height:104px;margin:8px auto 22px}
+.tg-logo{position:absolute;inset:4px;border-radius:50%;z-index:2;
+  background:linear-gradient(135deg,#2AABEE,#229ED9);
+  display:flex;align-items:center;justify-content:center;
+  box-shadow:0 14px 36px rgba(34,158,217,.45);
+  animation:tgFloat 3s ease-in-out infinite}
+.tg-logo svg{width:54px;height:54px;margin-left:-3px}
+.tg-deliver.sms .tg-logo{background:linear-gradient(135deg,var(--green-500),var(--green-700));
+  box-shadow:0 14px 36px rgba(15,110,86,.4)}
+/* to'lqin halqalari */
+.tg-ring{position:absolute;inset:4px;border-radius:50%;border:2.5px solid #229ED9;opacity:0;
+  animation:tgRipple 2.6s ease-out infinite}
+.tg-ring:nth-child(2){animation-delay:.85s}
+.tg-ring:nth-child(3){animation-delay:1.7s}
+.tg-deliver.sms .tg-ring{border-color:var(--green-500)}
+/* yetkazildi belgisi */
+.tg-check{position:absolute;bottom:0;right:0;width:36px;height:36px;z-index:3;
+  background:var(--green-600);border-radius:50%;border:3.5px solid var(--paper);
+  display:flex;align-items:center;justify-content:center;color:#fff;
+  animation:tgPop .55s .55s both cubic-bezier(.34,1.56,.64,1)}
+.tg-check svg{width:18px;height:18px}
+.tg-title{font-size:23px;margin-bottom:10px}
+.tg-sub{color:var(--ink-2);font-size:14.5px;line-height:1.6;margin-bottom:0}
+.tg-sub b{color:var(--ink);font-weight:700}
+.tg-deliver.wait .tg-logo{animation:tgFloat 3s ease-in-out infinite,tgWaitPulse 1.5s ease-in-out infinite}
+
+/* OTP kataklari — yaxshilangan */
+.otp-cell{background:#fff}
+.otp-cell:not(:placeholder-shown),.otp-cell.filled{border-color:var(--green-500);background:var(--green-50);
+  animation:otpFill .2s ease}
+.resend-hint{margin-bottom:20px;text-align:center}
+.resend-hint a{color:var(--green-700);font-weight:600;cursor:pointer}
+.resend-hint a:hover{text-decoration:underline}
+
+@keyframes tgFloat{0%,100%{transform:translateY(0)}50%{transform:translateY(-9px)}}
+@keyframes tgRipple{0%{opacity:.55;transform:scale(1)}100%{opacity:0;transform:scale(2)}}
+@keyframes tgPop{0%{transform:scale(0) rotate(-45deg)}100%{transform:scale(1) rotate(0)}}
+@keyframes tgFadeUp{0%{opacity:0;transform:translateY(18px)}100%{opacity:1;transform:translateY(0)}}
+@keyframes tgWaitPulse{0%,100%{box-shadow:0 14px 36px rgba(34,158,217,.45)}50%{box-shadow:0 14px 44px rgba(34,158,217,.7)}}
+@keyframes otpFill{0%{transform:scale(1.08)}100%{transform:scale(1)}}
+
+/* Reduced motion — animatsiyalarni o'chirish */
+@media (prefers-reduced-motion: reduce){
+  .tg-logo,.tg-ring,.tg-check,.tg-deliver,.tg-info{animation:none!important}
 }
