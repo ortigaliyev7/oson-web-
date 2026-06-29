@@ -259,12 +259,18 @@ const App = {
     return `
       <div class="app-back" onclick="App.go('/')" style="margin-bottom:20px">${I.arrowLeft}<span>Bosh sahifa</span></div>
       <h1>Tizimga kirish</h1>
-      <p class="sub">Telegram orqali bir tugma bilan tez va xavfsiz kiring</p>
+      <p class="sub">Telegram orqali bir tugma bilan kiring — telefon raqamini yozish shart emas</p>
 
       <div class="tg-login-hero">
         <div class="tg-login-logo">${telegramLogoSVG()}</div>
         <h3>Telegram orqali kirish</h3>
-        <p>Raqamingizni Telegram'da ulang — tasdiqlash kodi darrov shu yerga keladi. SMS kutish shart emas.</p>
+        <p>Telegram'da "Boshlash" va "Raqamni ulash" tugmalarini bossangiz — raqamingiz avtomatik bog'lanadi va kod darrov keladi.</p>
+      </div>
+
+      <div class="tg-steps tg-steps-compact">
+        <div class="tg-step"><span class="tg-step-n">1</span><div>Pastdagi tugmani bosing — Telegram ochiladi</div></div>
+        <div class="tg-step"><span class="tg-step-n">2</span><div><b>"Boshlash"</b> va <b>"📱 Raqamni ulash"</b>ni bosing</div></div>
+        <div class="tg-step"><span class="tg-step-n">3</span><div>Kod keladi — bu yerda avtomatik davom etadi</div></div>
       </div>
 
       <a class="btn btn-tg btn-block btn-lg tg-login-btn disabled" id="tgLoginBtn" target="_blank" rel="noopener"
@@ -272,9 +278,9 @@ const App = {
         ${telegramLogoSVG()} <span>Telegram orqali kirish</span>
       </a>
 
-      <div class="login-or"><span>yoki</span></div>
-
-      <button class="btn btn-ghost btn-block" onclick="App.showPhoneEntry()">${I.phone} Telefon raqami bilan kirish</button>`;
+      <div class="login-alt">
+        <a onclick="App.showPhoneEntry()">Telegram'siz, telefon raqami bilan kirish</a>
+      </div>`;
   },
 
   showPhoneEntry() {
