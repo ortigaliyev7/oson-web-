@@ -12,6 +12,10 @@ const API = `${API_BASE}/api`;
 const SOCKET = API_BASE;
 const UPLOADS = `${API_BASE}/uploads`;
 
+// Telegram bot (kod yuborish uchun)
+const BOT_USERNAME = 'online_sugurtambot';
+const BOT_LINK = `https://t.me/${BOT_USERNAME}`;
+
 // localStorage kalitlari
 const LS = {
   CLIENT_TOKEN: 'oson_client_token',

@@ -47,13 +47,16 @@
 }
 
 * { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
-html { scroll-behavior:smooth; }
+html { scroll-behavior:smooth; overflow-x:hidden; }
 body {
   font-family:'Inter', system-ui, sans-serif;
   background:var(--paper);
   color:var(--ink);
   line-height:1.55;
   font-size:16px;
+  overflow-x:hidden;
+  width:100%;
+  max-width:100vw;
   -webkit-font-smoothing:antialiased;
   text-rendering:optimizeLegibility;
 }
@@ -720,3 +723,23 @@ body.no-scroll{overflow:hidden}
 /* Tugmalardagi SVG iconlar to'g'ri o'lcham */
 .btn svg{width:20px;height:20px;flex-shrink:0}
 .btn-lg svg{width:22px;height:22px}
+
+/* ════════════════════════════════════════════════
+   TELEGRAM BOT YORDAM (login OTP)
+   ════════════════════════════════════════════════ */
+.bot-help{margin-top:24px;padding:18px;background:#EAF3FB;border:1px solid #CFE5F7;border-radius:var(--r-lg);text-align:center}
+.bot-help>p{font-size:14px;color:var(--ink-2);margin-bottom:12px;font-weight:500}
+.btn-tg{background:#229ED9;color:#fff}
+.btn-tg:hover{background:#1d8bc0}
+.btn-tg svg{width:20px;height:20px}
+.bot-help-note{display:block;font-size:12px;color:var(--muted);margin-top:10px;line-height:1.5}
+
+/* Juda kichik telefonlar uchun (≤360px) */
+@media (max-width:380px){
+  .wrap{padding:0 14px}
+  .flow-q{font-size:21px}
+  .hero h1{font-size:32px}
+  .otp-cell{width:42px;height:52px;font-size:22px}
+  .tiles{gap:10px}
+  .stat-grid{gap:10px}
+}
