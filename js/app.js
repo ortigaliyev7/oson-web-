@@ -19,6 +19,19 @@ const App = {
     if (d) { try { this.draft = JSON.parse(d); } catch {} }
 
     window.addEventListener('hashchange', () => this.route());
+    // Token yaroqsiz (401) bo'lsa — tozalab, kirish sahifasiga qaytaramiz
+    window.addEventListener('oson:session-expired', () => {
+      if (this._sessionEnding) return;
+      if (localStorage.getItem(LS.CLIENT_TOKEN)) {
+        this._sessionEnding = true;
+        localStorage.removeItem(LS.CLIENT_TOKEN);
+        localStorage.removeItem(LS.CLIENT_USER);
+        this.user = null;
+        toast('Sessiya muddati tugadi. Qaytadan kiring.', 'err');
+        this.go('/login');
+        setTimeout(() => { this._sessionEnding = false; }, 1500);
+      }
+    });
     this.route();
     this.loadSettings();
     this.initPWA();

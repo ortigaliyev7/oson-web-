@@ -14,6 +14,20 @@ const Admin = {
     const a = localStorage.getItem(LS.ADMIN_USER);
     if (a) { try { this.admin = JSON.parse(a); } catch {} }
     window.addEventListener('hashchange', () => this.route());
+    // Token yaroqsiz (401) bo'lsa — tozalab, login'ga qaytaramiz (osilib qolmasligi uchun)
+    window.addEventListener('oson:session-expired', () => {
+      if (this._sessionEnding) return;
+      if (localStorage.getItem(LS.ADMIN_TOKEN)) {
+        this._sessionEnding = true;
+        this.stopPolling();
+        toast('Sessiya muddati tugadi. Iltimos, qaytadan kiring.', 'err');
+        localStorage.removeItem(LS.ADMIN_TOKEN);
+        localStorage.removeItem(LS.ADMIN_USER);
+        this.admin = null;
+        this.go('/login');
+        setTimeout(() => { this._sessionEnding = false; }, 1500);
+      }
+    });
     this.route();
   },
 

@@ -14,15 +14,26 @@ async function req(path, { method = 'GET', body = null, token = null, isForm = f
     payload = JSON.stringify(body);
   }
   let res;
+  const ctrl = new AbortController();
+  const timer = setTimeout(() => ctrl.abort(), 15000); // 15s — osilib qolmasligi uchun
   try {
-    res = await fetch(`${API}${path}`, { method, headers, body: payload });
+    res = await fetch(`${API}${path}`, { method, headers, body: payload, signal: ctrl.signal });
   } catch (e) {
+    clearTimeout(timer);
+    if (e.name === 'AbortError') {
+      throw new Error("Server javob bermayapti. Internetni tekshirib, qaytadan urinib ko'ring.");
+    }
     throw new Error("Internetga ulanishda xatolik. Qaytadan urinib ko'ring.");
   }
+  clearTimeout(timer);
   let data = null;
   const text = await res.text();
   try { data = text ? JSON.parse(text) : null; } catch { data = { raw: text }; }
   if (!res.ok) {
+    // Token bilan yuborilgan so'rov 401 qaytarsa — sessiya tugagan/yaroqsiz
+    if (res.status === 401 && token) {
+      try { window.dispatchEvent(new CustomEvent('oson:session-expired')); } catch (e) {}
+    }
     const msg = (data && (data.message || data.error)) || `Xatolik (${res.status})`;
     const err = new Error(msg);
     err.status = res.status;
