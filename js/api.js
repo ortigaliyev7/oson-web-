@@ -44,6 +44,7 @@ const ClientAPI = {
     fd.append('type', type || 'texpassport');
     return req('/ocr', { method:'POST', body: fd, isForm:true });
   },
+  settings: () => req('/settings'),
   me:       () => req('/user-auth/me', { token: clientToken() }),
   updateMe: (data) => req('/user-auth/me', { method:'PATCH', body:data, token: clientToken() }),
 
@@ -87,6 +88,7 @@ const AdminAPI = {
   settings:        () => req('/settings/admin', { token: adminToken() }),
   setMaintenance:  (enabled, message) => req('/settings/maintenance', { method:'POST', body:{ enabled, message }, token: adminToken() }),
   setRenewal:      (enabled, message) => req('/settings/renewal-toggle', { method:'POST', body:{ enabled, message }, token: adminToken() }),
+  setSetting:      (key, value) => req('/settings', { method:'PATCH', body:{ [key]: value }, token: adminToken() }),
 
   // --- To'lov usullari ---
   payMethods:      () => req('/payment-methods/admin', { token: adminToken() }),

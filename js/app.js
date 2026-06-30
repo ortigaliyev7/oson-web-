@@ -10,6 +10,7 @@ const App = {
 
   init() {
     this.root = document.getElementById('app');
+    this.appSettings = {};
     // Saqlangan sessiya
     const u = localStorage.getItem(LS.CLIENT_USER);
     if (u) { try { this.user = JSON.parse(u); } catch {} }
@@ -19,6 +20,15 @@ const App = {
 
     window.addEventListener('hashchange', () => this.route());
     this.route();
+    this.loadSettings();
+  },
+  async loadSettings() {
+    try {
+      const s = await ClientAPI.settings();
+      this.appSettings = s || {};
+      // Agar haydovchi qadami ochiq bo'lsa, qayta chizamiz (toggle holatiga ko'ra)
+      if (location.hash.includes('/new/drivers')) this.flowDrivers();
+    } catch (e) { /* sozlama yuklanmasa default */ }
   },
 
   go(path) { location.hash = path; },
@@ -876,10 +886,8 @@ const App = {
   },
 
   texNext() {
-    const t = this.draft.tex || {};
+    // Rasm asosiy: faqat old tomon rasmi majburiy. Qolgan ma'lumotlar OCR/admin orqali.
     if (!this.draft.texPhotoData) return toast('Texpassport old tomoni rasmini yuklang', 'err');
-    if (!t.plate) return toast('Davlat raqamini kiriting', 'err');
-    if (!t.model) return toast('Model nomini kiriting', 'err');
     this.saveDraft();
     this.flowNext('tex');
   },
@@ -928,33 +936,100 @@ const App = {
     const d = this.draft;
     d.drivers = d.drivers || [];
     if (d.drivers.length === 0) d.drivers.push({ name:'', license:'' });
+    const reqLic = !!(this.appSettings && this.appSettings.require_driver_license);
     this.root.innerHTML = this.flowHeader('drivers', 'Haydovchilar') + `
       <h2 class="flow-q">Haydovchilar</h2>
-      <p class="flow-sub">Polisga kiritiladigan haydovchilar</p>
+      <p class="flow-sub">${reqLic ? "Haydovchilik guvohnomasini suratga oling — ma'lumotlar avtomatik aniqlanadi" : "Polisga kiritiladigan haydovchilar"}</p>
       <div id="driversList">${this.renderDrivers()}</div>
       ${d.drivers.length < 5 ? `<button class="btn btn-ghost btn-block" onclick="App.addDriver()">${I.plus} Haydovchi qo'shish</button>` : ''}
       <button class="btn btn-primary btn-block btn-lg" style="margin-top:16px" onclick="App.driversNext()">Davom etish</button>
       </div></div>`;
+    // saqlangan guvohnoma rasmlari
+    d.drivers.forEach((dr, i) => { if (dr.licensePhotoData) this.showDriverLicense(i, dr.licensePhotoData); });
   },
   renderDrivers() {
+    const reqLic = !!(this.appSettings && this.appSettings.require_driver_license);
     return this.draft.drivers.map((dr, i) => `
       <div class="driver-card">
         <div class="driver-head">
           <span>Haydovchi ${i+1}</span>
           ${this.draft.drivers.length > 1 ? `<button class="driver-del" onclick="App.delDriver(${i})">${I.x}</button>` : ''}
         </div>
-        <div class="field"><label>F.I.Sh</label>
-          <input class="inp" placeholder="Familiya Ism Sharif" value="${esc(dr.name||'')}" oninput="App.driverField(${i},'name',this.value)"></div>
+        ${reqLic ? `
+        <div class="upload-zone driver-up" id="dlUpload${i}" onclick="document.getElementById('dlFile${i}').click()">
+          <input type="file" id="dlFile${i}" accept="image/*" hidden onchange="App.onDriverLicense(${i}, event)">
+          <div id="dlPreview${i}">
+            <div class="uz-ic">${I.camera}</div>
+            <div class="uz-title">Guvohnoma rasmi</div>
+            <div class="uz-hint">Rasmga oling yoki tanlang</div>
+          </div>
+        </div>
+        <div id="dlStatus${i}" class="ocr-status" style="display:none;margin-bottom:14px"></div>` : ''}
+        <div class="field"><label>F.I.Sh${reqLic?' <span class="opt">(ixtiyoriy)</span>':''}</label>
+          <input class="inp" id="dr_name${i}" placeholder="Familiya Ism Sharif" value="${esc(dr.name||'')}" oninput="App.driverField(${i},'name',this.value)"></div>
         <div class="field"><label>Guvohnoma raqami</label>
-          <input class="inp" placeholder="AB 1234567" value="${esc(dr.license||'')}" oninput="App.driverField(${i},'license',this.value)"></div>
+          <input class="inp" id="dr_lic${i}" placeholder="AB1234567" value="${esc(dr.license||'')}" oninput="App.driverField(${i},'license',this.value)"></div>
       </div>`).join('');
   },
-  driverField(i, k, v) { this.draft.drivers[i][k] = v; this.saveDraft(); },
+  driverField(i, k, v) { this.draft.drivers[i][k] = v; this.saveDraftSoon(); },
+
+  onDriverLicense(i, e) {
+    const f = e.target.files && e.target.files[0];
+    if (!f) return;
+    const box = document.getElementById('dlPreview' + i);
+    if (box) box.innerHTML = `<div class="uz-loading"><span class="spinner"></span><span>Yuklanmoqda...</span></div>`;
+    compressImage(f, 1280, 0.7, (dataUrl) => {
+      this.draft.drivers[i].licensePhotoData = dataUrl;
+      this.saveDraft();
+      this.showDriverLicense(i, dataUrl);
+      this.runDriverOcr(i, dataUrl);
+    });
+  },
+  showDriverLicense(i, dataUrl) {
+    const box = document.getElementById('dlPreview' + i);
+    if (box) box.innerHTML = `<img src="${dataUrl}" class="uz-img" alt="guvohnoma">
+      <div class="uz-change">${I.refresh}<span>Almashtirish</span></div>`;
+  },
+  async runDriverOcr(i, dataUrl) {
+    const status = document.getElementById('dlStatus' + i);
+    if (status) {
+      status.style.display = 'flex';
+      status.className = 'ocr-status loading';
+      status.innerHTML = `<span class="spinner"></span><span>Rasm o'qilmoqda...</span>`;
+    }
+    try {
+      const r = await ClientAPI.ocr(dataUrl, 'driver_license');
+      const f = (r && r.fields) || {};
+      let filled = 0;
+      // OCR guvohnoma raqamini beradi (pasport maydoni)
+      if (f.pasport && !this.draft.drivers[i].license) {
+        this.draft.drivers[i].license = f.pasport;
+        const inp = document.getElementById('dr_lic' + i);
+        if (inp) { inp.value = f.pasport; inp.classList.add('ocr-filled'); }
+        filled++;
+      }
+      this.saveDraft();
+      if (status) {
+        if (filled > 0) {
+          status.className = 'ocr-status ok';
+          status.innerHTML = `${I.check}<span>Guvohnoma raqami aniqlandi — F.I.Sh ni qo'shing</span>`;
+        } else {
+          status.className = 'ocr-status warn';
+          status.innerHTML = `<span>Raqam aniqlanmadi — qo'lda kiriting</span>`;
+        }
+      }
+    } catch (err) {
+      if (status) {
+        status.className = 'ocr-status warn';
+        status.innerHTML = `<span>Rasm yuklandi — ma'lumotni qo'lda kiriting</span>`;
+      }
+    }
+  },
+
   addDriver() {
     if (this.draft.drivers.length >= 5) return;
     this.draft.drivers.push({ name:'', license:'' });
     this.saveDraft();
-    document.getElementById('driversList').innerHTML = this.renderDrivers();
     this.flowDrivers();
   },
   delDriver(i) {
@@ -963,8 +1038,15 @@ const App = {
     this.flowDrivers();
   },
   driversNext() {
-    const valid = this.draft.drivers.every(d => d.name && d.name.trim());
-    if (!valid) return toast('Haydovchi F.I.Sh kiriting', 'err');
+    const reqLic = !!(this.appSettings && this.appSettings.require_driver_license);
+    if (reqLic) {
+      // Rasm asosiy: har haydovchida guvohnoma rasmi yoki ism bo'lsin
+      const ok = this.draft.drivers.every(d => d.licensePhotoData || (d.name && d.name.trim()));
+      if (!ok) return toast('Har bir haydovchi uchun guvohnoma rasmini yuklang yoki F.I.Sh kiriting', 'err');
+    } else {
+      const ok = this.draft.drivers.every(d => d.name && d.name.trim());
+      if (!ok) return toast('Haydovchi F.I.Sh kiriting', 'err');
+    }
     this.flowNext('drivers');
   },
 
@@ -1056,6 +1138,12 @@ const App = {
       if (d.oldPolicyData) {
         fd.append('photo_renew_policy', dataURLtoBlob(d.oldPolicyData), 'policy.jpg');
       }
+      // Haydovchilik guvohnomasi rasmlari (har haydovchi uchun)
+      (d.drivers || []).forEach((dr, i) => {
+        if (dr.licensePhotoData) {
+          fd.append('photo_driver_license_' + i, dataURLtoBlob(dr.licensePhotoData), 'driver_' + i + '.jpg');
+        }
+      });
       const res = await ClientAPI.submitApp(fd);
       const appId = (res && (res.id || (res.app && res.app.id))) || null;
       this.clearDraft();

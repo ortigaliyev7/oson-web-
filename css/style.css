@@ -909,3 +909,11 @@ body.no-scroll{overflow:hidden}
 /* Rasm yuklanmoqda holati */
 .uz-loading{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;padding:20px;color:var(--green-700);font-size:13px;font-weight:600}
 .uz-loading .spinner{width:24px;height:24px;border-width:2.5px;border-color:var(--green-100);border-top-color:var(--green-600)}
+
+/* Haydovchi guvohnoma rasmi zonasi */
+.driver-up{margin-bottom:14px}
+.driver-up .uz-ic{width:38px;height:38px}
+.driver-up .uz-ic svg{width:22px;height:22px}
+.driver-up .uz-title{font-size:13.5px}
+.driver-up .uz-hint{font-size:12px}
+.driver-up .uz-img{max-height:120px}
