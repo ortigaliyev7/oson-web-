@@ -38,6 +38,12 @@ const ClientAPI = {
   verify:   (phone, code) => req('/user-auth/verify', { method:'POST', body:{ phone, code } }),
   startSession: () => req('/user-auth/start-session', { method:'POST', body:{} }),
   checkSession: (token) => req('/user-auth/session/' + encodeURIComponent(token)),
+  ocr: (dataUrl, type) => {
+    const fd = new FormData();
+    fd.append('image', dataURLtoBlob(dataUrl), 'photo.jpg');
+    fd.append('type', type || 'texpassport');
+    return req('/ocr', { method:'POST', body: fd, isForm:true });
+  },
   me:       () => req('/user-auth/me', { token: clientToken() }),
   updateMe: (data) => req('/user-auth/me', { method:'PATCH', body:data, token: clientToken() }),
 

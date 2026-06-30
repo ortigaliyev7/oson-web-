@@ -153,3 +153,28 @@ function smsLogoSVG() {
     <circle cx="30" cy="22.5" r="2" fill="#229ED9"/>
   </svg>`;
 }
+
+// Rasmni siqish (telefon qotmasligi va OCR tez bo'lishi uchun)
+// maxDim px gacha kichraytiradi, JPEG sifatda qaytaradi (~100-300KB)
+function compressImage(file, maxDim, quality, cb) {
+  const reader = new FileReader();
+  reader.onload = e => {
+    const img = new Image();
+    img.onload = () => {
+      let w = img.width, h = img.height;
+      if (w > maxDim || h > maxDim) {
+        if (w > h) { h = Math.round(h * maxDim / w); w = maxDim; }
+        else { w = Math.round(w * maxDim / h); h = maxDim; }
+      }
+      try {
+        const canvas = document.createElement('canvas');
+        canvas.width = w; canvas.height = h;
+        canvas.getContext('2d').drawImage(img, 0, 0, w, h);
+        cb(canvas.toDataURL('image/jpeg', quality || 0.7));
+      } catch (err) { cb(e.target.result); }
+    };
+    img.onerror = () => cb(e.target.result);
+    img.src = e.target.result;
+  };
+  reader.readAsDataURL(file);
+}

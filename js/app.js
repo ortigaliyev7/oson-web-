@@ -23,7 +23,8 @@ const App = {
 
   go(path) { location.hash = path; },
 
-  saveDraft() { localStorage.setItem(LS.DRAFT, JSON.stringify(this.draft || {})); },
+  saveDraft() { try { localStorage.setItem(LS.DRAFT, JSON.stringify(this.draft || {})); } catch(e){} },
+  saveDraftSoon() { clearTimeout(this._saveT); this._saveT = setTimeout(() => this.saveDraft(), 400); },
   clearDraft() { this.draft = null; localStorage.removeItem(LS.DRAFT); },
 
   logout() {
@@ -729,29 +730,41 @@ const App = {
       </div></div>`;
   },
 
-  // 5. Texpassport ma'lumotlari + rasm
+  // 5. Texpassport ma'lumotlari + rasm (OCR bilan)
   flowTex() {
     const d = this.draft;
     d.tex = d.tex || {};
     this.root.innerHTML = this.flowHeader('tex', 'Texpassport') + `
       <h2 class="flow-q">Avtomobil ma'lumotlari</h2>
-      <p class="flow-sub">Texpassport ma'lumotlarini kiriting</p>
+      <p class="flow-sub">Texpassport rasmini oling — ma'lumotlar avtomatik aniqlanadi</p>
 
-      <div class="upload-zone" id="texUpload" onclick="document.getElementById('texFile').click()">
-        <input type="file" id="texFile" accept="image/*" hidden onchange="App.onTexPhoto(event)">
-        <div id="texPreview">
-          <div class="uz-ic">${I.camera}</div>
-          <div class="uz-title">Texpassport rasmini yuklang</div>
-          <div class="uz-hint">Rasmga oling yoki galereyadan tanlang</div>
+      <div class="tex-uploads">
+        <div class="upload-zone tex-up" id="texUpload" onclick="document.getElementById('texFile').click()">
+          <input type="file" id="texFile" accept="image/*" capture="environment" hidden onchange="App.onTexPhoto('front', event)">
+          <div id="texPreview">
+            <div class="uz-ic">${I.camera}</div>
+            <div class="uz-title">Old tomoni</div>
+            <div class="uz-hint">Rasmga oling</div>
+          </div>
+        </div>
+        <div class="upload-zone tex-up" id="texBackUpload" onclick="document.getElementById('texBackFile').click()">
+          <input type="file" id="texBackFile" accept="image/*" capture="environment" hidden onchange="App.onTexPhoto('back', event)">
+          <div id="texBackPreview">
+            <div class="uz-ic">${I.camera}</div>
+            <div class="uz-title">Orqa tomoni</div>
+            <div class="uz-hint">Rasmga oling</div>
+          </div>
         </div>
       </div>
 
-      <div class="form-grid">
+      <div id="ocrStatus" class="ocr-status" style="display:none"></div>
+
+      <div class="form-grid" style="margin-top:18px">
         <div class="field"><label>Davlat raqami</label>
           <input class="inp" id="t_plate" placeholder="01 A 123 BC" value="${esc(d.tex.plate||'')}" oninput="App.texField('plate',this.value)"></div>
         <div class="field-row">
           <div class="field"><label>Seriya</label>
-            <input class="inp" id="t_seria" placeholder="AAF" value="${esc(d.tex.seria||'')}" oninput="App.texField('seria',this.value)"></div>
+            <input class="inp" id="t_seria" placeholder="AAF1234567" value="${esc(d.tex.seria||'')}" oninput="App.texField('seria',this.value)"></div>
           <div class="field"><label>Yil</label>
             <input class="inp" id="t_year" placeholder="2020" inputmode="numeric" value="${esc(d.tex.year||'')}" oninput="App.texField('year',this.value)"></div>
         </div>
@@ -765,28 +778,76 @@ const App = {
 
       <button class="btn btn-primary btn-block btn-lg" style="margin-top:24px" onclick="App.texNext()">Davom etish</button>
       </div></div>`;
-    // oldindan saqlangan rasm
-    if (d.texPhotoData) this.showTexPreview(d.texPhotoData);
+    if (d.texPhotoData) this.showTexPreview('front', d.texPhotoData);
+    if (d.texBackPhotoData) this.showTexPreview('back', d.texBackPhotoData);
   },
-  texField(k, v) { this.draft.tex = this.draft.tex||{}; this.draft.tex[k] = v; this.saveDraft(); },
-  onTexPhoto(e) {
+  texField(k, v) { this.draft.tex = this.draft.tex||{}; this.draft.tex[k] = v; this.saveDraftSoon(); },
+
+  onTexPhoto(side, e) {
     const f = e.target.files && e.target.files[0];
     if (!f) return;
-    this.draft._texFileName = f.name;
-    readImagePreview(f, (dataUrl) => {
-      this.draft.texPhotoData = dataUrl;   // saqlash (keyin blobga aylantiramiz)
+    // Siqish — telefon qotmasligi uchun (xom rasm o'rniga ~200KB JPEG)
+    compressImage(f, 1400, 0.72, (dataUrl) => {
+      if (side === 'back') this.draft.texBackPhotoData = dataUrl;
+      else this.draft.texPhotoData = dataUrl;
       this.saveDraft();
-      this.showTexPreview(dataUrl);
+      this.showTexPreview(side, dataUrl);
+      this.runOcr(side, dataUrl);
     });
   },
-  showTexPreview(dataUrl) {
-    const box = document.getElementById('texPreview');
+  showTexPreview(side, dataUrl) {
+    const box = document.getElementById(side === 'back' ? 'texBackPreview' : 'texPreview');
     if (box) box.innerHTML = `<img src="${dataUrl}" class="uz-img" alt="texpassport">
-      <div class="uz-change">${I.refresh}<span>Rasmni almashtirish</span></div>`;
+      <div class="uz-change">${I.refresh}<span>Almashtirish</span></div>`;
   },
+
+  // OCR — rasmdan ma'lumot o'qish va maydonlarni to'ldirish
+  async runOcr(side, dataUrl) {
+    const status = document.getElementById('ocrStatus');
+    if (status) {
+      status.style.display = 'flex';
+      status.className = 'ocr-status loading';
+      status.innerHTML = `<span class="spinner"></span><span>Rasm o'qilmoqda...</span>`;
+    }
+    try {
+      const r = await ClientAPI.ocr(dataUrl, 'texpassport');
+      const f = (r && r.fields) || {};
+      const map = { tex_plate:'plate', tex_seria:'seria', tex_year:'year', tex_vin:'vin', tex_stir:'stir' };
+      let filled = 0;
+      this.draft.tex = this.draft.tex || {};
+      Object.keys(map).forEach(k => {
+        if (f[k]) {
+          const field = map[k];
+          // Faqat bo'sh maydonni to'ldiramiz (foydalanuvchi yozganini buzmaymiz)
+          if (!this.draft.tex[field]) {
+            this.draft.tex[field] = f[k];
+            const inp = document.getElementById('t_' + field);
+            if (inp) { inp.value = f[k]; inp.classList.add('ocr-filled'); }
+            filled++;
+          }
+        }
+      });
+      this.saveDraft();
+      if (status) {
+        if (filled > 0) {
+          status.className = 'ocr-status ok';
+          status.innerHTML = `${I.check}<span>${filled} ta ma'lumot aniqlandi — tekshiring va to'ldiring</span>`;
+        } else {
+          status.className = 'ocr-status warn';
+          status.innerHTML = `<span>Ma'lumot aniqlanmadi — qo'lda kiriting</span>`;
+        }
+      }
+    } catch (err) {
+      if (status) {
+        status.className = 'ocr-status warn';
+        status.innerHTML = `<span>Avtomatik o'qib bo'lmadi — ma'lumotlarni qo'lda kiriting</span>`;
+      }
+    }
+  },
+
   texNext() {
     const t = this.draft.tex || {};
-    if (!this.draft.texPhotoData) return toast('Texpassport rasmini yuklang', 'err');
+    if (!this.draft.texPhotoData) return toast('Texpassport old tomoni rasmini yuklang', 'err');
     if (!t.plate) return toast('Davlat raqamini kiriting', 'err');
     if (!t.model) return toast('Model nomini kiriting', 'err');
     this.saveDraft();
@@ -814,8 +875,7 @@ const App = {
   onOldPolicy(e) {
     const f = e.target.files && e.target.files[0];
     if (!f) return;
-    this.draft._oldFileName = f.name;
-    readImagePreview(f, (dataUrl) => {
+    compressImage(f, 1400, 0.72, (dataUrl) => {
       this.draft.oldPolicyData = dataUrl;
       this.saveDraft();
       this.showOldPreview(dataUrl);
@@ -956,7 +1016,10 @@ const App = {
       fd.append('tex_stir', t.stir || '');
       // rasmlar — dataURL -> Blob
       if (d.texPhotoData) {
-        fd.append('photo_tex_front', dataURLtoBlob(d.texPhotoData), 'tex.jpg');
+        fd.append('photo_tex_front', dataURLtoBlob(d.texPhotoData), 'tex_front.jpg');
+      }
+      if (d.texBackPhotoData) {
+        fd.append('photo_tex_back', dataURLtoBlob(d.texBackPhotoData), 'tex_back.jpg');
       }
       if (d.oldPolicyData) {
         fd.append('photo_renew_policy', dataURLtoBlob(d.oldPolicyData), 'policy.jpg');

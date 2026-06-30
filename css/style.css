@@ -267,7 +267,7 @@ img, svg { display:block; max-width:100%; }
    MIJOZ APP (ichki)
    ============================================================ */
 .app-shell { min-height:100vh; padding-bottom:90px; }
-.app-topbar { position:sticky; top:0; z-index:50; background:rgba(246,250,248,.85); backdrop-filter:blur(16px); border-bottom:1px solid var(--line); }
+.app-topbar { position:sticky; top:0; z-index:50; background:var(--paper); border-bottom:1px solid var(--line); }
 .app-topbar-inner { height:64px; display:flex; align-items:center; justify-content:space-between; }
 .app-back { display:inline-flex; align-items:center; gap:8px; color:var(--ink-2); font-weight:600; font-size:15px; cursor:pointer; padding:8px 12px; border-radius:10px; transition:background .2s; }
 .app-back:hover { background:var(--green-50); }
@@ -852,3 +852,34 @@ body.no-scroll{overflow:hidden}
 .login-alt{text-align:center;margin-top:18px}
 .login-alt a{color:var(--muted);font-size:13.5px;font-weight:500;cursor:pointer;text-decoration:underline;text-underline-offset:3px}
 .login-alt a:hover{color:var(--green-700)}
+
+/* ════════════════════════════════════════════════
+   TEXPASSPORT — old/orqa rasm + OCR holati
+   ════════════════════════════════════════════════ */
+.tex-uploads{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.tex-up{margin:0}
+.tex-up .uz-ic{width:40px;height:40px}
+.tex-up .uz-ic svg{width:24px;height:24px}
+.tex-up .uz-title{font-size:14px}
+.tex-up .uz-hint{font-size:12px}
+.tex-up .uz-img{max-height:120px}
+
+/* OCR holat paneli */
+.ocr-status{display:flex;align-items:center;gap:10px;margin-top:14px;padding:12px 14px;border-radius:var(--r);font-size:13.5px;font-weight:500;animation:tgFadeUp .3s ease}
+.ocr-status.loading{background:#EAF6FD;color:#1d8bc0}
+.ocr-status.loading .spinner{width:17px;height:17px;border-width:2.5px;border-color:#BBDEF5;border-top-color:#229ED9}
+.ocr-status.ok{background:var(--green-50);color:var(--green-700)}
+.ocr-status.ok svg{width:18px;height:18px;flex-shrink:0}
+.ocr-status.warn{background:#FEF3E2;color:#B45309}
+/* OCR to'ldirgan maydon — yashil belgilanadi */
+.inp.ocr-filled{border-color:var(--green-400);background:var(--green-50);animation:otpFill .3s ease}
+
+@media (max-width:380px){
+  .tex-up .uz-img{max-height:100px}
+}
+
+/* Mobil unumdorlik — yopishqoq elementlarda blur'ni o'chirish (qotishni oldini oladi) */
+@media (max-width:768px){
+  .nav{background:var(--paper);backdrop-filter:none;-webkit-backdrop-filter:none}
+  .app-topbar{backdrop-filter:none;-webkit-backdrop-filter:none}
+}
