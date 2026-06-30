@@ -940,21 +940,8 @@ const Admin = {
       const s = await AdminAPI.settings();
       const maintenance = !!s.maintenance_mode;
       const renewal = s.renewal_enabled !== false;
-      const reqLicense = !!s.require_driver_license;
       const content = `
         <h1 class="adm-h1">Sozlamalar</h1>
-
-        <div class="adm-card setting-card" style="max-width:600px">
-          <div class="setting-row">
-            <div class="setting-txt">
-              <h3>Haydovchilik guvohnomasini so'rash</h3>
-              <p>Yoqilsa, mijoz ariza berishda har bir haydovchi uchun guvohnoma rasmini yuklaydi (ma'lumotlar avtomatik o'qiladi)</p>
-            </div>
-            <button class="toggle ${reqLicense?'on':''}" id="tgLicense" onclick="Admin.toggleDriverLicense(${!reqLicense})">
-              <span class="toggle-knob"></span>
-            </button>
-          </div>
-        </div>
 
         <div class="adm-card setting-card" style="max-width:600px">
           <div class="setting-row">
@@ -986,19 +973,30 @@ const Admin = {
             <label>O'chirilgan holatdagi xabar</label>
             <input class="inp" id="renewMsg" value="${esc(s.renewal_disabled_message||'')}" placeholder="Yangilash vaqtincha mavjud emas">
           </div>
+        </div>
+
+        <div class="adm-card setting-card" style="max-width:600px">
+          <div class="setting-txt" style="margin-bottom:12px">
+            <h3>Yordam — Telegram havolasi</h3>
+            <p>Mijoz "Yordam" bo'limida shu Telegram orqali murojaat qiladi (masalan, https://t.me/online_sugurtambot)</p>
+          </div>
+          <div class="field">
+            <label>Telegram havolasi (https://t.me/...)</label>
+            <input class="inp" id="supportTg" value="${esc(s.contact_admin_tg_url||'')}" placeholder="https://t.me/online_sugurtambot">
+          </div>
+          <button class="btn btn-primary btn-sm" style="margin-top:12px" onclick="Admin.saveSupportTg()">Saqlash</button>
         </div>`;
       this.root.innerHTML = this.shell('settings', content);
     } catch (e) {
       this.root.innerHTML = this.shell('settings', this.errorBlock(e.message));
     }
   },
-  async toggleDriverLicense(enabled) {
+  async saveSupportTg() {
+    const url = document.getElementById('supportTg').value.trim();
+    if (url && !/^https?:\/\//i.test(url)) return toast('Havola https:// bilan boshlanishi kerak', 'err');
     try {
-      await AdminAPI.setSetting('require_driver_license', enabled);
-      const el = document.getElementById('tgLicense');
-      el.className = 'toggle ' + (enabled?'on':'');
-      el.setAttribute('onclick', `Admin.toggleDriverLicense(${!enabled})`);
-      toast(enabled?'Guvohnoma so\'rash yoqildi':'Guvohnoma so\'rash o\'chirildi', 'ok');
+      await AdminAPI.setSetting('contact_admin_tg_url', url);
+      toast('Telegram havolasi saqlandi', 'ok');
     } catch (e) { toast(e.message, 'err'); }
   },
   async toggleMaintenance(enabled) {

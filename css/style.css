@@ -917,3 +917,41 @@ body.no-scroll{overflow:hidden}
 .driver-up .uz-title{font-size:13.5px}
 .driver-up .uz-hint{font-size:12px}
 .driver-up .uz-img{max-height:120px}
+
+/* Hujjat (ID/biometrik) yuklash — old/orqa */
+.doc-hint{font-size:12.5px;color:var(--muted);margin-bottom:10px}
+.doc-uploads{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:8px}
+.doc-up{margin:0}
+.doc-up .uz-ic{width:34px;height:34px}
+.doc-up .uz-ic svg{width:20px;height:20px}
+.doc-up .uz-title{font-size:13px}
+.doc-up .uz-hint{font-size:11px}
+.doc-up .uz-img{max-height:100px}
+
+/* Telegram yordam havolasi */
+.support-tg{background:#EAF6FD;border-color:#CFE9F9!important}
+.support-tg svg{width:22px;height:22px}
+
+/* PWA o'rnatish banneri */
+.pwa-banner{position:fixed;left:12px;right:12px;bottom:12px;z-index:1500;
+  background:#fff;border:1px solid var(--line);border-radius:16px;box-shadow:0 12px 40px rgba(15,40,30,.18);
+  padding:14px 16px;display:flex;align-items:center;gap:12px;animation:tgFadeUp .4s ease}
+.pwa-banner .pwa-ic{width:44px;height:44px;border-radius:12px;background:var(--green-600);color:#fff;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.pwa-banner .pwa-ic svg{width:26px;height:26px}
+.pwa-txt{flex:1;min-width:0}
+.pwa-txt b{display:block;font-size:14px;color:var(--ink)}
+.pwa-txt span{font-size:12.5px;color:var(--ink-2)}
+.pwa-btns{display:flex;gap:8px;flex-shrink:0}
+.pwa-install{background:var(--green-600);color:#fff;border:none;border-radius:10px;padding:9px 14px;font-weight:700;font-size:13px;cursor:pointer}
+.pwa-close{background:transparent;border:none;color:var(--muted);font-size:20px;cursor:pointer;padding:0 6px}
+@media (max-width:420px){ .pwa-banner{flex-wrap:wrap} .pwa-txt{flex-basis:70%} }
+
+/* Mijoz (o'zim / boshqa odam) bo'limi */
+.client-card{background:var(--card);border:1px solid var(--line);border-radius:var(--r-lg);padding:16px;margin-bottom:14px}
+.cc-title{font-size:14px;font-weight:700;color:var(--ink);margin-bottom:12px}
+.cc-toggle{display:flex;gap:8px;background:var(--paper);padding:4px;border-radius:12px}
+.cc-opt{flex:1;padding:10px;border:none;background:transparent;border-radius:9px;font-weight:600;font-size:13.5px;color:var(--ink-2);cursor:pointer;transition:all .15s}
+.cc-opt.on{background:var(--green-600);color:#fff;box-shadow:0 3px 10px rgba(15,110,86,.25)}
+.cc-me{display:flex;align-items:center;gap:10px;margin-top:12px;padding:12px 14px;background:var(--green-50);border-radius:var(--r);font-weight:600;color:var(--green-700)}
+.cc-me svg{width:18px;height:18px}
+.cc-hint{font-size:12.5px;color:var(--muted);margin-top:8px}

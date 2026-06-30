@@ -21,14 +21,64 @@ const App = {
     window.addEventListener('hashchange', () => this.route());
     this.route();
     this.loadSettings();
+    this.initPWA();
   },
   async loadSettings() {
     try {
       const s = await ClientAPI.settings();
       this.appSettings = s || {};
-      // Agar haydovchi qadami ochiq bo'lsa, qayta chizamiz (toggle holatiga ko'ra)
       if (location.hash.includes('/new/drivers')) this.flowDrivers();
     } catch (e) { /* sozlama yuklanmasa default */ }
+  },
+
+  // === PWA: ilovani o'rnatishni taklif qilish ===
+  initPWA() {
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('sw.js').catch(() => {});
+    }
+    const installed = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone;
+    if (installed) return;
+    if (localStorage.getItem('oson_pwa_dismissed') === '1') return;
+
+    window.addEventListener('beforeinstallprompt', (e) => {
+      e.preventDefault();
+      this._deferredPrompt = e;
+      setTimeout(() => this.showPwaBanner('android'), 2500);
+    });
+
+    const isIOS = /iphone|ipad|ipod/i.test(navigator.userAgent);
+    const isSafari = /safari/i.test(navigator.userAgent) && !/crios|fxios|chrome/i.test(navigator.userAgent);
+    if (isIOS && isSafari) {
+      setTimeout(() => this.showPwaBanner('ios'), 3000);
+    }
+  },
+  showPwaBanner(kind) {
+    if (document.getElementById('pwaBanner')) return;
+    const txt = kind === 'ios'
+      ? `<b>Ilovani o'rnating</b><span>"Ulashish" (↑) → "Bosh ekranga qo'shish"</span>`
+      : `<b>Ilovani o'rnating</b><span>Tez kirish uchun bosh ekranga qo'shing</span>`;
+    const btn = kind === 'ios' ? '' : `<button class="pwa-install" onclick="App.installPwa()">O'rnatish</button>`;
+    const el = document.createElement('div');
+    el.id = 'pwaBanner';
+    el.className = 'pwa-banner';
+    el.innerHTML = `
+      <div class="pwa-ic">${logoMarkSVG()}</div>
+      <div class="pwa-txt">${txt}</div>
+      <div class="pwa-btns">${btn}<button class="pwa-close" onclick="App.dismissPwa()">&times;</button></div>`;
+    document.body.appendChild(el);
+  },
+  async installPwa() {
+    const p = this._deferredPrompt;
+    if (!p) { this.dismissPwa(); return; }
+    p.prompt();
+    try { await p.userChoice; } catch {}
+    this._deferredPrompt = null;
+    this.dismissPwa();
+  },
+  dismissPwa() {
+    const el = document.getElementById('pwaBanner');
+    if (el) el.remove();
+    localStorage.setItem('oson_pwa_dismissed', '1');
   },
 
   go(path) { location.hash = path; },
@@ -210,7 +260,7 @@ const App = {
           <h4>Aloqa</h4>
           <div class="footer-links">
             <a href="tel:+998907772477">+998 90 777 24 77</a>
-            <a href="mailto:avazbekortigaliyev129@gmail.com">Email yozish</a>
+            <a href="${BOT_LINK}" target="_blank" rel="noopener">Telegram orqali yozish</a>
             <a href="privacy-policy.html">Maxfiylik siyosati</a>
           </div>
         </div>
@@ -734,12 +784,18 @@ const App = {
       <h2 class="flow-q">Hududingizni tanlang</h2>
       <p class="flow-sub">Avtomobil ro'yxatdan o'tgan hudud</p>
       <div class="region-grid">
-        ${REGIONS.map(r => `
-          <div class="region-chip ${d.region===r.name?'sel':''}" onclick="App.selectAndGo(this,'region','${esc(r.name)}','/new/duration')">
+        ${REGIONS.map((r, i) => `
+          <div class="region-chip ${d.region===r.name?'sel':''}" data-i="${i}" onclick="App.pickRegion(${i})">
             ${esc(r.name)}
           </div>`).join('')}
       </div>
       </div></div>`;
+  },
+  pickRegion(i) {
+    const r = REGIONS[i];
+    if (!r) return;
+    const el = document.querySelector('.region-chip[data-i="' + i + '"]');
+    this.selectAndGo(el, 'region', r.name, '/new/duration');
   },
 
   // 4. Muddat
@@ -932,103 +988,106 @@ const App = {
   },
 
   // 6. Haydovchilar
+  isUnlimited() { return /cheklovsiz/i.test(this.draft.duration || ''); },
+
   flowDrivers() {
     const d = this.draft;
+    const unlimited = this.isUnlimited();
     d.drivers = d.drivers || [];
-    if (d.drivers.length === 0) d.drivers.push({ name:'', license:'' });
-    const reqLic = !!(this.appSettings && this.appSettings.require_driver_license);
-    this.root.innerHTML = this.flowHeader('drivers', 'Haydovchilar') + `
-      <h2 class="flow-q">Haydovchilar</h2>
-      <p class="flow-sub">${reqLic ? "Haydovchilik guvohnomasini suratga oling — ma'lumotlar avtomatik aniqlanadi" : "Polisga kiritiladigan haydovchilar"}</p>
+    if (unlimited) { d.drivers = [d.drivers[0] || {}]; }
+    else if (d.drivers.length === 0) { d.drivers.push({}); }
+    const title = unlimited ? 'Avtomobil egasi' : 'Haydovchilar';
+    const sub = unlimited
+      ? "Cheklanmagan sug'urta — avtomobil egasining pasporti (yoki ID kartasi) suratga olinadi"
+      : "Cheklangan sug'urta — har bir haydovchi hujjati suratga olinadi (5 tagacha)";
+    this.root.innerHTML = this.flowHeader('drivers', title) + `
+      <h2 class="flow-q">${title}</h2>
+      <p class="flow-sub">${sub}</p>
       <div id="driversList">${this.renderDrivers()}</div>
-      ${d.drivers.length < 5 ? `<button class="btn btn-ghost btn-block" onclick="App.addDriver()">${I.plus} Haydovchi qo'shish</button>` : ''}
+      ${(!unlimited && d.drivers.length < 5) ? `<button class="btn btn-ghost btn-block" onclick="App.addDriver()">${I.plus} Haydovchi qo'shish</button>` : ''}
       <button class="btn btn-primary btn-block btn-lg" style="margin-top:16px" onclick="App.driversNext()">Davom etish</button>
       </div></div>`;
-    // saqlangan guvohnoma rasmlari
-    d.drivers.forEach((dr, i) => { if (dr.licensePhotoData) this.showDriverLicense(i, dr.licensePhotoData); });
+    d.drivers.forEach((dr, i) => {
+      if (dr._frontData) this.showDocPhoto(i, 'front', dr._frontData);
+      if (dr._backData) this.showDocPhoto(i, 'back', dr._backData);
+    });
   },
   renderDrivers() {
-    const reqLic = !!(this.appSettings && this.appSettings.require_driver_license);
+    const unlimited = this.isUnlimited();
     return this.draft.drivers.map((dr, i) => `
       <div class="driver-card">
         <div class="driver-head">
-          <span>Haydovchi ${i+1}</span>
-          ${this.draft.drivers.length > 1 ? `<button class="driver-del" onclick="App.delDriver(${i})">${I.x}</button>` : ''}
+          <span>${unlimited ? 'Avtomobil egasi' : 'Haydovchi ' + (i+1)}</span>
+          ${(!unlimited && this.draft.drivers.length > 1) ? `<button class="driver-del" onclick="App.delDriver(${i})">${I.x}</button>` : ''}
         </div>
-        ${reqLic ? `
-        <div class="upload-zone driver-up" id="dlUpload${i}" onclick="document.getElementById('dlFile${i}').click()">
-          <input type="file" id="dlFile${i}" accept="image/*" hidden onchange="App.onDriverLicense(${i}, event)">
-          <div id="dlPreview${i}">
-            <div class="uz-ic">${I.camera}</div>
-            <div class="uz-title">Guvohnoma rasmi</div>
-            <div class="uz-hint">Rasmga oling yoki tanlang</div>
+        <p class="doc-hint">ID karta yoki biometrik pasport — JSHSHIR va seriya avtomatik o'qiladi</p>
+        <div class="doc-uploads">
+          <div class="upload-zone doc-up" id="docUp${i}_front" onclick="document.getElementById('docFile${i}_front').click()">
+            <input type="file" id="docFile${i}_front" accept="image/*" hidden onchange="App.onDocPhoto(${i},'front',event)">
+            <div id="docPrev${i}_front"><div class="uz-ic">${I.camera}</div><div class="uz-title">Old tomoni</div><div class="uz-hint">ID / biometrik</div></div>
+          </div>
+          <div class="upload-zone doc-up" id="docUp${i}_back" onclick="document.getElementById('docFile${i}_back').click()">
+            <input type="file" id="docFile${i}_back" accept="image/*" hidden onchange="App.onDocPhoto(${i},'back',event)">
+            <div id="docPrev${i}_back"><div class="uz-ic">${I.camera}</div><div class="uz-title">Orqa tomoni</div><div class="uz-hint">ID karta uchun</div></div>
           </div>
         </div>
-        <div id="dlStatus${i}" class="ocr-status" style="display:none;margin-bottom:14px"></div>` : ''}
-        <div class="field"><label>F.I.Sh${reqLic?' <span class="opt">(ixtiyoriy)</span>':''}</label>
+        <div id="docStatus${i}" class="ocr-status" style="display:none;margin-bottom:14px"></div>
+        <div class="field"><label>JSHSHIR (14 raqam)</label>
+          <input class="inp" id="dr_jshshir${i}" inputmode="numeric" placeholder="00000000000000" value="${esc(dr.jshshir||'')}" oninput="App.driverField(${i},'jshshir',this.value)"></div>
+        <div class="field"><label>Pasport seriya</label>
+          <input class="inp" id="dr_seria${i}" placeholder="AB1234567" value="${esc(dr.seria||'')}" oninput="App.driverField(${i},'seria',this.value)"></div>
+        <div class="field"><label>F.I.Sh <span class="opt">(ixtiyoriy)</span></label>
           <input class="inp" id="dr_name${i}" placeholder="Familiya Ism Sharif" value="${esc(dr.name||'')}" oninput="App.driverField(${i},'name',this.value)"></div>
-        <div class="field"><label>Guvohnoma raqami</label>
-          <input class="inp" id="dr_lic${i}" placeholder="AB1234567" value="${esc(dr.license||'')}" oninput="App.driverField(${i},'license',this.value)"></div>
       </div>`).join('');
   },
   driverField(i, k, v) { this.draft.drivers[i][k] = v; this.saveDraftSoon(); },
 
-  onDriverLicense(i, e) {
+  onDocPhoto(i, side, e) {
     const f = e.target.files && e.target.files[0];
     if (!f) return;
-    const box = document.getElementById('dlPreview' + i);
+    const box = document.getElementById(`docPrev${i}_${side}`);
     if (box) box.innerHTML = `<div class="uz-loading"><span class="spinner"></span><span>Yuklanmoqda...</span></div>`;
     compressImage(f, 1280, 0.7, (dataUrl) => {
-      this.draft.drivers[i].licensePhotoData = dataUrl;
+      this.draft.drivers[i][side === 'back' ? '_backData' : '_frontData'] = dataUrl;
       this.saveDraft();
-      this.showDriverLicense(i, dataUrl);
-      this.runDriverOcr(i, dataUrl);
+      this.showDocPhoto(i, side, dataUrl);
+      this.runDocOcr(i, dataUrl);
     });
   },
-  showDriverLicense(i, dataUrl) {
-    const box = document.getElementById('dlPreview' + i);
-    if (box) box.innerHTML = `<img src="${dataUrl}" class="uz-img" alt="guvohnoma">
-      <div class="uz-change">${I.refresh}<span>Almashtirish</span></div>`;
+  showDocPhoto(i, side, dataUrl) {
+    const box = document.getElementById(`docPrev${i}_${side}`);
+    if (box) box.innerHTML = `<img src="${dataUrl}" class="uz-img" alt="hujjat"><div class="uz-change">${I.refresh}<span>Almashtirish</span></div>`;
   },
-  async runDriverOcr(i, dataUrl) {
-    const status = document.getElementById('dlStatus' + i);
-    if (status) {
-      status.style.display = 'flex';
-      status.className = 'ocr-status loading';
-      status.innerHTML = `<span class="spinner"></span><span>Rasm o'qilmoqda...</span>`;
-    }
+  async runDocOcr(i, dataUrl) {
+    const status = document.getElementById('docStatus' + i);
+    if (status) { status.style.display='flex'; status.className='ocr-status loading'; status.innerHTML=`<span class="spinner"></span><span>Rasm o'qilmoqda...</span>`; }
     try {
-      const r = await ClientAPI.ocr(dataUrl, 'driver_license');
+      const r = await ClientAPI.ocr(dataUrl, 'id_card');
       const f = (r && r.fields) || {};
       let filled = 0;
-      // OCR guvohnoma raqamini beradi (pasport maydoni)
-      if (f.pasport && !this.draft.drivers[i].license) {
-        this.draft.drivers[i].license = f.pasport;
-        const inp = document.getElementById('dr_lic' + i);
-        if (inp) { inp.value = f.pasport; inp.classList.add('ocr-filled'); }
+      if (f.jshshir && !this.draft.drivers[i].jshshir) {
+        this.draft.drivers[i].jshshir = f.jshshir;
+        const inp = document.getElementById('dr_jshshir' + i); if (inp){ inp.value=f.jshshir; inp.classList.add('ocr-filled'); }
+        filled++;
+      }
+      if (f.pasport && !this.draft.drivers[i].seria) {
+        this.draft.drivers[i].seria = f.pasport;
+        const inp = document.getElementById('dr_seria' + i); if (inp){ inp.value=f.pasport; inp.classList.add('ocr-filled'); }
         filled++;
       }
       this.saveDraft();
       if (status) {
-        if (filled > 0) {
-          status.className = 'ocr-status ok';
-          status.innerHTML = `${I.check}<span>Guvohnoma raqami aniqlandi — F.I.Sh ni qo'shing</span>`;
-        } else {
-          status.className = 'ocr-status warn';
-          status.innerHTML = `<span>Raqam aniqlanmadi — qo'lda kiriting</span>`;
-        }
+        if (filled > 0) { status.className='ocr-status ok'; status.innerHTML=`${I.check}<span>${filled} ta ma'lumot aniqlandi</span>`; }
+        else { status.className='ocr-status warn'; status.innerHTML=`<span>Aniqlanmadi — qo'lda kiriting</span>`; }
       }
     } catch (err) {
-      if (status) {
-        status.className = 'ocr-status warn';
-        status.innerHTML = `<span>Rasm yuklandi — ma'lumotni qo'lda kiriting</span>`;
-      }
+      if (status) { status.className='ocr-status warn'; status.innerHTML=`<span>Rasm yuklandi — ma'lumotni qo'lda kiriting</span>`; }
     }
   },
 
   addDriver() {
-    if (this.draft.drivers.length >= 5) return;
-    this.draft.drivers.push({ name:'', license:'' });
+    if (this.isUnlimited() || this.draft.drivers.length >= 5) return;
+    this.draft.drivers.push({});
     this.saveDraft();
     this.flowDrivers();
   },
@@ -1038,15 +1097,10 @@ const App = {
     this.flowDrivers();
   },
   driversNext() {
-    const reqLic = !!(this.appSettings && this.appSettings.require_driver_license);
-    if (reqLic) {
-      // Rasm asosiy: har haydovchida guvohnoma rasmi yoki ism bo'lsin
-      const ok = this.draft.drivers.every(d => d.licensePhotoData || (d.name && d.name.trim()));
-      if (!ok) return toast('Har bir haydovchi uchun guvohnoma rasmini yuklang yoki F.I.Sh kiriting', 'err');
-    } else {
-      const ok = this.draft.drivers.every(d => d.name && d.name.trim());
-      if (!ok) return toast('Haydovchi F.I.Sh kiriting', 'err');
-    }
+    // Rasm asosiy: har kishida hujjat rasmi YOKI (JSHSHIR + seriya) bo'lsin
+    const ok = this.draft.drivers.every(d => d._frontData || (d.jshshir && d.seria));
+    if (!ok) return toast('Har bir kishi uchun hujjat rasmini yuklang yoki JSHSHIR va seriyani kiriting', 'err');
+    this.draft.coverage = this.isUnlimited() ? 'unlimited' : 'limited';
     this.flowNext('drivers');
   },
 
@@ -1079,10 +1133,35 @@ const App = {
     const durObj = DURATIONS.find(x=>x.id===d.duration) || {};
     const payObj = PAY_METHODS.find(p=>p.id===d.pay_method) || {};
     d.price = price;
+    if (d.forSelf === undefined) d.forSelf = true;
     this.saveDraft();
+    const myPhone = this.user.phone || '';
     this.root.innerHTML = this.flowHeader('confirm', 'Tasdiqlash') + `
       <h2 class="flow-q">Arizani tasdiqlang</h2>
       <p class="flow-sub">Ma'lumotlarni tekshiring</p>
+
+      <div class="client-card">
+        <div class="cc-title">Polis kim uchun?</div>
+        <div class="cc-toggle">
+          <button class="cc-opt ${d.forSelf?'on':''}" onclick="App.setForSelf(true)">O'zim uchun</button>
+          <button class="cc-opt ${!d.forSelf?'on':''}" onclick="App.setForSelf(false)">Boshqa odam uchun</button>
+        </div>
+        ${d.forSelf ? `
+          <div class="cc-me">${I.phone}<span>${fmtPhone(myPhone)}</span></div>
+        ` : `
+          <div class="field" style="margin-top:12px"><label>Mijoz telefon raqami</label>
+            <div class="phone-input">
+              <span class="phone-prefix">+998</span>
+              <input id="otherPhone" type="tel" inputmode="numeric" maxlength="9" placeholder="90 123 45 67"
+                value="${esc(d.otherPhoneRaw||'')}" oninput="App.onOtherPhone(this)">
+            </div>
+          </div>
+          <div class="field"><label>Mijoz ismi <span class="opt">(ixtiyoriy)</span></label>
+            <input class="inp" id="otherName" placeholder="Ism Familiya" value="${esc(d.otherName||'')}" oninput="App.draft.otherName=this.value;App.saveDraftSoon()">
+          </div>
+          <p class="cc-hint">Do'stingiz yoki boshqa odam uchun polis — uning raqamini kiriting</p>
+        `}
+      </div>
 
       <div class="summary-card">
         <div class="sum-row"><span>Ariza turi</span><b>${d.app_type==='renew'?'Yangilash':'Yangi polis'}</b></div>
@@ -1090,8 +1169,7 @@ const App = {
         <div class="sum-row"><span>Hudud</span><b>${esc(d.region||'')}</b></div>
         <div class="sum-row"><span>Muddat</span><b>${durObj.label||''} · ${durObj.sub||''}</b></div>
         <div class="sum-row"><span>Davlat raqami</span><b>${esc((d.tex&&d.tex.plate)||'')}</b></div>
-        <div class="sum-row"><span>Model</span><b>${esc((d.tex&&d.tex.model)||'')}</b></div>
-        <div class="sum-row"><span>Haydovchilar</span><b>${(d.drivers||[]).length} ta</b></div>
+        <div class="sum-row"><span>${this.isUnlimited()?'Avtomobil egasi':'Haydovchilar'}</span><b>${this.isUnlimited()?'1 ta':(d.drivers||[]).length+' ta'}</b></div>
         <div class="sum-row"><span>To'lov</span><b>${payObj.label||''}</b></div>
         <div class="sum-divider"></div>
         <div class="sum-total"><span>Jami narx</span><b>${fmtSom(price)}</b></div>
@@ -1103,6 +1181,13 @@ const App = {
       <p class="confirm-note">Yuborish orqali siz ma'lumotlaringiz to'g'riligini tasdiqlaysiz</p>
       </div></div>`;
   },
+  setForSelf(v) { this.draft.forSelf = v; this.saveDraft(); this.flowConfirm(); },
+  onOtherPhone(el) {
+    let v = el.value.replace(/\D/g, '').slice(0, 9);
+    el.value = v;
+    this.draft.otherPhoneRaw = v;
+    this.saveDraftSoon();
+  },
 
   async submitApplication() {
     const btn = document.getElementById('submitBtn');
@@ -1110,17 +1195,30 @@ const App = {
     const d = this.draft;
     try {
       const fd = new FormData();
-      fd.append('client_phone', this.user.phone);
-      fd.append('client_name', (this.user.name || this.user.full_name || ''));
+      // Mijoz — o'zi yoki boshqa odam (do'st) uchun
+      let clientPhone = this.user.phone;
+      let clientName = (this.user.name || this.user.full_name || '');
+      if (d.forSelf === false) {
+        const raw = (d.otherPhoneRaw || '').replace(/\D/g, '');
+        if (raw.length !== 9) { setLoading(btn, false); return toast('Mijoz telefon raqamini to\'liq kiriting (9 raqam)', 'err'); }
+        clientPhone = '+998' + raw;
+        clientName = d.otherName || '';
+      }
+      fd.append('client_phone', clientPhone);
+      fd.append('client_name', clientName);
       fd.append('app_type', d.app_type || 'new');
       fd.append('vehicle', d.vehicle || '');
       fd.append('region', d.region || '');
       fd.append('duration', d.duration || '');
       fd.append('price', String(d.price || 0));
       fd.append('pay_method', d.pay_method || '');
-      fd.append('owner_doc', d.owner_doc || 'passport');
+      fd.append('owner_doc', this.isUnlimited() ? 'passport' : (d.owner_doc || ''));
       fd.append('driver_count', String((d.drivers||[]).length));
-      fd.append('drivers', JSON.stringify(d.drivers || []));
+      // drivers — faqat MATN (rasmlar alohida fayl sifatida ketadi)
+      const driversText = (d.drivers || []).map(dr => ({
+        jshshir: dr.jshshir || '', seria: dr.seria || '', name: dr.name || ''
+      }));
+      fd.append('drivers', JSON.stringify(driversText));
       const t = d.tex || {};
       fd.append('tex_plate', t.plate || '');
       fd.append('tex_seria', t.seria || '');
@@ -1138,12 +1236,16 @@ const App = {
       if (d.oldPolicyData) {
         fd.append('photo_renew_policy', dataURLtoBlob(d.oldPolicyData), 'policy.jpg');
       }
-      // Haydovchilik guvohnomasi rasmlari (har haydovchi uchun)
+      // Haydovchi/egasi hujjat rasmlari (oldi va orqasi) — backend kutgan nomlar bilan
       (d.drivers || []).forEach((dr, i) => {
-        if (dr.licensePhotoData) {
-          fd.append('photo_driver_license_' + i, dataURLtoBlob(dr.licensePhotoData), 'driver_' + i + '.jpg');
-        }
+        if (dr._frontData) fd.append('driver_photo_' + i, dataURLtoBlob(dr._frontData), 'doc_' + i + '_front.jpg');
+        if (dr._backData)  fd.append('driver_photo_back_' + i, dataURLtoBlob(dr._backData), 'doc_' + i + '_back.jpg');
       });
+      // Cheklanmagan sug'urtada — egasi pasporti maydonlariga ham
+      if (this.isUnlimited() && d.drivers[0]) {
+        if (d.drivers[0]._frontData) fd.append('photo_owner_front', dataURLtoBlob(d.drivers[0]._frontData), 'owner_front.jpg');
+        if (d.drivers[0]._backData)  fd.append('photo_owner_back', dataURLtoBlob(d.drivers[0]._backData), 'owner_back.jpg');
+      }
       const res = await ClientAPI.submitApp(fd);
       const appId = (res && (res.id || (res.app && res.app.id))) || null;
       this.clearDraft();
@@ -1426,11 +1528,12 @@ const App = {
     } catch (e) { setLoading(btn, false); toast(e.message, 'err'); }
   },
   openSupport() {
+    const tg = (this.appSettings && this.appSettings.contact_admin_tg_url) || BOT_LINK;
     showModal(`
       <h3 class="modal-title">Yordam</h3>
       <p style="color:var(--ink-2);margin-bottom:16px">Savollaringiz bo'lsa biz bilan bog'laning:</p>
+      <a class="support-link support-tg" href="${tg}" target="_blank" rel="noopener">${telegramLogoSVG()}<span>Telegram orqali yozish</span></a>
       <a class="support-link" href="tel:+998907772477">${I.phone}<span>+998 90 777 24 77</span></a>
-      <a class="support-link" href="mailto:avazbekortigaliyev129@gmail.com">${I.inbox}<span>Email yozish</span></a>
       <div class="modal-actions"><button class="btn btn-ghost btn-block" onclick="closeModal()">Yopish</button></div>`);
   },
   confirmLogout() {
