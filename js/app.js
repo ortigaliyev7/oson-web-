@@ -628,6 +628,7 @@ const App = {
     if (!this.draft) { this.startNewApp(); return; }
     document.body.className = '';
     window.scrollTo(0, 0);
+    this.hideTransition();
     switch (step) {
       case 'type':      return this.flowType();
       case 'vehicle':   return this.flowVehicle();
@@ -649,12 +650,12 @@ const App = {
       <h2 class="flow-q">Qanday ariza?</h2>
       <p class="flow-sub">Yangi polis yoki mavjudini yangilash</p>
       <div class="choice-list">
-        <div class="choice ${d.app_type==='new'?'sel':''}" onclick="App.pick('app_type','new','/new/vehicle')">
+        <div class="choice ${d.app_type==='new'?'sel':''}" onclick="App.selectAndGo(this,'app_type','new','/new/vehicle')">
           <div class="choice-ic" style="background:var(--green-100);color:var(--green-700)">${I.plus}</div>
           <div class="choice-txt"><h4>Yangi polis</h4><p>Birinchi marta rasmiylashtirish</p></div>
           <div class="choice-rad"></div>
         </div>
-        <div class="choice ${d.app_type==='renew'?'sel':''}" onclick="App.pickRenew()">
+        <div class="choice ${d.app_type==='renew'?'sel':''}" onclick="App.selectAndGo(this,'app_type','renew','/new/vehicle')">
           <div class="choice-ic" style="background:#DBEAFE;color:#1E40AF">${I.refresh}</div>
           <div class="choice-txt"><h4>Polisni yangilash</h4><p>Eski polis asosida tez yangilash</p></div>
           <div class="choice-rad"></div>
@@ -666,6 +667,32 @@ const App = {
     this.draft[field] = val;
     this.saveDraft();
     if (next) this.go(next);
+  },
+  // Tanlovni darrov belgilab (rang), keyin o'tadi — "qotish" hissini yo'qotadi
+  selectAndGo(el, field, val, next) {
+    if (el && el.parentElement) {
+      [...el.parentElement.children].forEach(s => s.classList.remove('sel'));
+      el.classList.add('sel');
+    }
+    this.draft[field] = val;
+    this.saveDraft();
+    this.showTransition();
+    setTimeout(() => { if (next) this.go(next); }, 230);
+  },
+  showTransition() {
+    let o = document.getElementById('stepLoading');
+    if (!o) {
+      o = document.createElement('div');
+      o.id = 'stepLoading';
+      o.className = 'step-loading';
+      o.innerHTML = `<div class="sl-box"><span class="spinner"></span><span>Kuting...</span></div>`;
+      document.body.appendChild(o);
+    }
+    requestAnimationFrame(() => o.classList.add('show'));
+  },
+  hideTransition() {
+    const o = document.getElementById('stepLoading');
+    if (o) o.classList.remove('show');
   },
   pickRenew() {
     this.draft.app_type = 'renew';
@@ -681,7 +708,7 @@ const App = {
       <p class="flow-sub">Sug'urta narxi turga bog'liq</p>
       <div class="choice-list">
         ${VEHICLES.map(v => `
-          <div class="choice ${d.vehicle===v.id?'sel':''}" onclick="App.pick('vehicle','${v.id}','/new/region')">
+          <div class="choice ${d.vehicle===v.id?'sel':''}" onclick="App.selectAndGo(this,'vehicle','${v.id}','/new/region')">
             <div class="choice-ic" style="background:var(--green-100);color:var(--green-700)">${v.id==='yuk'?I.truck:I.car}</div>
             <div class="choice-txt"><h4>${v.name}</h4><p>${v.desc}</p></div>
             <div class="choice-rad"></div>
@@ -698,7 +725,7 @@ const App = {
       <p class="flow-sub">Avtomobil ro'yxatdan o'tgan hudud</p>
       <div class="region-grid">
         ${REGIONS.map(r => `
-          <div class="region-chip ${d.region===r.name?'sel':''}" onclick="App.pick('region','${esc(r.name)}','/new/duration')">
+          <div class="region-chip ${d.region===r.name?'sel':''}" onclick="App.selectAndGo(this,'region','${esc(r.name)}','/new/duration')">
             ${esc(r.name)}
           </div>`).join('')}
       </div>
@@ -716,7 +743,7 @@ const App = {
         ${DURATIONS.map(dur => {
           const price = getPrice(d.vehicle, d.region, dur.id);
           return `
-          <div class="dur-card ${d.duration===dur.id?'sel':''}" onclick="App.pick('duration','${dur.id}','/new/tex')">
+          <div class="dur-card ${d.duration===dur.id?'sel':''}" onclick="App.selectAndGo(this,'duration','${dur.id}','/new/tex')">
             ${dur.popular?`<span class="dur-pop">Mashhur</span>`:''}
             <div class="dur-main">
               <div class="dur-label">${dur.label}</div>
@@ -740,7 +767,7 @@ const App = {
 
       <div class="tex-uploads">
         <div class="upload-zone tex-up" id="texUpload" onclick="document.getElementById('texFile').click()">
-          <input type="file" id="texFile" accept="image/*" capture="environment" hidden onchange="App.onTexPhoto('front', event)">
+          <input type="file" id="texFile" accept="image/*" hidden onchange="App.onTexPhoto('front', event)">
           <div id="texPreview">
             <div class="uz-ic">${I.camera}</div>
             <div class="uz-title">Old tomoni</div>
@@ -748,7 +775,7 @@ const App = {
           </div>
         </div>
         <div class="upload-zone tex-up" id="texBackUpload" onclick="document.getElementById('texBackFile').click()">
-          <input type="file" id="texBackFile" accept="image/*" capture="environment" hidden onchange="App.onTexPhoto('back', event)">
+          <input type="file" id="texBackFile" accept="image/*" hidden onchange="App.onTexPhoto('back', event)">
           <div id="texBackPreview">
             <div class="uz-ic">${I.camera}</div>
             <div class="uz-title">Orqa tomoni</div>
@@ -786,8 +813,11 @@ const App = {
   onTexPhoto(side, e) {
     const f = e.target.files && e.target.files[0];
     if (!f) return;
+    // Darrov "yuklanmoqda" ko'rsatamiz (siqish bir lahza vaqt oladi)
+    const box = document.getElementById(side === 'back' ? 'texBackPreview' : 'texPreview');
+    if (box) box.innerHTML = `<div class="uz-loading"><span class="spinner"></span><span>Yuklanmoqda...</span></div>`;
     // Siqish — telefon qotmasligi uchun (xom rasm o'rniga ~200KB JPEG)
-    compressImage(f, 1400, 0.72, (dataUrl) => {
+    compressImage(f, 1280, 0.7, (dataUrl) => {
       if (side === 'back') this.draft.texBackPhotoData = dataUrl;
       else this.draft.texPhotoData = dataUrl;
       this.saveDraft();
@@ -875,7 +905,9 @@ const App = {
   onOldPolicy(e) {
     const f = e.target.files && e.target.files[0];
     if (!f) return;
-    compressImage(f, 1400, 0.72, (dataUrl) => {
+    const box = document.getElementById('oldPreview');
+    if (box) box.innerHTML = `<div class="uz-loading"><span class="spinner"></span><span>Yuklanmoqda...</span></div>`;
+    compressImage(f, 1280, 0.7, (dataUrl) => {
       this.draft.oldPolicyData = dataUrl;
       this.saveDraft();
       this.showOldPreview(dataUrl);
