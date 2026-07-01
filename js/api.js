@@ -60,7 +60,7 @@ const ClientAPI = {
   updateMe: (data) => req('/user-auth/me', { method:'PATCH', body:data, token: clientToken() }),
 
   myApps:   (phone) => req(`/apps/client/${encodeURIComponent(phone)}`),
-  appDetail:(id) => req(`/apps/${id}`),
+  appDetail:(id) => req(`/apps/${id}`, { token: clientToken() }),
   messages: (id) => req(`/apps/${id}/messages`),
   sendMessage: (id, message) => req(`/apps/${id}/client-message`, { method:'POST', body:{ message } }),
 
@@ -78,7 +78,7 @@ const AdminAPI = {
   setWorkStatus: (status) => req('/auth/work-status', { method:'PATCH', body:{ status }, token: adminToken() }),
 
   allApps:  () => req('/apps', { token: adminToken() }),
-  appDetail:(id) => req(`/apps/${id}`),
+  appDetail:(id) => req(`/apps/${id}`, { token: adminToken() }),
   approve:  (id) => req(`/apps/${id}/approve`, { method:'POST', token: adminToken() }),
   reject:   (id, reason) => req(`/apps/${id}/reject`, { method:'POST', body:{ reason }, token: adminToken() }),
   paymentLink: (id, payload) => req(`/apps/${id}/payment-link`, { method:'POST', body: payload, token: adminToken() }),

@@ -528,7 +528,7 @@ img, svg { display:block; max-width:100%; }
 .dur-price{font-size:16px;font-weight:700;color:var(--green-700)}
 
 /* UPLOAD zona */
-.upload-zone{border:2px dashed var(--line-2);border-radius:var(--r-lg);padding:32px 20px;text-align:center;cursor:pointer;transition:.18s;background:var(--paper)}
+.upload-zone{position:relative;border:2px dashed var(--line-2);border-radius:var(--r-lg);padding:32px 20px;text-align:center;cursor:pointer;transition:.18s;background:var(--paper)}
 .upload-zone:hover{border-color:var(--green-500);background:var(--green-50)}
 .uz-ic{width:56px;height:56px;margin:0 auto 14px;color:var(--green-600)}
 .uz-ic svg{width:56px;height:56px}
@@ -537,6 +537,11 @@ img, svg { display:block; max-width:100%; }
 .uz-img{max-width:100%;max-height:220px;border-radius:var(--r);margin:0 auto;display:block}
 .uz-change{display:inline-flex;align-items:center;gap:6px;margin-top:12px;color:var(--green-700);font-size:13.5px;font-weight:600}
 .uz-change svg{width:16px;height:16px}
+.uz-cam-btn{position:absolute;top:8px;right:8px;width:32px;height:32px;border-radius:50%;border:1px solid var(--line-2);background:#fff;color:var(--green-700);display:grid;place-items:center;cursor:pointer;z-index:2}
+.uz-cam-btn svg{width:16px;height:16px}
+.uz-cam-btn:hover{border-color:var(--green-500);background:var(--green-50)}
+.tex-up .uz-cam-btn, .doc-up .uz-cam-btn{width:26px;height:26px}
+.tex-up .uz-cam-btn svg, .doc-up .uz-cam-btn svg{width:13px;height:13px}
 
 /* FORM maydonlar */
 .form-grid{display:flex;flex-direction:column;gap:14px;margin-top:20px}

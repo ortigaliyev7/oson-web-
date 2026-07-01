@@ -847,18 +847,20 @@ const App = {
       <div class="tex-uploads">
         <div class="upload-zone tex-up" id="texUpload" onclick="document.getElementById('texFile').click()">
           <input type="file" id="texFile" accept="image/*" hidden onchange="App.onTexPhoto('front', event)">
+          ${this.uzCamButton('texFileCam', "App.onTexPhoto('front', event)")}
           <div id="texPreview">
             <div class="uz-ic">${I.camera}</div>
             <div class="uz-title">Old tomoni</div>
-            <div class="uz-hint">Rasmga oling</div>
+            <div class="uz-hint">Rasmga oling yoki galereyadan tanlang</div>
           </div>
         </div>
         <div class="upload-zone tex-up" id="texBackUpload" onclick="document.getElementById('texBackFile').click()">
           <input type="file" id="texBackFile" accept="image/*" hidden onchange="App.onTexPhoto('back', event)">
+          ${this.uzCamButton('texBackFileCam', "App.onTexPhoto('back', event)")}
           <div id="texBackPreview">
             <div class="uz-ic">${I.camera}</div>
             <div class="uz-title">Orqa tomoni</div>
-            <div class="uz-hint">Rasmga oling</div>
+            <div class="uz-hint">Rasmga oling yoki galereyadan tanlang</div>
           </div>
         </div>
       </div>
@@ -969,6 +971,7 @@ const App = {
       <p class="flow-sub">Mavjud polis rasmini yuklang</p>
       <div class="upload-zone" id="oldUpload" onclick="document.getElementById('oldFile').click()">
         <input type="file" id="oldFile" accept="image/*" hidden onchange="App.onOldPolicy(event)">
+        ${this.uzCamButton('oldFileCam', "App.onOldPolicy(event)")}
         <div id="oldPreview">
           <div class="uz-ic">${I.doc}</div>
           <div class="uz-title">Eski polis rasmini yuklang</div>
@@ -1037,10 +1040,12 @@ const App = {
         <div class="doc-uploads">
           <div class="upload-zone doc-up" id="docUp${i}_front" onclick="document.getElementById('docFile${i}_front').click()">
             <input type="file" id="docFile${i}_front" accept="image/*" hidden onchange="App.onDocPhoto(${i},'front',event)">
+            ${this.uzCamButton(`docFile${i}_front_cam`, `App.onDocPhoto(${i},'front',event)`)}
             <div id="docPrev${i}_front"><div class="uz-ic">${I.camera}</div><div class="uz-title">Old tomoni</div><div class="uz-hint">ID / biometrik</div></div>
           </div>
           <div class="upload-zone doc-up" id="docUp${i}_back" onclick="document.getElementById('docFile${i}_back').click()">
             <input type="file" id="docFile${i}_back" accept="image/*" hidden onchange="App.onDocPhoto(${i},'back',event)">
+            ${this.uzCamButton(`docFile${i}_back_cam`, `App.onDocPhoto(${i},'back',event)`)}
             <div id="docPrev${i}_back"><div class="uz-ic">${I.camera}</div><div class="uz-title">Orqa tomoni</div><div class="uz-hint">ID karta uchun</div></div>
           </div>
         </div>
@@ -1562,6 +1567,13 @@ const App = {
   // ============================================================
   // YORDAMCHI BLOKLAR
   // ============================================================
+  // Rasm yuklash zonasiga qo'shimcha "Kameradan" tugmasi — asosiy zona bosilganda
+  // ochiladigan input (capture'siz) galereya+kamerani tanlash imkonini beradi,
+  // bu tugma esa kamerani to'g'ridan-to'g'ri (capture="environment") ochadi.
+  uzCamButton(camId, onchangeExpr) {
+    return `<input type="file" id="${camId}" accept="image/*" capture="environment" hidden onchange="${onchangeExpr}">
+      <button type="button" class="uz-cam-btn" onclick="event.stopPropagation();document.getElementById('${camId}').click()" title="Kameradan surat olish">${I.camera}</button>`;
+  },
   loadingBlock() { return `<div class="load-block"><div class="spinner"></div></div>`; },
   emptyBlock(icon, title, sub, btnText, btnAction) {
     return `<div class="empty-block">
