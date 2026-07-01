@@ -292,7 +292,7 @@ const Admin = {
     document.body.className = 'admin-body';
     this._animateApps = true;
     this._appsSig = null;
-    if (!document.querySelector('.adm-layout')) {
+    if (!document.getElementById('admAppsList')) {
       this.root.innerHTML = this.shell('apps', `
         <div class="adm-apps-head">
           <h1 class="adm-h1">Arizalar</h1>
