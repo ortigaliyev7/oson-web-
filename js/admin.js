@@ -616,10 +616,17 @@ const Admin = {
     const a = this.curApp;
     showModal(`
       <h3 class="modal-title">To'lov havolasi</h3>
+      <div class="field"><label>To'lov turi</label>
+        <select class="inp" id="payProvider">
+          <option value="payme">Payme</option>
+          <option value="click">Click</option>
+          <option value="card">Bank kartasi</option>
+          <option value="sms">SMS to'lov</option>
+        </select></div>
       <div class="field"><label>To'lov summasi (so'm)</label>
         <input class="inp" id="payAmount" inputmode="numeric" value="${a.price||0}"></div>
       <div class="field"><label>To'lov havolasi (link)</label>
-        <input class="inp" id="payLink" placeholder="https://payme.uz/... yoki click.uz/..."></div>
+        <input class="inp" id="payLink" placeholder="https://payme.uz/... yoki click.uz/..." oninput="Admin.detectPayProvider(this.value)"></div>
       <div class="field"><label>Izoh (ixtiyoriy)</label>
         <input class="inp" id="payNote" placeholder="To'lov haqida"></div>
       <div class="modal-actions">
@@ -627,7 +634,14 @@ const Admin = {
         <button class="btn btn-primary" id="payBtn" onclick="Admin.sendPaymentLink()">Yuborish</button>
       </div>`);
   },
+  detectPayProvider(link) {
+    const sel = document.getElementById('payProvider');
+    if (!sel) return;
+    if (/payme/i.test(link)) sel.value = 'payme';
+    else if (/click/i.test(link)) sel.value = 'click';
+  },
   async sendPaymentLink() {
+    const provider = document.getElementById('payProvider').value;
     const amount = document.getElementById('payAmount').value;
     const link = document.getElementById('payLink').value.trim();
     const note = document.getElementById('payNote').value.trim();
@@ -635,7 +649,7 @@ const Admin = {
     const btn = document.getElementById('payBtn');
     setLoading(btn, true);
     try {
-      await AdminAPI.paymentLink(this.curAppId, { amount:Number(amount)||0, link, note });
+      await AdminAPI.paymentLink(this.curAppId, { provider, amount:Number(amount)||0, link, note });
       closeModal(); toast('To\'lov havolasi yuborildi', 'ok'); this.viewAppDetail(this.curAppId);
     } catch (e) { setLoading(btn, false); toast(e.message, 'err'); }
   },
