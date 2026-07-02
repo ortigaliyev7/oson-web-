@@ -292,3 +292,29 @@
 @media (prefers-reduced-motion:reduce){
   .stat-card,.sb-fill,.dc-bar,.adm-card,.adm-app-grid.anim .adm-app-card,#admDetail{animation:none!important}
 }
+
+/* ===================================================================
+   GROSS ROBOT — portal rasmiylashtirish UI
+   =================================================================== */
+.btn-gross{background:var(--green-900);color:#fff;border:none}
+.btn-gross:hover{background:var(--green-700)}
+.btn-gross svg{width:18px;height:18px}
+.gross-inline-err{display:flex;align-items:flex-start;gap:8px;padding:11px 12px;background:var(--danger-l);color:var(--danger);border-radius:10px;font-size:13px;font-weight:500;margin:8px 0 2px}
+.gross-inline-err svg{width:17px;height:17px;flex-shrink:0}
+.gross-inline-ok{display:flex;align-items:center;gap:8px;padding:11px 12px;background:var(--green-50);color:var(--green-700);border-radius:10px;font-size:13px;font-weight:600;margin:8px 0 2px}
+.gross-inline-ok svg{width:17px;height:17px;flex-shrink:0}
+.gross-help{color:var(--ink-2);font-size:13.5px;line-height:1.5;margin-bottom:14px}
+.gross-captcha{display:flex;justify-content:center;margin:10px 0 14px;padding:12px;background:var(--bg,#f6f8f7);border-radius:12px}
+.gross-captcha img{max-width:220px;height:auto;border:1px solid var(--line);border-radius:8px;background:#fff}
+.gross-err{display:flex;flex-direction:column;gap:6px;padding:11px 12px;background:var(--danger-l);color:var(--danger);border-radius:10px;font-size:13px;font-weight:500;margin:8px 0}
+.gross-err svg{width:17px;height:17px;flex-shrink:0;vertical-align:-3px;margin-right:4px}
+.gross-review{max-height:320px;overflow:auto;margin:6px 0 12px;padding:4px 2px}
+.gross-raw{white-space:pre-wrap;font-size:12px;color:var(--ink-2);background:var(--bg,#f6f8f7);padding:12px;border-radius:10px;max-height:280px;overflow:auto}
+.gross-shot-link{display:inline-flex;align-items:center;gap:6px;color:var(--green-700);font-size:13px;font-weight:600;text-decoration:none;margin:4px 0 8px}
+.gross-shot-link svg{width:16px;height:16px}
+.gross-warn{display:flex;align-items:flex-start;gap:8px;padding:11px 12px;background:#fff7ed;color:#9a3412;border-radius:10px;font-size:12.5px;line-height:1.45;margin:6px 0 4px}
+.gross-warn svg{width:17px;height:17px;flex-shrink:0}
+.gross-done{text-align:center;padding:18px 8px}
+.gross-done svg{width:52px;height:52px;color:var(--green-600);margin-bottom:6px}
+.gross-done h3{font-family:'Sora',sans-serif;font-size:20px;font-weight:700;color:var(--ink);margin-bottom:8px}
+.gross-done p{color:var(--ink-2);font-size:14px;margin:4px 0}
