@@ -578,6 +578,18 @@ const Admin = {
       html += `<div class="action-rejected">${I.x} Rad etilgan: ${esc(a.reject_reason||a.reason||'')}</div>`;
     }
 
+    // Gross robot — polisni portalda rasmiylashtirish
+    if (['approved','payment_pending','paid','policy_preparing','policy_ready'].includes(st)) {
+      const gs = a.gross_status;
+      const label = gs === 'confirmed' ? "Gross'da qayta rasmiylashtirish" : "Gross'da rasmiylashtirish";
+      html += `<button class="btn btn-gross btn-block" onclick="Admin.openGross()">${I.shieldCheck} ${label}</button>`;
+      if (gs === 'error' && a.gross_error) {
+        html += `<div class="gross-inline-err">${I.x} ${esc(a.gross_error)}</div>`;
+      } else if (gs === 'confirmed' && a.gross_policy_number) {
+        html += `<div class="gross-inline-ok">${I.checkCircle} Gross polisi: ${esc(a.gross_policy_number)}</div>`;
+      }
+    }
+
     // status o'zgartirish (qo'lda)
     html += `<div class="status-change">
       <label>Statusni qo'lda o'zgartirish</label>
@@ -703,6 +715,183 @@ const Admin = {
   async changeStatus(status) {
     try { await AdminAPI.setStatus(this.curAppId, status); toast('Status yangilandi', 'ok'); this.viewAppDetail(this.curAppId); }
     catch (e) { toast(e.message, 'err'); this.viewAppDetail(this.curAppId); }
+  },
+
+  // =========================================================================
+  // GROSS ROBOT — portalda polisni yarim-avtomatik rasmiylashtirish
+  // =========================================================================
+  _gross: null,
+
+  async openGross() {
+    this._gross = { step: 'loading', captcha: null, data: null, screenshot: null, error: null, fields: null };
+    this.renderGross();
+    try {
+      const [job, st] = await Promise.all([
+        GrossAPI.job(this.curAppId),
+        GrossAPI.status().catch(() => ({})),
+      ]);
+      this._gross.fields = job.fields || { passportSeria:'', techSeria:'', plate:'' };
+      // Oldingi natija bo'lsa — ko'rsatamiz
+      if (job.gross_status === 'pulled' && job.gross_pulled_data) {
+        this._gross.data = job.gross_pulled_data;
+        this._gross.screenshot = job.gross_screenshot;
+        this._gross.step = 'review';
+      } else {
+        this._gross.step = st && st.has_session ? 'form' : 'login-intro';
+      }
+    } catch (e) {
+      this._gross.step = 'login-intro';
+      this._gross.error = e.message;
+    }
+    this.renderGross();
+  },
+
+  renderGross() {
+    const g = this._gross || {};
+    const shot = g.screenshot ? `<a href="${grossFileUrl(g.screenshot)}" target="_blank" class="gross-shot-link">${I.eye} Robot skrinshotini ko'rish</a>` : '';
+    const errBox = g.error ? `<div class="gross-err">${I.x} ${esc(g.error)}${shot}</div>` : '';
+    let inner = '';
+
+    if (g.step === 'loading') {
+      inner = `<div style="padding:24px;text-align:center">${this.loadingBlock ? this.loadingBlock() : 'Yuklanmoqda...'}</div>`;
+    }
+    else if (g.step === 'login-intro') {
+      inner = `
+        <p class="gross-help">Robot osago.gross.uz portaliga kirishi kerak. Portalda CAPTCHA bo'lgani uchun rasmni siz kiritasiz.</p>
+        ${errBox}
+        <div class="modal-actions">
+          <button class="btn btn-ghost" onclick="closeModal()">Yopish</button>
+          <button class="btn btn-primary" id="gConnBtn" onclick="Admin.grossConnect()">Portalga ulanish</button>
+        </div>`;
+    }
+    else if (g.step === 'login') {
+      inner = `
+        <p class="gross-help">Rasmda ko'rsatilgan CAPTCHA kodini kiriting:</p>
+        ${g.captcha ? `<div class="gross-captcha"><img src="${g.captcha}" alt="captcha"></div>` : `<p class="gross-help" style="color:var(--red-600,#b91c1c)">CAPTCHA rasmi topilmadi — kodni portal ko'rsatgan joydan kiriting.</p>`}
+        <div class="field"><label>CAPTCHA</label>
+          <input class="inp" id="gCaptcha" autocomplete="off" placeholder="Masalan: 4821" onkeydown="if(event.key==='Enter')Admin.grossDoLogin()"></div>
+        ${errBox}
+        <div class="modal-actions">
+          <button class="btn btn-ghost" onclick="closeModal()">Bekor</button>
+          <button class="btn btn-ghost" onclick="Admin.grossConnect()">${I.refresh} Yangilash</button>
+          <button class="btn btn-primary" id="gLoginBtn" onclick="Admin.grossDoLogin()">Kirish</button>
+        </div>`;
+    }
+    else if (g.step === 'form') {
+      const f = g.fields || {};
+      inner = `
+        <p class="gross-help">Robot quyidagi 3 ta ma'lumotni portalga kiritadi. Portal qolganini davlat bazasidan o'zi tortadi. Kerak bo'lsa tahrirlang:</p>
+        <div class="field"><label>Haydovchi pasport seriyasi</label>
+          <input class="inp" id="gPassport" value="${esc(f.passportSeria||'')}" placeholder="AA1234567"></div>
+        <div class="field"><label>Texpassport seriyasi</label>
+          <input class="inp" id="gTech" value="${esc(f.techSeria||'')}" placeholder="AAF1234567"></div>
+        <div class="field"><label>Avto davlat raqami</label>
+          <input class="inp" id="gPlate" value="${esc(f.plate||'')}" placeholder="01A123BC"></div>
+        ${errBox}
+        <div class="modal-actions">
+          <button class="btn btn-ghost" onclick="closeModal()">Bekor</button>
+          <button class="btn btn-primary" id="gLookupBtn" onclick="Admin.grossLookup()">Ma'lumotlarni tortib olish</button>
+        </div>`;
+    }
+    else if (g.step === 'review') {
+      const d = g.data || {};
+      const rows = (d.fields && Object.keys(d.fields).length)
+        ? Object.entries(d.fields).map(([k,v])=>`<div class="dr"><span>${esc(k)}</span><b>${esc(v)}</b></div>`).join('')
+        : `<pre class="gross-raw">${esc((d.raw||'').slice(0,1500))}</pre>`;
+      inner = `
+        <p class="gross-help">Portal tortib chiqargan ma'lumotlar. Tekshiring va to'g'ri bo'lsa yakuniy rasmiylashtiring:</p>
+        <div class="gross-review detail-rows">${rows}</div>
+        ${shot}
+        ${errBox}
+        <div class="gross-warn">${I.help} Diqqat: "Rasmiylashtirish" bosilgach polis yakuniy rasmiylashtiriladi.</div>
+        <div class="modal-actions">
+          <button class="btn btn-ghost" onclick="closeModal()">Bekor</button>
+          <button class="btn btn-ghost" onclick="Admin.grossLookup()">${I.refresh} Qayta tortish</button>
+          <button class="btn btn-primary" id="gConfirmBtn" onclick="Admin.grossConfirm()">${I.checkCircle} Tasdiqlab rasmiylashtirish</button>
+        </div>`;
+    }
+    else if (g.step === 'done') {
+      inner = `
+        <div class="gross-done">${I.checkCircle}
+          <h3>Polis rasmiylashtirildi!</h3>
+          ${g.policyNumber ? `<p>Polis raqami: <b>${esc(g.policyNumber)}</b></p>` : ''}
+          <p>PDF arizaga biriktirildi va mijozga yuborildi.</p>
+        </div>
+        <div class="modal-actions">
+          <button class="btn btn-primary" onclick="closeModal();Admin.viewAppDetail(Admin.curAppId)">Yopish</button>
+        </div>`;
+    }
+
+    showModal(`<h3 class="modal-title">${I.shieldCheck} Gross'da rasmiylashtirish</h3>${inner}`);
+  },
+
+  async grossConnect() {
+    const btn = document.getElementById('gConnBtn') || document.getElementById('gLoginBtn');
+    setLoading(btn, true, 'Ulanmoqda...');
+    try {
+      const r = await GrossAPI.loginStart();
+      if (r.already_logged_in) { this._gross.step = 'form'; this._gross.error = null; return this.renderGross(); }
+      if (!r.ok) { this._gross.error = r.error || 'Portalga ulanib bo\'lmadi'; this._gross.step = 'login-intro'; return this.renderGross(); }
+      this._gross.captcha = r.captcha || null;
+      this._gross.error = null;
+      this._gross.step = 'login';
+      this.renderGross();
+    } catch (e) { setLoading(btn, false); this._gross.error = e.message; this.renderGross(); }
+  },
+
+  async grossDoLogin() {
+    const captcha = (document.getElementById('gCaptcha')?.value || '').trim();
+    const btn = document.getElementById('gLoginBtn');
+    setLoading(btn, true, 'Kirilmoqda...');
+    try {
+      const r = await GrossAPI.loginSubmit(captcha);
+      if (r.ok) { this._gross.error = null; this._gross.step = 'form'; toast('Portalga kirildi', 'ok'); return this.renderGross(); }
+      // Xato — yangi captcha bo'lsa ko'rsatamiz
+      this._gross.captcha = r.captcha || this._gross.captcha;
+      this._gross.error = r.error || 'Kirish amalga oshmadi';
+      this._gross.step = 'login';
+      this.renderGross();
+    } catch (e) { setLoading(btn, false); this._gross.error = e.message; this.renderGross(); }
+  },
+
+  async grossLookup() {
+    // form step'da inputlardan o'qiymiz; review step'da mavjud fields'dan
+    const p = document.getElementById('gPassport');
+    if (p) {
+      this._gross.fields = {
+        passportSeria: p.value.trim(),
+        techSeria: (document.getElementById('gTech')?.value || '').trim(),
+        plate: (document.getElementById('gPlate')?.value || '').trim(),
+      };
+    }
+    const btn = document.getElementById('gLookupBtn') || document.getElementById('gConfirmBtn');
+    setLoading(btn, true, 'Tortilmoqda...');
+    try {
+      const r = await GrossAPI.lookup(this.curAppId, this._gross.fields);
+      if (r.need_login) { this._gross.error = r.error; this._gross.step = 'login-intro'; return this.renderGross(); }
+      if (!r.ok) { this._gross.error = r.error || 'Ma\'lumot tortilmadi'; this._gross.screenshot = r.screenshot; this._gross.step = 'form'; return this.renderGross(); }
+      this._gross.data = r.data;
+      this._gross.screenshot = r.screenshot;
+      this._gross.error = null;
+      this._gross.step = 'review';
+      this.renderGross();
+    } catch (e) { setLoading(btn, false); this._gross.error = e.message; this.renderGross(); }
+  },
+
+  async grossConfirm() {
+    if (!confirm("Polis yakuniy rasmiylashtiriladi. Ma'lumotlar to'g'riligiga ishonchingiz komilmi?")) return;
+    const btn = document.getElementById('gConfirmBtn');
+    setLoading(btn, true, 'Rasmiylashtirilmoqda...');
+    try {
+      const r = await GrossAPI.confirm(this.curAppId);
+      if (r.need_lookup) { this._gross.error = r.error; this._gross.step = 'form'; return this.renderGross(); }
+      if (r.need_login) { this._gross.error = r.error; this._gross.step = 'login-intro'; return this.renderGross(); }
+      if (!r.ok) { this._gross.error = r.error || 'Rasmiylashtirish amalga oshmadi'; this._gross.screenshot = r.screenshot; this._gross.step = 'review'; return this.renderGross(); }
+      this._gross.policyNumber = r.policyNumber;
+      this._gross.step = 'done';
+      toast('Polis rasmiylashtirildi!', 'ok');
+      this.renderGross();
+    } catch (e) { setLoading(btn, false); this._gross.error = e.message; this.renderGross(); }
   },
 
   // admin chat

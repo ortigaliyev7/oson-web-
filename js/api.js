@@ -107,3 +107,22 @@ const AdminAPI = {
   payMethodUpdate: (id, data) => req(`/payment-methods/${id}`, { method:'PATCH', body:data, token: adminToken() }),
   payMethodDelete: (id) => req(`/payment-methods/${id}`, { method:'DELETE', token: adminToken() }),
 };
+
+/* ---------- GROSS ROBOT (osago.gross.uz) ---------- */
+const GrossAPI = {
+  status:      () => req('/gross/status', { token: adminToken() }),
+  check:       () => req('/gross/check', { method:'POST', token: adminToken() }),
+  loginStart:  () => req('/gross/login/start', { method:'POST', token: adminToken() }),
+  loginSubmit: (captcha) => req('/gross/login/submit', { method:'POST', body:{ captcha }, token: adminToken() }),
+  logout:      () => req('/gross/logout', { method:'POST', token: adminToken() }),
+  job:         (id) => req(`/gross/apps/${id}/job`, { token: adminToken() }),
+  lookup:      (id, fields) => req(`/gross/apps/${id}/lookup`, { method:'POST', body: fields, token: adminToken() }),
+  confirm:     (id) => req(`/gross/apps/${id}/confirm`, { method:'POST', token: adminToken() }),
+};
+
+// Skrinshot/upload yo'lini to'liq URL ga aylantirish
+function grossFileUrl(p) {
+  if (!p) return '';
+  if (/^(https?:|data:)/.test(p)) return p;
+  return `${API_BASE}${p.startsWith('/') ? '' : '/'}${p}`;
+}
