@@ -676,10 +676,50 @@ const App = {
     } catch {}
   },
 
-  startNewApp() {
+  async startNewApp() {
     this.draft = { app_type: 'new', drivers: [] };
+    // Takroriy mijoz — oldingi arizadagi ma'lumotlardan foydalanish taklifi
+    try {
+      const last = await this.getLastAppFull();
+      if (last && (last.tex_plate || (Array.isArray(last.drivers) && last.drivers.length))) {
+        const info = last.tex_plate ? `\nAvto: ${last.tex_plate}` : '';
+        if (confirm(`Oldingi arizangizdagi ma'lumotlardan foydalanasizmi?${info}`)) {
+          this.prefillDraftFrom(last);
+          toast('Oldingi ma\'lumotlar to\'ldirildi — tekshiring', 'success');
+        }
+      }
+    } catch (e) { /* prefill ixtiyoriy */ }
     this.saveDraft();
     this.go('/new/type');
+  },
+
+  // Mijozning oxirgi arizasini to'liq ma'lumot bilan olish
+  async getLastAppFull() {
+    if (!this.user || !this.user.phone) return null;
+    const r = await ClientAPI.myApps(this.user.phone).catch(() => null);
+    const items = (r && r.items) || [];
+    if (!items.length) return null;
+    const id = items[0].id || items[0]._id;
+    if (!id) return null;
+    const full = await ClientAPI.appDetail(id).catch(() => null);
+    return (full && (full.app || full)) || null;
+  },
+
+  // Draftni oldingi arizadan to'ldirish (rasm/muddat/narx qayta tanlanadi)
+  prefillDraftFrom(a) {
+    this.draft.vehicle = a.vehicle || null;
+    if (a.region) { this.draft.region = a.region; this.draft.regionAuto = a.region; }
+    this.draft.owner_doc = a.owner_doc || null;
+    this.draft.tex = {
+      plate: a.tex_plate || '', seria: a.tex_seria || '', model: a.tex_model || '',
+      year: a.tex_year || '', vin: a.tex_vin || '', stir: a.tex_stir || '',
+    };
+    if (Array.isArray(a.drivers) && a.drivers.length) {
+      this.draft.drivers = a.drivers.map(d => ({
+        jshshir: d.jshshir || '', seria: d.seria || d.license || '', name: d.name || '',
+      }));
+    }
+    this.draft._prefilled = true;
   },
   startRenew() {
     this.draft = { app_type: 'renew', drivers: [] };
@@ -1014,8 +1054,12 @@ const App = {
   },
 
   texNext() {
-    // Rasm asosiy: faqat old tomon rasmi majburiy. Qolgan ma'lumotlar OCR/admin orqali.
-    if (!this.draft.texPhotoData) return toast('Texpassport old tomoni rasmini yuklang', 'err');
+    // Rasm asosiy: old tomon rasmi majburiy. Ammo takroriy mijozда (oldingi
+    // arizadan to'ldirilgan, raqam bor) rasm qayta talab qilinmaydi.
+    const prefilled = this.draft._prefilled && this.draft.tex && this.draft.tex.plate;
+    if (!this.draft.texPhotoData && !prefilled) {
+      return toast('Texpassport old tomoni rasmini yuklang', 'err');
+    }
     this.saveDraft();
     this.flowNext('tex');
   },
