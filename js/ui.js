@@ -41,9 +41,9 @@ const I = {
   trophy: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 4 h10 v5 a5 5 0 0 1 -10 0z"/><path d="M7 5 H4 v2 a3 3 0 0 0 3 3 M17 5 h3 v2 a3 3 0 0 1 -3 3 M9 19 h6 M12 14 v5"/></svg>',
 };
 
-// Logo SVG (oq qalqon + mashina + check)
+// Logo — yangi brend qalqoni (yashil qalqon + oq avto + belgi), shaffof fon
 function logoMarkSVG() {
-  return `<svg viewBox="0 0 24 24" fill="none"><path d="M12 2 l7.5 2.8 v5.7 c0 5.5 -3.7 8.5 -7.5 10.3 c-3.8 -1.8 -7.5 -4.8 -7.5 -10.3 V4.8z" fill="#fff"/><path d="M8.5 11 h7 v3 h-7z M9.5 11 l.8 -2 h3.4 l.8 2" stroke="#0F6E56" stroke-width="1" fill="#0F6E56"/><circle cx="10" cy="14.5" r="1" fill="#0F6E56"/><circle cx="14" cy="14.5" r="1" fill="#0F6E56"/><circle cx="15.5" cy="13.5" r="3" fill="#2BB673"/><path d="M14.2 13.5 l1 1 l1.8 -2" stroke="#fff" stroke-width="1" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
+  return `<img src="icons/logo-mark.png" alt="Oson Sug'urtam" class="logo-img" loading="eager">`;
 }
 
 // Toast

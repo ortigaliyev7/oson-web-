@@ -1157,8 +1157,21 @@ const Admin = {
       const s = await AdminAPI.settings();
       const maintenance = !!s.maintenance_mode;
       const renewal = s.renewal_enabled !== false;
+      const reqLicense = s.require_driver_license === true;
       const content = `
         <h1 class="adm-h1">Sozlamalar</h1>
+
+        <div class="adm-card setting-card" style="max-width:600px">
+          <div class="setting-row">
+            <div class="setting-txt">
+              <h3>Haydovchilik guvohnomasini so'rash</h3>
+              <p>Yoqilsa, ariza berishда mijozdan har bir haydovchining guvohnoma seriyasi ham so'raladi</p>
+            </div>
+            <button class="toggle ${reqLicense?'on':''}" id="tgLicense" onclick="Admin.toggleDriverLicense(${!reqLicense})">
+              <span class="toggle-knob"></span>
+            </button>
+          </div>
+        </div>
 
         <div class="adm-card setting-card" style="max-width:600px">
           <div class="setting-row">
@@ -1232,6 +1245,15 @@ const Admin = {
       document.getElementById('tgRenew').className = 'toggle ' + (enabled?'on':'');
       document.getElementById('tgRenew').setAttribute('onclick', `Admin.toggleRenewal(${!enabled})`);
       toast(enabled?'Yangilash yoqildi':'Yangilash o\'chirildi', 'ok');
+    } catch (e) { toast(e.message, 'err'); }
+  },
+  async toggleDriverLicense(enabled) {
+    try {
+      await AdminAPI.setSetting('require_driver_license', !!enabled);
+      const el = document.getElementById('tgLicense');
+      el.className = 'toggle ' + (enabled?'on':'');
+      el.setAttribute('onclick', `Admin.toggleDriverLicense(${!enabled})`);
+      toast(enabled?'Guvohnoma so\'raladi':'Guvohnoma so\'ralmaydi', 'ok');
     } catch (e) { toast(e.message, 'err'); }
   },
 
