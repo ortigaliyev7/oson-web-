@@ -1170,6 +1170,9 @@ const App = {
           <input class="inp" id="dr_seria${i}" placeholder="AB1234567" value="${esc(dr.seria||'')}" oninput="App.driverField(${i},'seria',this.value)"></div>
         <div class="field"><label>F.I.Sh <span class="opt">(ixtiyoriy)</span></label>
           <input class="inp" id="dr_name${i}" placeholder="Familiya Ism Sharif" value="${esc(dr.name||'')}" oninput="App.driverField(${i},'name',this.value)"></div>
+        ${(this.appSettings && this.appSettings.require_driver_license) ? `
+        <div class="field"><label>Haydovchilik guvohnomasi seriyasi</label>
+          <input class="inp" id="dr_license${i}" placeholder="AB1234567" value="${esc(dr.license||'')}" oninput="App.driverField(${i},'license',this.value)"></div>` : ''}
       </div>`).join('');
   },
   driverField(i, k, v) { this.draft.drivers[i][k] = v; this.saveDraftSoon(); },
@@ -1232,6 +1235,11 @@ const App = {
     // Rasm asosiy: har kishida hujjat rasmi YOKI (JSHSHIR + seriya) bo'lsin
     const ok = this.draft.drivers.every(d => d._frontData || (d.jshshir && d.seria));
     if (!ok) return toast('Har bir kishi uchun hujjat rasmini yuklang yoki JSHSHIR va seriyani kiriting', 'err');
+    // Guvohnoma so'rash yoqilgan bo'lsa — majburiy
+    if (this.appSettings && this.appSettings.require_driver_license) {
+      const licOk = this.draft.drivers.every(d => d.license && d.license.trim());
+      if (!licOk) return toast('Har bir haydovchi uchun guvohnoma seriyasini kiriting', 'err');
+    }
     this.draft.coverage = this.isUnlimited() ? 'unlimited' : 'limited';
     this.flowNext('drivers');
   },
