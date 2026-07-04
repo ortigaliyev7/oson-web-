@@ -44,11 +44,43 @@ const App = {
     } catch (e) { /* sozlama yuklanmasa default */ }
   },
 
+  // === WEB PUSH: telefonga bildirishnoma obunasi ===
+  // canPrompt=true bo'lsa ruxsat so'raladi (login kabi harakatdan keyin);
+  // aks holda faqat ruxsat allaqachon berilgan bo'lsa obuna qilinadi.
+  async setupWebPush(canPrompt) {
+    try {
+      if (!('serviceWorker' in navigator) || !('PushManager' in window) || !('Notification' in window)) return;
+      if (!this.user || !this.user.phone) return;
+      if (Notification.permission === 'denied') return;
+      if (Notification.permission === 'default' && !canPrompt) return;
+
+      const r = await ClientAPI.vapidPublic().catch(() => null);
+      const publicKey = r && r.publicKey;
+      if (!publicKey) return;
+
+      if (Notification.permission === 'default') {
+        const perm = await Notification.requestPermission();
+        if (perm !== 'granted') return;
+      }
+      const reg = await navigator.serviceWorker.ready;
+      let sub = await reg.pushManager.getSubscription();
+      if (!sub) {
+        sub = await reg.pushManager.subscribe({
+          userVisibleOnly: true,
+          applicationServerKey: urlBase64ToUint8Array(publicKey),
+        });
+      }
+      await ClientAPI.webPushSubscribe(this.user.phone, sub);
+    } catch (e) { /* push majburiy emas — sukut */ }
+  },
+
   // === PWA: ilovani o'rnatishni taklif qilish ===
   initPWA() {
     if ('serviceWorker' in navigator) {
       navigator.serviceWorker.register('sw.js').catch(() => {});
     }
+    // Ruxsat oldin berilgan bo'lsa — jim obuna (prompt'siz)
+    if (this.isAuthed && this.isAuthed()) this.setupWebPush(false);
     const installed = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone;
     if (installed) return;
     if (localStorage.getItem('oson_pwa_dismissed') === '1') return;
@@ -566,6 +598,7 @@ const App = {
       this.user = r.user || { phone: this.loginFullPhone };
       localStorage.setItem(LS.CLIENT_USER, JSON.stringify(this.user));
       toast('Xush kelibsiz!', 'success');
+      this.setupWebPush(true); // bildirishnomaga obuna (ruxsat so'raladi)
       this.go('/dashboard');
     } catch (e) {
       toast(e.message || 'Kod noto\'g\'ri', 'error');

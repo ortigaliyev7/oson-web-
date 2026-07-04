@@ -64,6 +64,10 @@ const ClientAPI = {
   messages: (id) => req(`/apps/${id}/messages`),
   sendMessage: (id, message) => req(`/apps/${id}/client-message`, { method:'POST', body:{ message } }),
 
+  // Web Push (brauzer bildirishnomasi)
+  vapidPublic: () => req('/client/vapid-public'),
+  webPushSubscribe: (phone, sub) => req(`/client/${encodeURIComponent(phone)}/web-push-subscribe`, { method:'POST', body:{ subscription: sub } }),
+
   notifications: (phone) => req(`/client/${encodeURIComponent(phone)}/notifications`),
   markRead: (phone) => req(`/client/${encodeURIComponent(phone)}/notifications/mark-read`, { method:'POST' }),
 
