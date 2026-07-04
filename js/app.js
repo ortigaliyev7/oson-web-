@@ -659,9 +659,11 @@ const App = {
   // ============================================================
   flowSteps() {
     // renew bo'lsa "type" o'tkazib yuboriladi
+    // tex (texpassport rasmi) region'dan OLDIN — OCR raqamni o'qib viloyatni
+    // avtomatik aniqlaydi, mijoz qo'lda tanlashga majbur bo'lmaydi.
     const base = this.draft && this.draft.app_type === 'renew'
-      ? ['vehicle','region','duration','tex','oldpolicy','drivers','payment','confirm']
-      : ['type','vehicle','region','duration','tex','drivers','payment','confirm'];
+      ? ['vehicle','tex','region','duration','oldpolicy','drivers','payment','confirm']
+      : ['type','vehicle','tex','region','duration','drivers','payment','confirm'];
     return base;
   },
 
@@ -793,15 +795,18 @@ const App = {
   // 3. Hudud
   flowRegion() {
     const d = this.draft;
+    const auto = d.regionAuto && d.region === d.regionAuto;
     this.root.innerHTML = this.flowHeader('region', 'Hudud') + `
-      <h2 class="flow-q">Hududingizni tanlang</h2>
-      <p class="flow-sub">Avtomobil ro'yxatdan o'tgan hudud</p>
+      <h2 class="flow-q">Hududingizni tasdiqlang</h2>
+      <p class="flow-sub">${auto ? "Davlat raqamidan avtomatik aniqlandi — noto'g'ri bo'lsa o'zgartiring" : "Avtomobil ro'yxatdan o'tgan hudud"}</p>
+      ${auto ? `<div class="region-auto">${I.checkCircle}<span>Aniqlandi: <b>${esc(d.region)}</b></span></div>` : ''}
       <div class="region-grid">
         ${REGIONS.map((r, i) => `
           <div class="region-chip ${d.region===r.name?'sel':''}" data-i="${i}" onclick="App.pickRegion(${i})">
             ${esc(r.name)}
           </div>`).join('')}
       </div>
+      ${d.region ? `<button class="btn btn-primary btn-block btn-lg" style="margin-top:20px" onclick="App.flowNext('region')">Davom etish</button>` : ''}
       </div></div>`;
   },
   pickRegion(i) {
@@ -889,7 +894,16 @@ const App = {
     if (d.texPhotoData) this.showTexPreview('front', d.texPhotoData);
     if (d.texBackPhotoData) this.showTexPreview('back', d.texBackPhotoData);
   },
-  texField(k, v) { this.draft.tex = this.draft.tex||{}; this.draft.tex[k] = v; this.saveDraftSoon(); },
+  texField(k, v) {
+    this.draft.tex = this.draft.tex||{};
+    this.draft.tex[k] = v;
+    // Davlat raqamidan viloyatni avtomatik aniqlash (qo'lda kiritilganda ham)
+    if (k === 'plate') {
+      const rg = regionFromPlate(v);
+      if (rg) { this.draft.region = rg; this.draft.regionAuto = rg; }
+    }
+    this.saveDraftSoon();
+  },
 
   onTexPhoto(side, e) {
     const f = e.target.files && e.target.files[0];
@@ -938,11 +952,21 @@ const App = {
           }
         }
       });
+      // Davlat raqamidan viloyatni avtomatik aniqlash
+      let regionMsg = '';
+      if (this.draft.tex.plate) {
+        const rg = regionFromPlate(this.draft.tex.plate);
+        if (rg) {
+          this.draft.region = rg;
+          this.draft.regionAuto = rg;
+          regionMsg = ` · Hudud: ${rg}`;
+        }
+      }
       this.saveDraft();
       if (status) {
         if (filled > 0) {
           status.className = 'ocr-status ok';
-          status.innerHTML = `${I.check}<span>${filled} ta ma'lumot aniqlandi — tekshiring va to'ldiring</span>`;
+          status.innerHTML = `${I.check}<span>${filled} ta ma'lumot aniqlandi${regionMsg} — tekshiring</span>`;
         } else {
           status.className = 'ocr-status warn';
           status.innerHTML = `<span>Ma'lumot aniqlanmadi — qo'lda kiriting</span>`;
