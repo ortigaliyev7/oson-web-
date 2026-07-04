@@ -43,6 +43,38 @@ const REGIONS = [
   { name: "Qoraqalpog'iston",  zone: 'bsh' },
 ];
 
+// === DAVLAT RAQAMI KODIDAN VILOYAT (avtomatik aniqlash) ===
+// Raqamning birinchi 2 raqami — viloyat kodi. Jadval taxminiy; noto'g'ri bo'lsa
+// bu yerdan tuzatish mumkin. Mijoz baribir ariza oynasida o'zgartira oladi.
+const PLATE_REGION_RANGES = [
+  [ 1,  9, 'Toshkent shahri'],
+  [10, 19, 'Toshkent viloyati'],
+  [20, 24, 'Sirdaryo'],
+  [25, 29, 'Jizzax'],
+  [30, 39, 'Samarqand'],
+  [40, 49, "Farg'ona"],
+  [50, 59, 'Namangan'],
+  [60, 69, 'Andijon'],
+  [70, 74, 'Qashqadaryo'],
+  [75, 79, 'Surxondaryo'],
+  [80, 84, 'Buxoro'],
+  [85, 89, 'Navoiy'],
+  [90, 94, 'Xorazm'],
+  [95, 99, "Qoraqalpog'iston"],
+];
+
+// Davlat raqamidan (masalan "01A123BC" yoki "01 A 123 BC") viloyat nomini qaytaradi
+function regionFromPlate(plate) {
+  if (!plate) return null;
+  const m = String(plate).replace(/\s+/g, '').match(/^(\d{2})/);
+  if (!m) return null;
+  const code = parseInt(m[1], 10);
+  const row = PLATE_REGION_RANGES.find(([lo, hi]) => code >= lo && code <= hi);
+  if (!row) return null;
+  // REGIONS ichida shu nom borligini tekshiramiz
+  return REGIONS.some(r => r.name === row[2]) ? row[2] : null;
+}
+
 // === AVTOMOBIL TURLARI ===
 const VEHICLES = [
   { id: 'yengil', name: 'Yengil avtomobil', desc: 'Sedan, hatchback, universal, SUV' },
