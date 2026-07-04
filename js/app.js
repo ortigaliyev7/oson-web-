@@ -724,7 +724,7 @@ const App = {
   startRenew() {
     this.draft = { app_type: 'renew', drivers: [] };
     this.saveDraft();
-    this.go('/new/vehicle');
+    this.go('/new/tex');
   },
 
   // ============================================================
@@ -734,9 +734,11 @@ const App = {
     // renew bo'lsa "type" o'tkazib yuboriladi
     // tex (texpassport rasmi) region'dan OLDIN — OCR raqamni o'qib viloyatni
     // avtomatik aniqlaydi, mijoz qo'lda tanlashga majbur bo'lmaydi.
+    // tex (texpassport rasmi) eng oldinda — OCR raqamni o'qib viloyatni
+    // avtomatik aniqlaydi; keyin avto turi, hudud (tasdiq), muddat/narx.
     const base = this.draft && this.draft.app_type === 'renew'
-      ? ['vehicle','tex','region','duration','oldpolicy','drivers','payment','confirm']
-      : ['type','vehicle','tex','region','duration','drivers','payment','confirm'];
+      ? ['tex','vehicle','region','duration','oldpolicy','drivers','payment','confirm']
+      : ['type','tex','vehicle','region','duration','drivers','payment','confirm'];
     return base;
   },
 
@@ -798,12 +800,12 @@ const App = {
       <h2 class="flow-q">Qanday ariza?</h2>
       <p class="flow-sub">Yangi polis yoki mavjudini yangilash</p>
       <div class="choice-list">
-        <div class="choice ${d.app_type==='new'?'sel':''}" onclick="App.selectAndGo(this,'app_type','new','/new/vehicle')">
+        <div class="choice ${d.app_type==='new'?'sel':''}" onclick="App.selectAndGo(this,'app_type','new','/new/tex')">
           <div class="choice-ic" style="background:var(--green-100);color:var(--green-700)">${I.plus}</div>
           <div class="choice-txt"><h4>Yangi polis</h4><p>Birinchi marta rasmiylashtirish</p></div>
           <div class="choice-rad"></div>
         </div>
-        <div class="choice ${d.app_type==='renew'?'sel':''}" onclick="App.selectAndGo(this,'app_type','renew','/new/vehicle')">
+        <div class="choice ${d.app_type==='renew'?'sel':''}" onclick="App.selectAndGo(this,'app_type','renew','/new/tex')">
           <div class="choice-ic" style="background:#DBEAFE;color:#1E40AF">${I.refresh}</div>
           <div class="choice-txt"><h4>Polisni yangilash</h4><p>Eski polis asosida tez yangilash</p></div>
           <div class="choice-rad"></div>
@@ -827,6 +829,17 @@ const App = {
     this.showTransition();
     setTimeout(() => { if (next) this.go(next); }, 230);
   },
+  // Tanlab, flowSteps tartibi bo'yicha KEYINGI qadamga o'tadi (qattiq yo'l emas)
+  selectAndNext(el, field, val, step) {
+    if (el && el.parentElement) {
+      [...el.parentElement.children].forEach(s => s.classList.remove('sel'));
+      el.classList.add('sel');
+    }
+    this.draft[field] = val;
+    this.saveDraft();
+    this.showTransition();
+    setTimeout(() => this.flowNext(step), 230);
+  },
   showTransition() {
     let o = document.getElementById('stepLoading');
     if (!o) {
@@ -845,7 +858,7 @@ const App = {
   pickRenew() {
     this.draft.app_type = 'renew';
     this.saveDraft();
-    this.go('/new/vehicle');
+    this.go('/new/tex');
   },
 
   // 2. Avto turi
@@ -856,7 +869,7 @@ const App = {
       <p class="flow-sub">Sug'urta narxi turga bog'liq</p>
       <div class="choice-list">
         ${VEHICLES.map(v => `
-          <div class="choice ${d.vehicle===v.id?'sel':''}" onclick="App.selectAndGo(this,'vehicle','${v.id}','/new/region')">
+          <div class="choice ${d.vehicle===v.id?'sel':''}" onclick="App.selectAndNext(this,'vehicle','${v.id}','vehicle')">
             <div class="choice-ic" style="background:var(--green-100);color:var(--green-700)">${v.id==='yuk'?I.truck:I.car}</div>
             <div class="choice-txt"><h4>${v.name}</h4><p>${v.desc}</p></div>
             <div class="choice-rad"></div>
@@ -900,7 +913,7 @@ const App = {
         ${DURATIONS.map(dur => {
           const price = getPrice(d.vehicle, d.region, dur.id);
           return `
-          <div class="dur-card ${d.duration===dur.id?'sel':''}" onclick="App.selectAndGo(this,'duration','${dur.id}','/new/tex')">
+          <div class="dur-card ${d.duration===dur.id?'sel':''}" onclick="App.selectAndNext(this,'duration','${dur.id}','duration')">
             ${dur.popular?`<span class="dur-pop">Mashhur</span>`:''}
             <div class="dur-main">
               <div class="dur-label">${dur.label}</div>
