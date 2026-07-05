@@ -64,6 +64,11 @@ const ClientAPI = {
   messages: (id) => req(`/apps/${id}/messages`),
   sendMessage: (id, message) => req(`/apps/${id}/client-message`, { method:'POST', body:{ message } }),
 
+  // Referral bonus (mijoz)
+  refConfig:   () => req('/referral/config'),
+  refEstimate: (region, vehicle, price) => req(`/referral/estimate?region=${encodeURIComponent(region||'')}&vehicle=${encodeURIComponent(vehicle||'')}&price=${encodeURIComponent(price||0)}`),
+  refUser:     (phone) => req(`/referral/user/${encodeURIComponent(phone)}`),
+
   // Web Push (brauzer bildirishnomasi)
   vapidPublic: () => req('/client/vapid-public'),
   webPushSubscribe: (phone, sub) => req(`/client/${encodeURIComponent(phone)}/web-push-subscribe`, { method:'POST', body:{ subscription: sub } }),
@@ -110,6 +115,13 @@ const AdminAPI = {
   payMethodCreate: (data) => req('/payment-methods', { method:'POST', body:data, token: adminToken() }),
   payMethodUpdate: (id, data) => req(`/payment-methods/${id}`, { method:'PATCH', body:data, token: adminToken() }),
   payMethodDelete: (id) => req(`/payment-methods/${id}`, { method:'DELETE', token: adminToken() }),
+
+  // --- Referral bonus (admin) ---
+  refConfig:     () => req('/referral/admin/config', { token: adminToken() }),
+  refSaveConfig: (cfg) => req('/referral/admin/config', { method:'PATCH', body: cfg, token: adminToken() }),
+  refOverview:   () => req('/referral/admin/overview', { token: adminToken() }),
+  refRating:     () => req('/referral/admin/rating', { token: adminToken() }),
+  refPayout:     (phone) => req(`/referral/admin/payout/${encodeURIComponent(phone)}`, { method:'POST', token: adminToken() }),
 };
 
 /* ---------- GROSS ROBOT (osago.gross.uz) ---------- */

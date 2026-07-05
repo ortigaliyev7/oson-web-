@@ -318,3 +318,17 @@
 .gross-done svg{width:52px;height:52px;color:var(--green-600);margin-bottom:6px}
 .gross-done h3{font-family:'Sora',sans-serif;font-size:20px;font-weight:700;color:var(--ink);margin-bottom:8px}
 .gross-done p{color:var(--ink-2);font-size:14px;margin:4px 0}
+
+/* ===== Bonuslar (referral) admin ===== */
+.bonus-rate-row{display:grid;grid-template-columns:1fr 110px 130px;gap:8px;align-items:center;margin-bottom:8px}
+.brr-lab{font-size:14px;color:var(--ink);font-weight:600}
+.bonus-list{display:flex;flex-direction:column;gap:2px}
+.bonus-user-row,.bonus-rank-row{display:flex;align-items:center;gap:12px;padding:12px 4px;border-bottom:1px solid var(--line)}
+.bonus-user-row:last-child,.bonus-rank-row:last-child{border-bottom:none}
+.bonus-user-row>div:first-child,.bonus-rank-row>div:nth-child(2){flex:1;min-width:0}
+.bonus-user-row b,.bonus-rank-row b{display:block;font-size:14px;color:var(--ink)}
+.bonus-user-row span,.bonus-rank-row span{font-size:12.5px;color:var(--ink-2)}
+.bur-bal{font-weight:700;color:var(--green-700);font-size:15px}
+.brk-n{width:26px;height:26px;border-radius:50%;background:var(--green-100);color:var(--green-700);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:13px;flex-shrink:0}
+.brk-c{font-size:13px;color:var(--ink-2);text-align:right}
+@media(max-width:520px){.bonus-rate-row{grid-template-columns:1fr 90px 100px}}
