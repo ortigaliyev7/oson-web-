@@ -182,13 +182,19 @@ const Admin = {
   },
 
   roleLabel(r) {
-    return { head:'Rahbar', worker:'Xodim', operator:'Operator', accountant:'Hisobchi', recruiter:'Rekruter', executive:'Menejer' }[r] || r;
+    return { head:'Bosh admin', worker:'Xodim', operator:'Operator', accountant:'Buxgalter', recruiter:'HR menejer', executive:'Menejer' }[r] || r;
   },
   ROLES: [
     { id:'worker', label:'Xodim' },
-    { id:'accountant', label:'Hisobchi' },
-    { id:'recruiter', label:'Rekruter' },
-    { id:'executive', label:'Menejer' },
+    { id:'recruiter', label:"HR menejer (yollash/bo'shatish huquqi bilan)" },
+    { id:'accountant', label:'Buxgalter' },
+    { id:'executive', label:'Menejer (kuzatuvchi)' },
+  ],
+  // Bosh admin bo'lmagan menejer (masalan HR menejer) faqat shu rollarni
+  // yarata/tahrirlay oladi — buxgalter va menejer faqat bosh admin tomonidan
+  ROLES_NONHEAD: [
+    { id:'worker', label:'Xodim' },
+    { id:'recruiter', label:"HR menejer (yollash/bo'shatish huquqi bilan)" },
   ],
 
   async setWork(status) {
@@ -227,13 +233,15 @@ const Admin = {
           }
         } catch (e) {}
       }
+      // Umumiy tushum/daromad — faqat bosh admin (backend shunga qarab yuboradi)
+      const hasFinance = s.totalRevenue !== undefined;
       const content = `
         <h1 class="adm-h1">Statistika</h1>
         <div class="stat-grid">
           ${this.statCard(I.inbox, 'Jami arizalar', s.total||0, 'var(--green-600)', 'var(--green-50)')}
           ${this.statCard(I.clock, 'Bugun', s.todayCount||0, '#1E40AF', '#DBEAFE')}
-          ${this.statCard(I.wallet, 'Tushum', s.totalRevenue||0, 'var(--gold)', 'var(--gold-l)', true)}
-          ${this.statCard(I.chart, 'Daromad', s.totalIncome||0, '#6B21A8', '#F3E8FF', true)}
+          ${hasFinance ? this.statCard(I.wallet, 'Tushum', s.totalRevenue||0, 'var(--gold)', 'var(--gold-l)', true) : ''}
+          ${hasFinance ? this.statCard(I.chart, 'Daromad', s.totalIncome||0, '#6B21A8', '#F3E8FF', true) : ''}
         </div>
         ${owedCards}
 
@@ -952,10 +960,14 @@ const Admin = {
     document.body.className = 'admin-body';
     this.root.innerHTML = this.shell('payroll', this.loadingBlock());
     try {
-      const data = await req('/payroll', { token: adminToken() });
-      this._payrollPeriod = data.period;
-      const myBonus = await req('/payroll/my-bonus', { token: adminToken() }).catch(()=>null);
       const isHead = this.admin.role === 'head';
+      const [data, myBonus, rateCfg] = await Promise.all([
+        req('/payroll', { token: adminToken() }),
+        req('/payroll/my-bonus', { token: adminToken() }).catch(()=>null),
+        isHead ? req('/payroll/commission-config', { token: adminToken() }).catch(()=>null) : Promise.resolve(null),
+      ]);
+      this._payrollPeriod = data.period;
+      this._bonusRateCfg = rateCfg ? rateCfg.config : null;
       const content = `
         <h1 class="adm-h1">Ish haqi${data.period ? ` — ${esc(data.period)}` : ''}</h1>
         ${myBonus && !isHead ? `
@@ -969,12 +981,51 @@ const Admin = {
           ${this.statCard(I.wallet, 'Jami hisoblangan', fmtSom(data.totals?.total_payroll||0), 'var(--green-600)', 'var(--green-50)')}
           ${this.statCard(I.bell, "To'lanmagan", fmtSom(data.totals?.total_unpaid||0), '#B91C1C', '#FEE2E2')}
         </div>` : ''}
-        ${this.renderPayrollTable(data, isHead)}`;
+        ${this.renderPayrollTable(data, isHead)}
+        ${isHead && this._bonusRateCfg ? this.renderBonusRatesCard(this._bonusRateCfg) : ''}`;
       this.root.innerHTML = this.shell('payroll', content);
       this.animateCounts();
     } catch (e) {
       this.root.innerHTML = this.shell('payroll', this.errorBlock(e.message));
     }
+  },
+  renderBonusRatesCard(cfg) {
+    const ZONES = [
+      ['tsh_yengil', 'Toshkent · Yengil'],
+      ['tsh_yuk', 'Toshkent · Yuk'],
+      ['other_yengil', 'Viloyat · Yengil'],
+      ['other_yuk', 'Viloyat · Yuk'],
+    ];
+    const ROLES = [['worker','Xodim'],['head','Bosh admin'],['accountant','Buxgalter']];
+    return `<div class="adm-card" style="max-width:680px">
+      <h3 class="adm-card-title">Xodimlar bonusi (hudud va avto bo'yicha)</h3>
+      <p style="color:var(--ink-2);font-size:13px;margin-bottom:14px">Har bir ariza narxidan foiz (%) — hudud va avto turiga qarab, har rol uchun alohida</p>
+      <div class="bonus-rates-grid">
+        <div class="brg-row brg-head"><span></span>${ROLES.map(([,l])=>`<span>${l}</span>`).join('')}</div>
+        ${ZONES.map(([key,label]) => `
+        <div class="brg-row">
+          <span class="brg-lab">${label}</span>
+          ${ROLES.map(([rk]) => `<input class="inp" id="bcr_${key}_${rk}" inputmode="numeric" value="${(cfg[key]&&cfg[key][rk])||0}">`).join('')}
+        </div>`).join('')}
+      </div>
+      <button class="btn btn-primary" style="margin-top:14px" onclick="Admin.saveBonusRates()">Saqlash</button>
+    </div>`;
+  },
+  async saveBonusRates() {
+    const ZONES = ['tsh_yengil','tsh_yuk','other_yengil','other_yuk'];
+    const ROLES = ['worker','head','accountant'];
+    const config = {};
+    for (const z of ZONES) {
+      config[z] = {};
+      for (const r of ROLES) {
+        const v = Number(document.getElementById(`bcr_${z}_${r}`).value);
+        config[z][r] = Math.max(0, Math.min(100, isNaN(v) ? 0 : v));
+      }
+    }
+    try {
+      await AdminAPI.bonusRatesSave(config);
+      toast('Bonus stavkalari saqlandi', 'ok');
+    } catch (e) { toast(e.message, 'err'); }
   },
   renderPayrollTable(data, isHead) {
     const rows = data.items || data.admins || data.workers || (Array.isArray(data) ? data : []);
@@ -1028,6 +1079,9 @@ const Admin = {
   staffCard(s) {
     const blocked = s.account_status === 'blocked' || s.account_status === 'suspended';
     const isHead = s.role === 'head';
+    // Bosh admin bo'lmagan menejer (masalan HR menejer) faqat xodim/recruiter'ni
+    // tahrirlashi/bo'shatishi mumkin — buxgalter/menejer/bosh adminga tegmaydi
+    const canManage = this.admin.role === 'head' || ['worker','recruiter'].includes(s.role);
     return `
       <div class="staff-card ${blocked?'blocked':''}">
         <div class="staff-top">
@@ -1041,14 +1095,14 @@ const Admin = {
         <div class="staff-stats">
           <div><b>${s.total_apps||0}</b><span>Arizalar</span></div>
           <div><b>${s.confirmed||0}</b><span>Tasdiq</span></div>
-          <div><b>${s.commission_percent_base||0}%</b><span>Komissiya</span></div>
+          <div><b>${s.commission_percent_base||0}%</b><span>Bonus</span></div>
         </div>
-        ${!isHead ? `<div class="staff-actions">
+        ${isHead ? `<div class="staff-head-badge">${I.shieldCheck} Bosh administrator</div>` : canManage ? `<div class="staff-actions">
           <button class="btn btn-ghost btn-sm" onclick='Admin.openStaffForm(${JSON.stringify(s).replace(/'/g,"&#39;")})'>${I.edit} Tahrir</button>
           <button class="btn btn-ghost btn-sm ${blocked?'':'staff-block'}" onclick="Admin.toggleStaffStatus('${s.id}','${blocked?'active':'blocked'}')">
-            ${blocked?'Faollashtirish':'Bloklash'}
+            ${blocked?'Faollashtirish':"Bo'shatish"}
           </button>
-        </div>` : `<div class="staff-head-badge">${I.shieldCheck} Bosh administrator</div>`}
+        </div>` : ''}
       </div>`;
   },
   openStaffForm(staff) {
@@ -1064,9 +1118,9 @@ const Admin = {
         <input class="inp" id="sf_pass" type="password" placeholder="${edit?'Bo\'sh qoldiring':'Kamida 6 belgi'}"></div>
       <div class="field"><label>Rol</label>
         <select class="inp" id="sf_role">
-          ${this.ROLES.map(r=>`<option value="${r.id}" ${s.role===r.id?'selected':''}>${r.label}</option>`).join('')}
+          ${(this.admin.role==='head'?this.ROLES:this.ROLES_NONHEAD).map(r=>`<option value="${r.id}" ${s.role===r.id?'selected':''}>${r.label}</option>`).join('')}
         </select></div>
-      <div class="field"><label>Komissiya foizi (%)</label>
+      <div class="field"><label>Qo'shimcha bonus foizi (%) <span class="opt">(ixtiyoriy)</span></label>
         <input class="inp" id="sf_comm" inputmode="numeric" value="${s.commission_percent_base||0}" placeholder="0"></div>
       <div class="modal-actions">
         <button class="btn btn-ghost" onclick="closeModal()">Bekor</button>

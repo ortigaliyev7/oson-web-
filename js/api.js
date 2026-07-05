@@ -110,6 +110,10 @@ const AdminAPI = {
   setRenewal:      (enabled, message) => req('/settings/renewal-toggle', { method:'POST', body:{ enabled, message }, token: adminToken() }),
   setSetting:      (key, value) => req('/settings', { method:'PATCH', body:{ [key]: value }, token: adminToken() }),
 
+  // --- Xodim bonus stavkalari (hudud x avto) ---
+  bonusRatesConfig:    () => req('/payroll/commission-config', { token: adminToken() }),
+  bonusRatesSave:      (config) => req('/payroll/commission-config', { method:'PUT', body:{ config }, token: adminToken() }),
+
   // --- To'lov usullari ---
   payMethods:      () => req('/payment-methods/admin', { token: adminToken() }),
   payMethodCreate: (data) => req('/payment-methods', { method:'POST', body:data, token: adminToken() }),
