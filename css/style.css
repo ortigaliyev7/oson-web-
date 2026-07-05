@@ -700,7 +700,8 @@ img, svg { display:block; max-width:100%; }
 #modal-root.show{display:block}
 .modal-overlay{position:fixed;inset:0;background:rgba(11,84,63,.4);backdrop-filter:blur(3px);display:flex;align-items:flex-end;justify-content:center;z-index:1000;padding:0;animation:fadeIn .2s}
 .modal-box{background:var(--card);border-radius:24px 24px 0 0;padding:28px 22px calc(22px + env(safe-area-inset-bottom));width:100%;max-width:var(--maxw);animation:slideUp .28s cubic-bezier(.4,0,.2,1)}
-.modal-title{font-family:'Sora',sans-serif;font-size:20px;font-weight:700;color:var(--ink);margin-bottom:18px}
+.modal-title{font-family:'Sora',sans-serif;font-size:20px;font-weight:700;color:var(--ink);margin-bottom:18px;display:flex;align-items:center;gap:8px}
+.modal-title svg{width:22px;height:22px;flex-shrink:0}
 .modal-actions{display:flex;gap:12px;margin-top:22px}
 .modal-actions .btn{flex:1}
 .support-link{display:flex;align-items:center;gap:12px;padding:15px;background:var(--paper);border-radius:var(--r);text-decoration:none;color:var(--ink);font-size:15px;font-weight:600;margin-bottom:10px}
