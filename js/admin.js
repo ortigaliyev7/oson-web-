@@ -29,6 +29,33 @@ const Admin = {
       }
     });
     this.route();
+    if (this.isAuthed()) this.initSocket();
+  },
+
+  // === REAL VAQT (Socket.io) — yangi ariza, status, mijoz xabari darhol keladi ===
+  async initSocket() {
+    if (this._socket) return;
+    try {
+      const io = await loadSocketIO();
+      const socket = io(SOCKET, { transports: ['websocket', 'polling'] });
+      this._socket = socket;
+      socket.on('connect', () => socket.emit('join_admin'));
+
+      socket.on('new_application', (app) => {
+        playNotifSound();
+        toast(`🆕 Yangi ariza: ${app.client_name || app.client_phone || ''}`, 'success');
+        if (location.hash.includes('/apps')) this.loadApps(false);
+      });
+      socket.on('app_updated', (d) => {
+        if (location.hash.includes('/apps')) this.loadApps(false);
+        if (location.hash === `#/app/${d.app_id}` && this.curAppId === d.app_id) this.viewAppDetail(d.app_id);
+      });
+      socket.on('client_message', (m) => {
+        playNotifSound();
+        toast(`💬 Mijozdan yangi xabar`, '');
+        if (this.curAppId && location.hash === `#/app/${this.curAppId}`) this.loadAdminChat();
+      });
+    } catch (e) { /* real vaqt ixtiyoriy */ }
   },
 
   go(path) { location.hash = path; },
@@ -105,6 +132,7 @@ const Admin = {
       localStorage.setItem(LS.ADMIN_TOKEN, r.token);
       this.admin = r.admin;
       localStorage.setItem(LS.ADMIN_USER, JSON.stringify(r.admin));
+      this.initSocket();
       this.go('/apps');
     } catch (e) {
       setLoading(btn, false);
@@ -521,7 +549,9 @@ const Admin = {
             <div class="detail-drivers">
               ${drivers.map((d,i)=>`<div class="dd-item">
                 <span class="dd-num">${i+1}</span>
-                <div><b>${esc(d.name||'—')}</b><span>${esc(d.license||'')}</span></div>
+                <div><b>${esc(d.name||'Haydovchi '+(i+1))}</b>
+                  <span>${[d.jshshir?`JSHSHIR: ${esc(d.jshshir)}`:'', d.seria?`Seriya: ${esc(d.seria)}`:'', d.license?`Guvohnoma: ${esc(d.license)}`:'', d.doc_type==='bio'?'Biometrik pasport':''].filter(Boolean).join(' · ') || 'Ma\'lumot kiritilmagan'}</span>
+                </div>
               </div>`).join('')}
             </div>
           </div>` : ''}
@@ -569,9 +599,10 @@ const Admin = {
     ];
     const out = [];
     map.forEach(([k,lab])=>{ if (a[k]) out.push({ url:`${UPLOADS}/${a[k]}`, label:lab }); });
-    // haydovchi rasmlari
+    // haydovchi hujjat rasmlari (har bir haydovchi ichida saqlanadi: d.photo / d.photo_back)
     (a.drivers||[]).forEach((d,i)=>{
-      if (a[`driver_photo_${i}`]) out.push({ url:`${UPLOADS}/${a[`driver_photo_${i}`]}`, label:`Haydovchi ${i+1}` });
+      if (d.photo) out.push({ url:`${UPLOADS}/${d.photo}`, label:`Haydovchi ${i+1} — old tomon` });
+      if (d.photo_back) out.push({ url:`${UPLOADS}/${d.photo_back}`, label:`Haydovchi ${i+1} — orqa tomon` });
     });
     // umumiy photos massiv
     if (Array.isArray(a.photos)) a.photos.forEach((p,i)=> out.push({ url:`${UPLOADS}/${p}`, label:`Rasm ${i+1}` }));
@@ -1403,6 +1434,15 @@ const Admin = {
             <div class="setting-txt"><h3>Birinchi sug'urta uchun ham bonus</h3><p>Do'stning birinchi sug'urtasi uchun ham bonus berilsinmi</p></div>
             <button class="toggle ${cfg.first_insurance?'on':''}" id="tgFirst" onclick="Admin.bonusToggle('first_insurance',${!cfg.first_insurance})"><span class="toggle-knob"></span></button>
           </div>
+          ${cfg.first_insurance ? `
+          <div class="bonus-rate-row" style="margin-top:12px">
+            <span class="brr-lab">Birinchi sug'urta stavkasi</span>
+            <select class="inp brr-mode" id="rmode_first_insurance">
+              <option value="percent" ${cfg.first_insurance_rate.mode==='percent'?'selected':''}>Foiz %</option>
+              <option value="fixed" ${cfg.first_insurance_rate.mode==='fixed'?'selected':''}>So'm</option>
+            </select>
+            <input class="inp brr-val" id="rval_first_insurance" inputmode="numeric" value="${cfg.first_insurance_rate.value||0}">
+          </div>` : ''}
           <div class="setting-row" style="margin-top:10px">
             <div class="setting-txt"><h3>Bonusni chegirma sifatida ishlatish</h3><p>Mijoz bonusини keyingi sug'urtaga chegirma qiladi (faqat karta to'lovda)</p></div>
             <button class="toggle ${cfg.allow_discount?'on':''}" id="tgDisc" onclick="Admin.bonusToggle('allow_discount',${!cfg.allow_discount})"><span class="toggle-knob"></span></button>
@@ -1441,11 +1481,13 @@ const Admin = {
     try {
       const patch = {}; patch[key] = val;
       await AdminAPI.refSaveConfig(patch);
-      const id = key==='enabled'?'tgBonus':key==='first_insurance'?'tgFirst':'tgDisc';
+      toast('Saqlandi', 'ok');
+      // first_insurance yoqilsa/o'chirilsa stavka qatori ko'rinishi o'zgaradi — qayta chizamiz
+      if (key === 'first_insurance') { this.viewBonus(); return; }
+      const id = key==='enabled'?'tgBonus':'tgDisc';
       const el = document.getElementById(id);
       el.className = 'toggle ' + (val?'on':'');
       el.setAttribute('onclick', `Admin.bonusToggle('${key}',${!val})`);
-      toast('Saqlandi', 'ok');
     } catch (e) { toast(e.message, 'err'); }
   },
   async bonusSaveConfig() {
@@ -1459,8 +1501,14 @@ const Admin = {
     });
     const payout_contact = document.getElementById('refContact').value.trim();
     if (payout_contact && !/^https?:\/\//i.test(payout_contact)) return toast('Havola https:// bilan boshlanishi kerak', 'err');
+    const body = { rates, payout_contact };
+    const fiMode = document.getElementById('rmode_first_insurance');
+    const fiVal = document.getElementById('rval_first_insurance');
+    if (fiMode && fiVal) {
+      body.first_insurance_rate = { mode: fiMode.value, value: Number(fiVal.value) || 0 };
+    }
     try {
-      await AdminAPI.refSaveConfig({ rates, payout_contact });
+      await AdminAPI.refSaveConfig(body);
       toast('Bonus sozlamalari saqlandi', 'ok');
     } catch (e) { toast(e.message, 'err'); }
   },

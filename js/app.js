@@ -47,6 +47,42 @@ const App = {
     this.route();
     this.loadSettings();
     this.initPWA();
+    if (this.isAuthed && this.isAuthed()) this.initSocket();
+  },
+
+  // === REAL VAQT (Socket.io) — status/to'lov/polis/xabar darhol yangilanadi ===
+  async initSocket() {
+    if (this._socket || !this.user || !this.user.phone) return;
+    try {
+      const io = await loadSocketIO();
+      const socket = io(SOCKET, { transports: ['websocket', 'polling'] });
+      this._socket = socket;
+      socket.on('connect', () => socket.emit('join_client', this.user.phone));
+
+      socket.on('status_updated', (d) => {
+        playNotifSound();
+        toast(`Ariza holati yangilandi: ${STATUS_LABEL[d.status] || d.status}`, 'success');
+        if (location.hash === `#/status/${d.app_id}`) this.viewStatus(d.app_id);
+        this.refreshNotifCount();
+      });
+      socket.on('payment_link', (d) => {
+        playNotifSound();
+        toast("To'lov havolasi keldi", 'success');
+        if (location.hash === `#/status/${d.app_id}`) this.viewStatus(d.app_id);
+        this.refreshNotifCount();
+      });
+      socket.on('policy_uploaded', (d) => {
+        playNotifSound();
+        toast('Polisingiz tayyor!', 'success');
+        if (location.hash === `#/status/${d.app_id}`) this.viewStatus(d.app_id);
+        this.refreshNotifCount();
+      });
+      socket.on('new_message', (m) => {
+        playNotifSound();
+        if (this.chatAppId && location.hash === `#/chat/${this.chatAppId}`) this.loadChat();
+        else toast("Operatordan yangi xabar keldi", '');
+      });
+    } catch (e) { /* real vaqt ixtiyoriy — ulanmasa ham ilova ishlayveradi */ }
   },
   async loadSettings() {
     try {
@@ -140,7 +176,12 @@ const App = {
 
   go(path) { location.hash = path; },
 
-  saveDraft() { try { localStorage.setItem(LS.DRAFT, JSON.stringify(this.draft || {})); } catch(e){} },
+  saveDraft() {
+    try {
+      if (this.draft && this.user && this.user.phone) this.draft._ownerPhone = this.user.phone;
+      localStorage.setItem(LS.DRAFT, JSON.stringify(this.draft || {}));
+    } catch(e){}
+  },
   saveDraftSoon() { clearTimeout(this._saveT); this._saveT = setTimeout(() => this.saveDraft(), 400); },
   clearDraft() { this.draft = null; localStorage.removeItem(LS.DRAFT); },
 
@@ -148,7 +189,8 @@ const App = {
     localStorage.removeItem(LS.CLIENT_TOKEN);
     localStorage.removeItem(LS.CLIENT_USER);
     this.user = null;
-    this.clearDraft();
+    // Qoralama TOZALANMAYDI — shu raqam bilan qaytadan kirsa, davom ettirish
+    // uchun saqlanadi (boshqa raqam kirsa initSocket/verify'da tekshiriladi).
     this.go('/');
   },
 
@@ -692,8 +734,14 @@ const App = {
       localStorage.setItem(LS.CLIENT_TOKEN, r.token);
       this.user = r.user || { phone: this.loginFullPhone };
       localStorage.setItem(LS.CLIENT_USER, JSON.stringify(this.user));
+      // Qoralama boshqa raqamga tegishli bo'lsa — tozalaymiz (maxfiylik uchun);
+      // shu raqamga tegishli bo'lsa (yoki eski, egasiz qoralama) — davom ettiramiz.
+      if (this.draft && this.draft._ownerPhone && this.draft._ownerPhone !== this.user.phone) {
+        this.clearDraft();
+      }
       toast('Xush kelibsiz!', 'success');
       this.setupWebPush(true); // bildirishnomaga obuna (ruxsat so'raladi)
+      this.initSocket();
       this.go('/dashboard');
     } catch (e) {
       toast(e.message || 'Kod noto\'g\'ri', 'error');
@@ -710,6 +758,7 @@ const App = {
     document.body.className = '';
     const name = (this.user && (this.user.name || this.user.full_name)) || '';
     const firstName = name ? name.split(/\s+/)[0] : 'Mijoz';
+    const isFirstVisit = !localStorage.getItem('oson_onboarded');
     this.root.innerHTML = `
       ${this.topbar('')}
       <div class="app-shell"><div class="wrap app-main app-view">
@@ -722,10 +771,17 @@ const App = {
           <div class="hc-shield">${I.shieldCheck}</div>
         </div>
 
-        <div class="action-card" onclick="App.startNewApp()">
-          <div class="ac-plus">${I.plus}</div>
-          <div><h3>Yangi ariza</h3><p>3-5 daqiqada to'ldiring</p></div>
-          <div class="ac-arrow">${I.arrowRight}</div>
+        <div class="onb-wrap">
+          <div class="action-card ${isFirstVisit?'onb-highlight':''}" onclick="App.dismissOnboarding();App.startNewApp()">
+            <div class="ac-plus">${I.plus}</div>
+            <div><h3>Yangi ariza</h3><p>3-5 daqiqada to'ldiring</p></div>
+            <div class="ac-arrow">${I.arrowRight}</div>
+          </div>
+          ${isFirstVisit ? `
+          <div class="onb-hint">
+            <span>👆 Sug'urta olish uchun shu yerdan boshlang!</span>
+            <button onclick="App.dismissOnboarding()">${I.x}</button>
+          </div>` : ''}
         </div>
 
         <div class="bonus-promo" onclick="App.go('/bonus')">
@@ -764,6 +820,13 @@ const App = {
       </div></div>
       ${this.bottomNav('dashboard')}`;
     this.refreshNotifCount();
+  },
+  dismissOnboarding() {
+    localStorage.setItem('oson_onboarded', '1');
+    const el = document.querySelector('.onb-hint');
+    if (el) el.remove();
+    const card = document.querySelector('.action-card.onb-highlight');
+    if (card) card.classList.remove('onb-highlight');
   },
 
   async refreshNotifCount() {
@@ -825,20 +888,19 @@ const App = {
   startRenew() {
     this.draft = { app_type: 'renew', drivers: [] };
     this.saveDraft();
-    this.go('/new/tex');
+    this.go('/new/oldpolicy');
   },
 
   // ============================================================
   // YANGI ARIZA — ko'p bosqichli oqim
   // ============================================================
   flowSteps() {
-    // renew bo'lsa "type" o'tkazib yuboriladi
-    // tex (texpassport rasmi) region'dan OLDIN — OCR raqamni o'qib viloyatni
-    // avtomatik aniqlaydi, mijoz qo'lda tanlashga majbur bo'lmaydi.
-    // tex (texpassport rasmi) eng oldinda — OCR raqamni o'qib viloyatni
-    // avtomatik aniqlaydi; keyin avto turi, hudud (tasdiq), muddat/narx.
+    // renew bo'lsa "type" o'tkazib yuboriladi. Yangilashda texpassport EMAS —
+    // faqat eski polis rasmi (1 ta) so'raladi; haydovchi qo'shish ixtiyoriy.
+    // Yangi arizada tex (texpassport rasmi) eng oldinda — OCR raqamni o'qib
+    // viloyatni avtomatik aniqlaydi; keyin avto turi, hudud (tasdiq), muddat/narx.
     const base = this.draft && this.draft.app_type === 'renew'
-      ? ['tex','vehicle','region','duration','oldpolicy','drivers','payment','confirm']
+      ? ['oldpolicy','vehicle','region','duration','drivers','payment','confirm']
       : ['type','tex','vehicle','region','duration','drivers','payment','confirm'];
     return base;
   },
@@ -906,7 +968,7 @@ const App = {
           <div class="choice-txt"><h4>Yangi polis</h4><p>Birinchi marta rasmiylashtirish</p></div>
           <div class="choice-rad"></div>
         </div>
-        <div class="choice ${d.app_type==='renew'?'sel':''}" onclick="App.selectAndGo(this,'app_type','renew','/new/tex')">
+        <div class="choice ${d.app_type==='renew'?'sel':''}" onclick="App.selectAndGo(this,'app_type','renew','/new/oldpolicy')">
           <div class="choice-ic" style="background:#DBEAFE;color:#1E40AF">${I.refresh}</div>
           <div class="choice-txt"><h4>Polisni yangilash</h4><p>Eski polis asosida tez yangilash</p></div>
           <div class="choice-rad"></div>
@@ -959,7 +1021,7 @@ const App = {
   pickRenew() {
     this.draft.app_type = 'renew';
     this.saveDraft();
-    this.go('/new/tex');
+    this.go('/new/oldpolicy');
   },
 
   // 2. Avto turi
@@ -1183,7 +1245,7 @@ const App = {
     const d = this.draft;
     this.root.innerHTML = this.flowHeader('oldpolicy', 'Eski polis') + `
       <h2 class="flow-q">Eski polisingiz</h2>
-      <p class="flow-sub">Mavjud polis rasmini yuklang</p>
+      <p class="flow-sub">Mavjud polis rasmini yuklang (1 ta rasm)</p>
       <div class="upload-zone" id="oldUpload" onclick="document.getElementById('oldFile').click()">
         <input type="file" id="oldFile" accept="image/*" hidden onchange="App.onOldPolicy(event)">
         <div id="oldPreview">
@@ -1193,7 +1255,8 @@ const App = {
         </div>
         ${this.uzCamButton('oldFileCam', "App.onOldPolicy(event)", 'oldFile')}
       </div>
-      <button class="btn btn-primary btn-block btn-lg" style="margin-top:24px" onclick="App.oldNext()">Davom etish</button>
+      <div id="oldOcrStatus" class="ocr-status" style="display:none;margin-bottom:8px"></div>
+      <button class="btn btn-primary btn-block btn-lg" style="margin-top:16px" onclick="App.oldNext()">Davom etish</button>
       </div></div>`;
     if (d.oldPolicyData) this.showOldPreview(d.oldPolicyData);
   },
@@ -1206,6 +1269,7 @@ const App = {
       this.draft.oldPolicyData = dataUrl;
       this.saveDraft();
       this.showOldPreview(dataUrl);
+      this.runOldPolicyOcr(dataUrl);
     });
   },
   showOldPreview(dataUrl) {
@@ -1213,8 +1277,33 @@ const App = {
     if (box) box.innerHTML = `<img src="${dataUrl}" class="uz-img" alt="polis">
       <div class="uz-change">${I.refresh}<span>Rasmni almashtirish</span></div>`;
   },
+  // Eski polis rasmi to'g'ri tushganini tekshirish (JSHSHIR yoki pasport seriya bor-yo'qligi)
+  async runOldPolicyOcr(dataUrl) {
+    const status = document.getElementById('oldOcrStatus');
+    if (status) { status.style.display='flex'; status.className='ocr-status loading'; status.innerHTML=`<span class="spinner"></span><span>Rasm tekshirilmoqda...</span>`; }
+    try {
+      const r = await ClientAPI.ocr(dataUrl, 'auto');
+      this.draft._oldPolicyValid = isDocTextValid(r && r.text);
+      this.saveDraft();
+      if (status) {
+        if (this.draft._oldPolicyValid) {
+          status.className='ocr-status ok'; status.innerHTML=`${I.check}<span>Hujjat qabul qilindi</span>`;
+        } else {
+          status.className='ocr-status warn';
+          status.innerHTML=`<span>Hujjat yaxshi ko'rinmayapti — qayta suratga oling</span>`;
+        }
+      }
+    } catch (err) {
+      // OCR ishlamasa ham arizani to'sib qo'ymaymiz — faqat ogohlantirmiz
+      this.draft._oldPolicyValid = true;
+      if (status) { status.style.display = 'none'; }
+    }
+  },
   oldNext() {
     if (!this.draft.oldPolicyData) return toast('Eski polis rasmini yuklang', 'err');
+    if (this.draft._oldPolicyValid === false) {
+      return toast("Hujjat yaxshi ko'rinmayapti — qayta suratga oling", 'err');
+    }
     this.flowNext('oldpolicy');
   },
 
@@ -1224,13 +1313,17 @@ const App = {
   flowDrivers() {
     const d = this.draft;
     const unlimited = this.isUnlimited();
+    const isRenew = d.app_type === 'renew';
     d.drivers = d.drivers || [];
     if (unlimited) { d.drivers = [d.drivers[0] || {}]; }
-    else if (d.drivers.length === 0) { d.drivers.push({}); }
-    const title = unlimited ? 'Avtomobil egasi' : 'Haydovchilar';
+    // Yangilashda (renew) haydovchi ixtiyoriy — majburiy bo'sh yozuv qo'shilmaydi
+    else if (d.drivers.length === 0 && !isRenew) { d.drivers.push({}); }
+    const title = unlimited ? 'Avtomobil egasi' : (isRenew ? "Qo'shimcha haydovchilar" : 'Haydovchilar');
     const sub = unlimited
       ? "Cheklanmagan sug'urta — avtomobil egasining pasporti (yoki ID kartasi) suratga olinadi"
-      : "Cheklangan sug'urta — har bir haydovchi hujjati suratga olinadi (5 tagacha)";
+      : isRenew
+        ? "Ixtiyoriy — yangi haydovchi qo'shmoqchi bo'lsangiz, hujjatini yuklang (5 tagacha)"
+        : "Cheklangan sug'urta — har bir haydovchi hujjati suratga olinadi (5 tagacha)";
     this.root.innerHTML = this.flowHeader('drivers', title) + `
       <h2 class="flow-q">${title}</h2>
       <p class="flow-sub">${sub}</p>
@@ -1245,24 +1338,31 @@ const App = {
   },
   renderDrivers() {
     const unlimited = this.isUnlimited();
-    return this.draft.drivers.map((dr, i) => `
+    return this.draft.drivers.map((dr, i) => {
+      const isBio = (dr.doc_type || 'id') === 'bio'; // 'id' = ID karta (2 tomon), 'bio' = biometrik pasport (1 tomon)
+      return `
       <div class="driver-card">
         <div class="driver-head">
           <span>${unlimited ? 'Avtomobil egasi' : 'Haydovchi ' + (i+1)}</span>
-          ${(!unlimited && this.draft.drivers.length > 1) ? `<button class="driver-del" onclick="App.delDriver(${i})">${I.x}</button>` : ''}
+          ${(!unlimited && (this.draft.drivers.length > 1 || this.draft.app_type === 'renew')) ? `<button class="driver-del" onclick="App.delDriver(${i})">${I.x}</button>` : ''}
         </div>
-        <p class="doc-hint">ID karta yoki biometrik pasport — JSHSHIR va seriya avtomatik o'qiladi</p>
-        <div class="doc-uploads">
+        <div class="doc-type-toggle">
+          <button class="dt-opt ${!isBio?'sel':''}" onclick="App.setDocType(${i},'id')">ID karta</button>
+          <button class="dt-opt ${isBio?'sel':''}" onclick="App.setDocType(${i},'bio')">Biometrik pasport</button>
+        </div>
+        <p class="doc-hint">${isBio ? "Pasportning rasmi bor sahifasini suratga oling — JSHSHIR va seriya avtomatik o'qiladi" : "ID kartaning ikkala tomonini suratga oling — JSHSHIR va seriya avtomatik o'qiladi"}</p>
+        <div class="doc-uploads ${isBio?'doc-uploads-single':''}">
           <div class="upload-zone doc-up" id="docUp${i}_front" onclick="document.getElementById('docFile${i}_front').click()">
             <input type="file" id="docFile${i}_front" accept="image/*" hidden onchange="App.onDocPhoto(${i},'front',event)">
-            <div id="docPrev${i}_front"><div class="uz-ic">${I.camera}</div><div class="uz-title">Old tomoni</div><div class="uz-hint">ID / biometrik</div></div>
+            <div id="docPrev${i}_front"><div class="uz-ic">${I.camera}</div><div class="uz-title">${isBio?'Rasmi bor sahifa':'Old tomoni'}</div><div class="uz-hint">${isBio?'Biometrik pasport':'ID karta'}</div></div>
             ${this.uzCamButton(`docFile${i}_front_cam`, `App.onDocPhoto(${i},'front',event)`, `docFile${i}_front`)}
           </div>
+          ${!isBio ? `
           <div class="upload-zone doc-up" id="docUp${i}_back" onclick="document.getElementById('docFile${i}_back').click()">
             <input type="file" id="docFile${i}_back" accept="image/*" hidden onchange="App.onDocPhoto(${i},'back',event)">
             <div id="docPrev${i}_back"><div class="uz-ic">${I.camera}</div><div class="uz-title">Orqa tomoni</div><div class="uz-hint">ID karta uchun</div></div>
             ${this.uzCamButton(`docFile${i}_back_cam`, `App.onDocPhoto(${i},'back',event)`, `docFile${i}_back`)}
-          </div>
+          </div>` : ''}
         </div>
         <div id="docStatus${i}" class="ocr-status" style="display:none;margin-bottom:14px"></div>
         <div class="field"><label>JSHSHIR (14 raqam)</label>
@@ -1274,7 +1374,17 @@ const App = {
         ${(this.appSettings && this.appSettings.require_driver_license) ? `
         <div class="field"><label>Haydovchilik guvohnomasi seriyasi</label>
           <input class="inp" id="dr_license${i}" placeholder="AB1234567" value="${esc(dr.license||'')}" oninput="App.driverField(${i},'license',this.value)"></div>` : ''}
-      </div>`).join('');
+      </div>`;
+    }).join('');
+  },
+  setDocType(i, type) {
+    this.draft.drivers[i].doc_type = type;
+    if (type === 'bio') {
+      // Biometrik pasportda orqa tomon kerak emas — mavjud bo'lsa tozalaymiz
+      this.draft.drivers[i]._backData = null;
+    }
+    this.saveDraftSoon();
+    this.flowDrivers();
   },
   driverField(i, k, v) { this.draft.drivers[i][k] = v; this.saveDraftSoon(); },
 
@@ -1313,8 +1423,14 @@ const App = {
       }
       this.saveDraft();
       if (status) {
-        if (filled > 0) { status.className='ocr-status ok'; status.innerHTML=`${I.check}<span>${filled} ta ma'lumot aniqlandi</span>`; }
-        else { status.className='ocr-status warn'; status.innerHTML=`<span>Aniqlanmadi — qo'lda kiriting</span>`; }
+        if (filled > 0) {
+          status.className='ocr-status ok'; status.innerHTML=`${I.check}<span>${filled} ta ma'lumot aniqlandi</span>`;
+        } else if (!isDocTextValid(r && r.text)) {
+          status.className='ocr-status warn';
+          status.innerHTML=`<span>${I.x||''} Hujjat yaxshi ko'rinmayapti — qayta suratga oling</span>`;
+        } else {
+          status.className='ocr-status warn'; status.innerHTML=`<span>Aniqlanmadi — qo'lda kiriting</span>`;
+        }
       }
     } catch (err) {
       if (status) { status.className='ocr-status warn'; status.innerHTML=`<span>Rasm yuklandi — ma'lumotni qo'lda kiriting</span>`; }
@@ -1502,7 +1618,8 @@ const App = {
       fd.append('driver_count', String((d.drivers||[]).length));
       // drivers — faqat MATN (rasmlar alohida fayl sifatida ketadi)
       const driversText = (d.drivers || []).map(dr => ({
-        jshshir: dr.jshshir || '', seria: dr.seria || '', name: dr.name || ''
+        jshshir: dr.jshshir || '', seria: dr.seria || '', name: dr.name || '',
+        license: dr.license || '', doc_type: dr.doc_type || 'id',
       }));
       fd.append('drivers', JSON.stringify(driversText));
       const t = d.tex || {};
@@ -1650,10 +1767,19 @@ const App = {
           <div class="pd-arrow">${I.download}</div>
         </a>` : ''}
 
-      ${a.payment_link && (st==='payment_pending'||st==='approved') ? `
-        <a class="pay-link-btn" href="${esc(a.payment_link)}" target="_blank">
-          ${I.card}<span>To'lovni amalga oshirish — ${fmtSom(a.price||0)}</span>
-        </a>` : ''}
+      ${(() => {
+        const links = Array.isArray(a.payment_links) ? a.payment_links : [];
+        const last = links.length ? links[links.length - 1] : null;
+        if (!last || !(st === 'payment_pending' || st === 'approved')) return '';
+        if (last.provider === 'sms') {
+          return `<div class="pay-sms-note">${I.phone}<span>To'lov uchun SMS orqali havola yuborildi — telefoningizni tekshiring</span></div>`;
+        }
+        if (!last.link) return '';
+        return `
+        <a class="pay-link-btn" href="${esc(last.link)}" target="_blank">
+          ${I.card}<span>To'lovni amalga oshirish — ${fmtSom(last.amount||a.price||0)}</span>
+        </a>`;
+      })()}
 
       <h3 class="section-h">Jarayon bosqichlari</h3>
       <div class="timeline">${timeline}</div>
