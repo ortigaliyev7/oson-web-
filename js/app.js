@@ -11,6 +11,18 @@ const App = {
   init() {
     this.root = document.getElementById('app');
     this.appSettings = {};
+    // Referral havolasi (?ref=RAQAM) — do'st shu havola orqali kelsa saqlaymiz
+    try {
+      const params = new URLSearchParams(location.search);
+      const ref = params.get('ref');
+      if (ref) {
+        const digits = ref.replace(/\D/g, '');
+        if (digits.length >= 9) {
+          const norm = digits.startsWith('998') ? '+' + digits : '+998' + digits.slice(-9);
+          localStorage.setItem('oson_ref', norm);
+        }
+      }
+    } catch (e) {}
     // Saqlangan sessiya
     const u = localStorage.getItem(LS.CLIENT_USER);
     if (u) { try { this.user = JSON.parse(u); } catch {} }
@@ -150,7 +162,7 @@ const App = {
     if (path !== 'login') this.stopSessionPoll();
 
     // Himoyalangan sahifalar
-    const protectedViews = ['dashboard','new','apps','status','profile','notifications','chat'];
+    const protectedViews = ['dashboard','new','apps','status','profile','notifications','chat','bonus'];
     if (protectedViews.includes(path) && !this.isAuthed()) {
       return this.go('/login');
     }
@@ -166,8 +178,91 @@ const App = {
       case 'status':   return this.viewStatus(rest[0]);
       case 'chat':     return this.viewChat(rest[0]);
       case 'notifications': return this.viewNotifications();
+      case 'bonus':    return this.viewBonusClient();
       case 'profile':  return this.viewProfile();
       default:         return this.viewLanding();
+    }
+  },
+
+  // ============================================================
+  // BONUS (mijoz) — do'stingizga sug'urta qiling, pul ishlang
+  // ============================================================
+  refShareLink() {
+    const digits = String(this.user && this.user.phone || '').replace(/\D/g, '').slice(-9);
+    return `https://osugurta.uz/?ref=${digits}`;
+  },
+  refCalc() {
+    const cfg = this._refCfg; if (!cfg) return;
+    const zone = document.getElementById('bcZone').value;   // tsh | bsh
+    const veh  = document.getElementById('bcVeh').value;     // yengil | yuk
+    const rate = (cfg.rates && cfg.rates[`${zone}_${veh}`]) || { mode:'percent', value:0 };
+    const region = zone === 'tsh' ? 'Toshkent shahri' : 'Samarqand';
+    const price = getPrice(veh, region, '1 yil cheklovli') || 0;
+    let amount = rate.mode === 'fixed' ? (+rate.value||0) : Math.round(price * (+rate.value||0) / 100);
+    const out = document.getElementById('bcResult');
+    if (out) out.innerHTML = `Har do'st uchun: <b>${fmtSom(amount)}</b>` +
+      (rate.mode==='percent' ? ` <span class="bc-note">(1 yillik polisdan, ${rate.value}%)</span>` : '');
+  },
+  async shareRef() {
+    const link = this.refShareLink();
+    const text = `Oson Sug'urtam orqali avto sug'urtangizni onlayn rasmiylashtiring! ${link}`;
+    try {
+      if (navigator.share) { await navigator.share({ title:"Oson Sug'urtam", text, url: link }); return; }
+    } catch (e) { return; }
+    try { await navigator.clipboard.writeText(link); toast('Havola nusxalandi', 'success'); }
+    catch { prompt('Havolani nusxalang:', link); }
+  },
+  async viewBonusClient() {
+    this.root.innerHTML = this.topbar('Bonus', '/dashboard') + `<div class="app-shell"><div class="wrap app-main app-view">${this.loadingBlock ? this.loadingBlock() : ''}</div></div>`;
+    try {
+      const phone = this.user.phone;
+      const [cfg, ub, apps] = await Promise.all([
+        ClientAPI.refConfig(), ClientAPI.refUser(phone), ClientAPI.myApps(phone).catch(()=>({items:[]})),
+      ]);
+      this._refCfg = cfg;
+      const completed = (apps.items||[]).some(a => a.status_simple === 'completed' || a.status === 'completed' || a.status === 'policy_ready');
+      const link = this.refShareLink();
+      const contact = cfg.payout_contact || this.appSettings.contact_admin_tg_url || '';
+      const txHtml = (ub.transactions||[]).length ? ub.transactions.map(t => `
+        <div class="bx-tx">
+          <div><b>${t.type==='earned'?'Bonus qo\'shildi':t.type==='paid'?'To\'lab berildi':t.type==='discount'?'Chegirma':'—'}</b>
+            <span>${fmtDate(t.createdAt)}</span></div>
+          <div class="bx-amt ${t.amount<0?'neg':''}">${t.amount>0?'+':''}${fmtSom(Math.abs(t.amount))}</div>
+        </div>`).join('') : `<p class="muted-text" style="text-align:center;padding:16px">Hozircha tranzaksiya yo'q</p>`;
+
+      const body = `
+        <div class="bx-balance">
+          <div class="bx-bal-lab">Sizning bonusingiz</div>
+          <div class="bx-bal-val">${fmtSom(ub.balance)}</div>
+          <div class="bx-bal-sub">Jami ishlangan: ${fmtSom(ub.total_earned)} · Do'stlar: ${ub.referral_count||0}</div>
+          ${ub.balance > 0 && contact ? `<a href="${esc(contact)}" target="_blank" class="btn btn-light btn-sm" style="margin-top:12px">${I.send} Bonusni olish uchun murojaat</a>` : ''}
+        </div>
+
+        ${cfg.enabled ? `
+        <div class="bx-card bx-earn">
+          <h3>${I.trophy} Do'stingizga sug'urta qiling — pul ishlang!</h3>
+          <p>Do'stingiz sizning havolangiz orqali sug'urta qildirса, sizga bonus qo'shiladi.</p>
+          ${completed ? `
+            <div class="bx-link"><input class="inp" id="refLink" readonly value="${esc(link)}"><button class="btn btn-primary btn-sm" onclick="App.shareRef()">${I.send} Ulashish</button></div>
+            <div class="bx-calc">
+              <div class="bx-calc-row">
+                <select class="inp" id="bcZone" onchange="App.refCalc()"><option value="tsh">Toshkent</option><option value="bsh">Viloyat</option></select>
+                <select class="inp" id="bcVeh" onchange="App.refCalc()"><option value="yengil">Yengil avto</option><option value="yuk">Yuk avto</option></select>
+              </div>
+              <div class="bx-calc-result" id="bcResult"></div>
+            </div>
+          ` : `<div class="bx-lock">${I.help} Bu imkoniyat o'zingizga sug'urta qilib bo'lgach ochiladi.</div>`}
+        </div>` : ''}
+
+        <div class="bx-card">
+          <h3 class="bx-h">Tarix</h3>
+          ${txHtml}
+        </div>`;
+      this.root.querySelector('.app-view').innerHTML = body;
+      if (completed) this.refCalc();
+    } catch (e) {
+      const v = this.root.querySelector('.app-view');
+      if (v) v.innerHTML = this.errorBlock ? this.errorBlock(e.message) : `<p>${esc(e.message)}</p>`;
     }
   },
 
@@ -630,6 +725,12 @@ const App = {
         <div class="action-card" onclick="App.startNewApp()">
           <div class="ac-plus">${I.plus}</div>
           <div><h3>Yangi ariza</h3><p>3-5 daqiqada to'ldiring</p></div>
+          <div class="ac-arrow">${I.arrowRight}</div>
+        </div>
+
+        <div class="bonus-promo" onclick="App.go('/bonus')">
+          <div class="bp-ic">${I.trophy}</div>
+          <div class="bp-txt"><h3>Do'stni taklif qiling — pul ishlang</h3><p>Har bir do'st polisi uchun bonus oling</p></div>
           <div class="ac-arrow">${I.arrowRight}</div>
         </div>
 
@@ -1274,6 +1375,8 @@ const App = {
     const payObj = PAY_METHODS.find(p=>p.id===d.pay_method) || {};
     d.price = price;
     if (d.forSelf === undefined) d.forSelf = true;
+    // Bonus chegirma faqat: o'ziga + karta to'lov. Aks holda tozalaymiz.
+    if (d.forSelf === false || d.pay_method !== 'card') d.bonus_used = 0;
     this.saveDraft();
     const myPhone = this.user.phone || '';
     this.root.innerHTML = this.flowHeader('confirm', 'Tasdiqlash') + `
@@ -1311,15 +1414,46 @@ const App = {
         <div class="sum-row"><span>Davlat raqami</span><b>${esc((d.tex&&d.tex.plate)||'')}</b></div>
         <div class="sum-row"><span>${this.isUnlimited()?'Avtomobil egasi':'Haydovchilar'}</span><b>${this.isUnlimited()?'1 ta':(d.drivers||[]).length+' ta'}</b></div>
         <div class="sum-row"><span>To'lov</span><b>${payObj.label||''}</b></div>
+        ${d.bonus_used ? `<div class="sum-row"><span>Bonus chegirma</span><b style="color:var(--green-700)">−${fmtSom(d.bonus_used)}</b></div>` : ''}
         <div class="sum-divider"></div>
-        <div class="sum-total"><span>Jami narx</span><b>${fmtSom(price)}</b></div>
+        <div class="sum-total"><span>Jami narx</span><b>${fmtSom(Math.max(0, price - (d.bonus_used||0)))}</b></div>
       </div>
+
+      <div id="bonusDiscount"></div>
 
       <button class="btn btn-primary btn-block btn-lg" id="submitBtn" style="margin-top:20px" onclick="App.submitApplication()">
         Arizani yuborish
       </button>
       <p class="confirm-note">Yuborish orqali siz ma'lumotlaringiz to'g'riligini tasdiqlaysiz</p>
       </div></div>`;
+    this.renderBonusDiscount();
+  },
+  // Karta to'lovda bonusni chegirma sifatida taklif qilish
+  async renderBonusDiscount() {
+    const d = this.draft;
+    const box = document.getElementById('bonusDiscount');
+    if (!box) return;
+    if (d.forSelf === false || d.pay_method !== 'card') { box.innerHTML = ''; return; }
+    try {
+      const [cfg, ub] = await Promise.all([
+        this._refCfg ? Promise.resolve(this._refCfg) : ClientAPI.refConfig(),
+        ClientAPI.refUser(this.user.phone),
+      ]);
+      this._refCfg = cfg;
+      if (!cfg.enabled || !cfg.allow_discount || !(ub.balance > 0)) { box.innerHTML = ''; return; }
+      const on = (d.bonus_used || 0) > 0;
+      box.innerHTML = `
+        <div class="bonus-use-card">
+          <div class="buc-txt"><b>Bonusdan foydalanish</b><span>Balans: ${fmtSom(ub.balance)}</span></div>
+          <button class="toggle ${on?'on':''}" onclick="App.toggleBonusUse(${!on}, ${ub.balance})"><span class="toggle-knob"></span></button>
+        </div>`;
+    } catch (e) { box.innerHTML = ''; }
+  },
+  toggleBonusUse(on, balance) {
+    const price = this.draft.price || 0;
+    this.draft.bonus_used = on ? Math.min(balance, price) : 0;
+    this.saveDraft();
+    this.flowConfirm();
   },
   setForSelf(v) { this.draft.forSelf = v; this.saveDraft(); this.flowConfirm(); },
   onOtherPhone(el) {
@@ -1346,6 +1480,18 @@ const App = {
       }
       fd.append('client_phone', clientPhone);
       fd.append('client_name', clientName);
+      // Referral: do'st uchun qilinsa — men referrerman; yoki havola (?ref=) orqali kelgan
+      let referredBy = null;
+      if (d.forSelf === false) referredBy = this.user.phone;
+      else {
+        const rl = localStorage.getItem('oson_ref');
+        if (rl && rl !== clientPhone) referredBy = rl;
+      }
+      if (referredBy && referredBy !== clientPhone) fd.append('referred_by', referredBy);
+      // Bonusni chegirma sifatida (faqat karta to'lovda)
+      if (d.forSelf !== false && d.bonus_used > 0 && d.pay_method === 'card') {
+        fd.append('bonus_used', String(d.bonus_used));
+      }
       fd.append('app_type', d.app_type || 'new');
       fd.append('vehicle', d.vehicle || '');
       fd.append('region', d.region || '');

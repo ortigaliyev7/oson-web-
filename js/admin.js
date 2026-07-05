@@ -58,6 +58,7 @@ const Admin = {
       case 'payroll': return this.viewPayroll();
       case 'staff':   return this.viewStaff();
       case 'paymethods': return this.viewPayMethods();
+      case 'bonus':   return this.viewBonus();
       case 'settings': return this.viewSettings();
       case 'profile': return this.viewProfile();
       default:        return this.go('/apps');
@@ -130,6 +131,7 @@ const Admin = {
     }
     if (this.admin.role === 'head') {
       nav.push({ k:'paymethods', ic:I.card, lab:"To'lov usullari", path:'/paymethods' });
+      nav.push({ k:'bonus', ic:I.trophy, lab:'Bonuslar', path:'/bonus' });
       nav.push({ k:'settings', ic:I.settings, lab:'Sozlamalar', path:'/settings' });
     }
     nav.push({ k:'profile', ic:I.user, lab:'Profil', path:'/profile' });
@@ -1254,6 +1256,125 @@ const Admin = {
       el.className = 'toggle ' + (enabled?'on':'');
       el.setAttribute('onclick', `Admin.toggleDriverLicense(${!enabled})`);
       toast(enabled?'Guvohnoma so\'raladi':'Guvohnoma so\'ralmaydi', 'ok');
+    } catch (e) { toast(e.message, 'err'); }
+  },
+
+  // ============================================================
+  // BONUSLAR (referral) — bosh admin
+  // ============================================================
+  async viewBonus() {
+    this.root.innerHTML = this.shell('bonus', this.loadingBlock());
+    try {
+      const [cfg, ov, rt] = await Promise.all([
+        AdminAPI.refConfig(), AdminAPI.refOverview(), AdminAPI.refRating(),
+      ]);
+      this._refCfg = cfg;
+      const RATES = [
+        ['tsh_yengil', 'Toshkent · Yengil'],
+        ['tsh_yuk', 'Toshkent · Yuk'],
+        ['bsh_yengil', 'Viloyat · Yengil'],
+        ['bsh_yuk', 'Viloyat · Yuk'],
+      ];
+      const rateRow = ([key, lab]) => {
+        const r = (cfg.rates && cfg.rates[key]) || { mode:'percent', value:0 };
+        return `<div class="bonus-rate-row">
+          <span class="brr-lab">${lab}</span>
+          <select class="inp brr-mode" id="rmode_${key}">
+            <option value="percent" ${r.mode==='percent'?'selected':''}>Foiz %</option>
+            <option value="fixed" ${r.mode==='fixed'?'selected':''}>So'm</option>
+          </select>
+          <input class="inp brr-val" id="rval_${key}" inputmode="numeric" value="${r.value||0}">
+        </div>`;
+      };
+      const ovRows = ov.items.length ? ov.items.map(u => `
+        <div class="bonus-user-row">
+          <div><b>${esc(u.name)}</b><span>${fmtPhone(u.phone)}</span></div>
+          <div class="bur-bal">${fmtSom(u.balance)}</div>
+          <button class="btn btn-primary btn-sm" onclick="Admin.bonusPayout('${u.phone}', ${u.balance})">To'landi</button>
+        </div>`).join('') : `<p class="muted-text" style="padding:14px">Hozircha to'lanadigan bonus yo'q</p>`;
+      const rtRows = rt.items.length ? rt.items.map((u,i) => `
+        <div class="bonus-rank-row">
+          <span class="brk-n">${i+1}</span>
+          <div><b>${esc(u.name)}</b><span>${fmtPhone(u.phone)}</span></div>
+          <div class="brk-c">${u.referral_count} ta · ${fmtSom(u.total_earned)}</div>
+        </div>`).join('') : `<p class="muted-text" style="padding:14px">Hali taklif yo'q</p>`;
+
+      const content = `
+        <h1 class="adm-h1">Bonuslar (referral)</h1>
+
+        <div class="adm-card setting-card" style="max-width:640px">
+          <div class="setting-row">
+            <div class="setting-txt"><h3>Bonus tizimi</h3><p>Mijoz do'stiga sug'urta qildirса bonus oladi</p></div>
+            <button class="toggle ${cfg.enabled?'on':''}" id="tgBonus" onclick="Admin.bonusToggle('enabled',${!cfg.enabled})"><span class="toggle-knob"></span></button>
+          </div>
+          <div class="setting-row" style="margin-top:10px">
+            <div class="setting-txt"><h3>Birinchi sug'urta uchun ham bonus</h3><p>Do'stning birinchi sug'urtasi uchun ham bonus berilsinmi</p></div>
+            <button class="toggle ${cfg.first_insurance?'on':''}" id="tgFirst" onclick="Admin.bonusToggle('first_insurance',${!cfg.first_insurance})"><span class="toggle-knob"></span></button>
+          </div>
+          <div class="setting-row" style="margin-top:10px">
+            <div class="setting-txt"><h3>Bonusni chegirma sifatida ishlatish</h3><p>Mijoz bonusини keyingi sug'urtaga chegirma qiladi (faqat karta to'lovda)</p></div>
+            <button class="toggle ${cfg.allow_discount?'on':''}" id="tgDisc" onclick="Admin.bonusToggle('allow_discount',${!cfg.allow_discount})"><span class="toggle-knob"></span></button>
+          </div>
+        </div>
+
+        <div class="adm-card setting-card" style="max-width:640px">
+          <h3 class="adm-card-title">Bonus stavkalari (hudud × avto)</h3>
+          <p style="color:var(--ink-2);font-size:13px;margin-bottom:12px">Har biri foiz (%) yoki qat'iy so'm summa</p>
+          ${RATES.map(rateRow).join('')}
+          <div class="field" style="margin-top:14px">
+            <label>Bonus olish uchun murojaat (Telegram havolasi)</label>
+            <input class="inp" id="refContact" value="${esc(cfg.payout_contact||'')}" placeholder="https://t.me/...">
+          </div>
+          <button class="btn btn-primary" style="margin-top:14px" onclick="Admin.bonusSaveConfig()">Saqlash</button>
+        </div>
+
+        <div class="adm-card" style="max-width:640px">
+          <h3 class="adm-card-title">To'lanadigan bonuslar (${ov.items.length})</h3>
+          <div class="bonus-list">${ovRows}</div>
+        </div>
+
+        <div class="adm-card" style="max-width:640px">
+          <h3 class="adm-card-title">🏆 Eng ko'p taklif qilganlar</h3>
+          <div class="bonus-list">${rtRows}</div>
+        </div>`;
+      this.root.innerHTML = this.shell('bonus', content);
+    } catch (e) {
+      this.root.innerHTML = this.shell('bonus', this.errorBlock(e.message));
+    }
+  },
+  async bonusToggle(key, val) {
+    try {
+      const patch = {}; patch[key] = val;
+      await AdminAPI.refSaveConfig(patch);
+      const id = key==='enabled'?'tgBonus':key==='first_insurance'?'tgFirst':'tgDisc';
+      const el = document.getElementById(id);
+      el.className = 'toggle ' + (val?'on':'');
+      el.setAttribute('onclick', `Admin.bonusToggle('${key}',${!val})`);
+      toast('Saqlandi', 'ok');
+    } catch (e) { toast(e.message, 'err'); }
+  },
+  async bonusSaveConfig() {
+    const keys = ['tsh_yengil','tsh_yuk','bsh_yengil','bsh_yuk'];
+    const rates = {};
+    keys.forEach(k => {
+      rates[k] = {
+        mode: document.getElementById('rmode_'+k).value,
+        value: Number(document.getElementById('rval_'+k).value) || 0,
+      };
+    });
+    const payout_contact = document.getElementById('refContact').value.trim();
+    if (payout_contact && !/^https?:\/\//i.test(payout_contact)) return toast('Havola https:// bilan boshlanishi kerak', 'err');
+    try {
+      await AdminAPI.refSaveConfig({ rates, payout_contact });
+      toast('Bonus sozlamalari saqlandi', 'ok');
+    } catch (e) { toast(e.message, 'err'); }
+  },
+  async bonusPayout(phone, balance) {
+    if (!confirm(`${fmtSom(balance)} bonusni to'lab berdingizmi? Balans 0 ga tushadi.`)) return;
+    try {
+      await AdminAPI.refPayout(phone);
+      toast('To\'landi deb belgilandi', 'ok');
+      this.viewBonus();
     } catch (e) { toast(e.message, 'err'); }
   },
 
