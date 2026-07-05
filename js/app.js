@@ -297,7 +297,12 @@ const App = {
         ${cfg.enabled ? `
         <div class="bx-card bx-earn">
           <h3>${I.trophy} Do'stingizga sug'urta qiling — pul ishlang!</h3>
-          <p>Do'stingiz sizning havolangiz orqali sug'urta qildirса, sizga bonus qo'shiladi.</p>
+          <p>Bu — sizning shaxsiy daromad manbaingiz. Qancha ko'p do'st taklif qilsangiz, shuncha ko'p bonus ishlaysiz:</p>
+          <div class="bx-steps">
+            <div class="bx-step"><b>1</b><span>Pastdagi havolani do'stingizga yuboring</span></div>
+            <div class="bx-step"><b>2</b><span>Do'stingiz shu havola orqali kirib, sug'urta arizasini to'ldiradi</span></div>
+            <div class="bx-step bx-step-key"><b>3</b><span><b>To'lovni amalga oshirib, arizani yakunlagandan keyingina</b> — bonus avtomatik hisobingizga tushadi</span></div>
+          </div>
           ${completed ? `
             <div class="bx-link"><input class="inp" id="refLink" readonly value="${esc(link)}"><button class="btn btn-primary btn-sm" onclick="App.shareRef()">${I.send} Ulashish</button></div>
             <div class="bx-calc">
@@ -799,9 +804,16 @@ const App = {
         </div>
 
         <div class="bonus-promo" onclick="App.go('/bonus')">
-          <div class="bp-ic">${I.trophy}</div>
-          <div class="bp-txt"><h3>Do'stni taklif qiling — pul ishlang</h3><p>Har bir do'st polisi uchun bonus oling</p></div>
-          <div class="ac-arrow">${I.arrowRight}</div>
+          <div class="bp-top">
+            <div class="bp-ic">${I.trophy}</div>
+            <div class="bp-txt"><h3>Do'stingizni taklif qiling — pul ishlang!</h3><p>Bu — sizning shaxsiy daromad manbaingiz</p></div>
+            <div class="ac-arrow">${I.arrowRight}</div>
+          </div>
+          <div class="bp-steps">
+            <div class="bp-step"><b>1</b><span>Havolangizni do'stingizga yuboring</span></div>
+            <div class="bp-step"><b>2</b><span>Do'stingiz sug'urta arizasini to'ldiradi</span></div>
+            <div class="bp-step bp-key"><b>3</b><span><b>To'lovni amalga oshirib, arizani yakunlagandan keyingina</b> sizga bonus tushadi</span></div>
+          </div>
         </div>
 
         <div class="tiles">
