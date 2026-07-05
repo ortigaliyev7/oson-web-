@@ -889,21 +889,28 @@ const App = {
     } catch {}
   },
 
-  async startNewApp() {
+  startNewApp() {
     this.draft = { app_type: 'new', drivers: [] };
-    // Takroriy mijoz — oldingi arizadagi ma'lumotlardan foydalanish taklifi
+    this.saveDraft();
+    this.go('/new/type');
+    // Takroriy mijoz — oldingi arizadagi ma'lumotlardan foydalanish taklifi.
+    // Tarmoq so'rovi FONDA ketadi — tugma bosilganda darhol keyingi ekranga
+    // o'tiladi, sekin internetda ham "bosilmayapti" degan taassurot bo'lmasin.
+    this.offerPrefillFromLastApp();
+  },
+  async offerPrefillFromLastApp() {
     try {
       const last = await this.getLastAppFull();
       if (last && (last.tex_plate || (Array.isArray(last.drivers) && last.drivers.length))) {
         const info = last.tex_plate ? `\nAvto: ${last.tex_plate}` : '';
         if (confirm(`Oldingi arizangizdagi ma'lumotlardan foydalanasizmi?${info}`)) {
           this.prefillDraftFrom(last);
+          this.saveDraft();
           toast('Oldingi ma\'lumotlar to\'ldirildi — tekshiring', 'success');
+          if (location.hash.startsWith('#/new/')) this.route();
         }
       }
     } catch (e) { /* prefill ixtiyoriy */ }
-    this.saveDraft();
-    this.go('/new/type');
   },
 
   // Mijozning oxirgi arizasini to'liq ma'lumot bilan olish
