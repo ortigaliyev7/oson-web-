@@ -302,7 +302,7 @@ const App = {
             <div class="bx-link"><input class="inp" id="refLink" readonly value="${esc(link)}"><button class="btn btn-primary btn-sm" onclick="App.shareRef()">${I.send} Ulashish</button></div>
             <div class="bx-calc">
               <div class="bx-calc-row">
-                <select class="inp" id="bcZone" onchange="App.refCalc()"><option value="tsh">Toshkent</option><option value="bsh">Viloyat</option></select>
+                <select class="inp" id="bcZone" onchange="App.refCalc()"><option value="bsh">Viloyat</option><option value="tsh">Toshkent</option></select>
                 <select class="inp" id="bcVeh" onchange="App.refCalc()"><option value="yengil">Yengil avto</option><option value="yuk">Yuk avto</option></select>
               </div>
               <div class="bx-calc-result" id="bcResult"></div>
