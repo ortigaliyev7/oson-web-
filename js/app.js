@@ -181,9 +181,23 @@ const App = {
       if (this.draft && this.user && this.user.phone) this.draft._ownerPhone = this.user.phone;
       localStorage.setItem(LS.DRAFT, JSON.stringify(this.draft || {}));
     } catch(e){}
+    this.pingDraftServer();
   },
   saveDraftSoon() { clearTimeout(this._saveT); this._saveT = setTimeout(() => this.saveDraft(), 400); },
-  clearDraft() { this.draft = null; localStorage.removeItem(LS.DRAFT); },
+  clearDraft() {
+    if (this.user && this.user.phone) ClientAPI.clearDraftServer(this.user.phone).catch(() => {});
+    this.draft = null; localStorage.removeItem(LS.DRAFT);
+  },
+  // Tugallanmagan ariza haqida serverga signal (rasm/matn EMAS — faqat bosqich va vaqt,
+  // "arizangiz saqlanib qoldi" eslatmasi uchun). 1 daqiqada bir martadan ortiq yubormaymiz.
+  pingDraftServer() {
+    if (!this.draft || !this.user || !this.user.phone) return;
+    const now = Date.now();
+    if (this._lastDraftPing && now - this._lastDraftPing < 60000) return;
+    this._lastDraftPing = now;
+    const step = (location.hash.match(/\/new\/(\w+)/) || [])[1] || '';
+    ClientAPI.saveDraftServer(this.user.phone, step).catch(() => {});
+  },
 
   logout() {
     localStorage.removeItem(LS.CLIENT_TOKEN);
@@ -817,9 +831,44 @@ const App = {
             <p style="font-size:13.5px;color:var(--ink-2)">Ma'lumotlaringiz shifrlangan kanallar orqali himoyalangan</p>
           </div>
         </div>
+
+        <div id="trust-banner"></div>
       </div></div>
       ${this.bottomNav('dashboard')}`;
     this.refreshNotifCount();
+    this.renderTrustBanner();
+  },
+
+  // Ishonch bloki — real statistika (backend) + admin qo'shgan sharhlar
+  async renderTrustBanner() {
+    try {
+      const [stats, s] = await Promise.all([
+        ClientAPI.statsPublic().catch(() => null),
+        Object.keys(this.appSettings || {}).length ? Promise.resolve(this.appSettings) : ClientAPI.settings().catch(() => ({})),
+      ]);
+      const el = document.getElementById('trust-banner');
+      if (!el) return;
+      let html = '';
+      if (stats && (+stats.totalPolicies || 0) >= 5) {
+        html += `
+        <div class="trust-stats">
+          <div class="ts-item"><strong>${stats.totalPolicies}+</strong><span>polis rasmiylashtirildi</span></div>
+          <div class="ts-item"><strong>${stats.totalClients}+</strong><span>mijoz ro'yxatdan o'tdi</span></div>
+        </div>`;
+      }
+      const testimonials = (s && Array.isArray(s.testimonials)) ? s.testimonials : [];
+      if (testimonials.length) {
+        html += `
+        <div class="testimonials">
+          ${testimonials.slice(0, 5).map(t => `
+          <div class="testimonial-card">
+            <p>"${esc(t.text || '')}"</p>
+            <div class="tc-author">${esc(t.name || 'Mijoz')}${t.city ? ', ' + esc(t.city) : ''}</div>
+          </div>`).join('')}
+        </div>`;
+      }
+      el.innerHTML = html;
+    } catch (e) { /* ixtiyoriy blok */ }
   },
   dismissOnboarding() {
     localStorage.setItem('oson_onboarded', '1');

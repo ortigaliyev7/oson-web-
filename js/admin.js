@@ -1340,11 +1340,50 @@ const Admin = {
             <input class="inp" id="supportTg" value="${esc(s.contact_admin_tg_url||'')}" placeholder="https://t.me/online_sugurtambot">
           </div>
           <button class="btn btn-primary btn-sm" style="margin-top:12px" onclick="Admin.saveSupportTg()">Saqlash</button>
+        </div>
+
+        <div class="adm-card setting-card" style="max-width:600px">
+          <div class="setting-txt" style="margin-bottom:12px">
+            <h3>Mijoz sharhlari (saytda ko'rinadi)</h3>
+            <p>Faqat haqiqiy mijozlardan olingan sharhlarni qo'shing — bosh sahifada ishonch bloki sifatida chiqadi</p>
+          </div>
+          <div id="testiList">${this.renderTestimonialRows(Array.isArray(s.testimonials) ? s.testimonials : [])}</div>
+          <button class="btn btn-outline btn-sm" style="margin-top:10px" onclick="Admin.addTestimonialRow()">+ Sharh qo'shish</button>
+          <button class="btn btn-primary btn-sm" style="margin-top:10px" onclick="Admin.saveTestimonials()">Saqlash</button>
         </div>`;
       this.root.innerHTML = this.shell('settings', content);
     } catch (e) {
       this.root.innerHTML = this.shell('settings', this.errorBlock(e.message));
     }
+  },
+  renderTestimonialRows(list) {
+    if (!list.length) return `<p style="font-size:13px;color:var(--ink-2)">Hali sharh qo'shilmagan</p>`;
+    return list.map((t, i) => `
+      <div class="testi-row" style="display:flex;gap:8px;margin-top:${i?'10px':'0'};align-items:flex-start">
+        <div style="flex:1;display:flex;flex-direction:column;gap:6px">
+          <input class="inp testi-name" value="${esc(t.name||'')}" placeholder="Mijoz ismi">
+          <input class="inp testi-city" value="${esc(t.city||'')}" placeholder="Shahar (ixtiyoriy)">
+          <textarea class="inp testi-text" rows="2" placeholder="Sharh matni">${esc(t.text||'')}</textarea>
+        </div>
+        <button class="btn btn-outline btn-sm" onclick="this.closest('.testi-row').remove()">${I.x}</button>
+      </div>`).join('');
+  },
+  addTestimonialRow() {
+    const wrap = document.getElementById('testiList');
+    if (wrap.querySelector('p')) wrap.innerHTML = '';
+    wrap.insertAdjacentHTML('beforeend', this.renderTestimonialRows([{}]).replace('margin-top:0', `margin-top:${wrap.children.length?'10px':'0'}`));
+  },
+  async saveTestimonials() {
+    const rows = Array.from(document.querySelectorAll('#testiList .testi-row'));
+    const testimonials = rows.map(r => ({
+      name: r.querySelector('.testi-name').value.trim(),
+      city: r.querySelector('.testi-city').value.trim(),
+      text: r.querySelector('.testi-text').value.trim(),
+    })).filter(t => t.text);
+    try {
+      await AdminAPI.setSetting('testimonials', testimonials);
+      toast("Sharhlar saqlandi", 'ok');
+    } catch (e) { toast(e.message, 'err'); }
   },
   async saveSupportTg() {
     const url = document.getElementById('supportTg').value.trim();

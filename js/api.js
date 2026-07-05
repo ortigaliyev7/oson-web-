@@ -56,6 +56,9 @@ const ClientAPI = {
     return req('/ocr', { method:'POST', body: fd, isForm:true });
   },
   settings: () => req('/settings'),
+  statsPublic: () => req('/stats/public'),
+  saveDraftServer: (phone, step) => req(`/client/${encodeURIComponent(phone)}/draft`, { method:'POST', body:{ step } }),
+  clearDraftServer: (phone) => req(`/client/${encodeURIComponent(phone)}/draft`, { method:'DELETE' }),
   me:       () => req('/user-auth/me', { token: clientToken() }),
   updateMe: (data) => req('/user-auth/me', { method:'PATCH', body:data, token: clientToken() }),
 
