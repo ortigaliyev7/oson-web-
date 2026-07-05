@@ -154,6 +154,11 @@
 .pt-av{width:34px;height:34px;border-radius:50%;background:var(--green-100);color:var(--green-700);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:12px;flex-shrink:0}
 .pt-row span{color:var(--ink-2)}
 .pt-row b{color:var(--green-700);font-weight:700}
+.pt-head-mode .pt-head,.pt-head-mode .pt-row{grid-template-columns:1.6fr .8fr 1fr 1fr auto;gap:8px}
+.pt-unpaid{color:#B91C1C!important}
+.pt-paid{color:var(--ink-2)!important;font-weight:600!important}
+.pt-ok{display:flex;justify-content:center;color:var(--green-600)}
+.pt-ok svg{width:20px;height:20px}
 
 /* PROFIL */
 .adm-profile-head{display:flex;align-items:center;gap:16px}
@@ -332,3 +337,8 @@
 .brk-n{width:26px;height:26px;border-radius:50%;background:var(--green-100);color:var(--green-700);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:13px;flex-shrink:0}
 .brk-c{font-size:13px;color:var(--ink-2);text-align:right}
 @media(max-width:520px){.bonus-rate-row{grid-template-columns:1fr 90px 100px}}
+
+/* Bonus overview: umumiy to'lanmagan summasi */
+.adm-card-title-row{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:16px}
+.adm-card-title-row .adm-card-title{margin-bottom:0}
+.bonus-total-unpaid{font-family:'Sora',sans-serif;font-weight:800;font-size:18px;color:#B91C1C}

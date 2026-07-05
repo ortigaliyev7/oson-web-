@@ -209,6 +209,24 @@ const Admin = {
     this.root.innerHTML = this.shell('dashboard', this.loadingBlock());
     try {
       const s = await req('/stats', { token: adminToken() });
+      let owedCards = '';
+      if (this.admin.role === 'head') {
+        try {
+          const [pr, rb] = await Promise.all([
+            req('/payroll', { token: adminToken() }).catch(()=>null),
+            req('/referral/admin/overview', { token: adminToken() }).catch(()=>null),
+          ]);
+          const unpaidPayroll = pr && pr.totals ? (pr.totals.total_unpaid||0) : 0;
+          const unpaidBonus = rb ? (rb.total_unpaid||0) : 0;
+          if (pr || rb) {
+            owedCards = `
+              <div class="stat-grid">
+                ${this.statCard(I.wallet, "Hodimlarga to'lanmagan", unpaidPayroll, '#B91C1C', '#FEE2E2', true)}
+                ${this.statCard(I.trophy, "Mijozlarga to'lanmagan bonus", unpaidBonus, '#B91C1C', '#FEE2E2', true)}
+              </div>`;
+          }
+        } catch (e) {}
+      }
       const content = `
         <h1 class="adm-h1">Statistika</h1>
         <div class="stat-grid">
@@ -217,6 +235,7 @@ const Admin = {
           ${this.statCard(I.wallet, 'Tushum', s.totalRevenue||0, 'var(--gold)', 'var(--gold-l)', true)}
           ${this.statCard(I.chart, 'Daromad', s.totalIncome||0, '#6B21A8', '#F3E8FF', true)}
         </div>
+        ${owedCards}
 
         <div class="adm-card">
           <h3 class="adm-card-title">Status bo'yicha</h3>
@@ -933,37 +952,56 @@ const Admin = {
     document.body.className = 'admin-body';
     this.root.innerHTML = this.shell('payroll', this.loadingBlock());
     try {
-      const r = await req('/payroll', { token: adminToken() });
-      const data = r.payroll || r;
+      const data = await req('/payroll', { token: adminToken() });
+      this._payrollPeriod = data.period;
       const myBonus = await req('/payroll/my-bonus', { token: adminToken() }).catch(()=>null);
+      const isHead = this.admin.role === 'head';
       const content = `
-        <h1 class="adm-h1">Ish haqi</h1>
-        ${myBonus ? `
+        <h1 class="adm-h1">Ish haqi${data.period ? ` — ${esc(data.period)}` : ''}</h1>
+        ${myBonus && !isHead ? `
         <div class="stat-grid">
           ${this.statCard(I.wallet, 'Joriy oy', fmtSom(myBonus.total||myBonus.amount||0), 'var(--green-600)', 'var(--green-50)')}
           ${this.statCard(I.checkCircle, 'Yakunlangan', (myBonus.completed_count||myBonus.count||0)+' ta', '#1E40AF', '#DBEAFE')}
           ${this.statCard(I.trophy, 'Bonus', fmtSom(myBonus.bonus||0), 'var(--gold)', 'var(--gold-l)')}
         </div>` : ''}
-        ${this.renderPayrollTable(data)}`;
+        ${isHead ? `
+        <div class="stat-grid">
+          ${this.statCard(I.wallet, 'Jami hisoblangan', fmtSom(data.totals?.total_payroll||0), 'var(--green-600)', 'var(--green-50)')}
+          ${this.statCard(I.bell, "To'lanmagan", fmtSom(data.totals?.total_unpaid||0), '#B91C1C', '#FEE2E2')}
+        </div>` : ''}
+        ${this.renderPayrollTable(data, isHead)}`;
       this.root.innerHTML = this.shell('payroll', content);
+      this.animateCounts();
     } catch (e) {
       this.root.innerHTML = this.shell('payroll', this.errorBlock(e.message));
     }
   },
-  renderPayrollTable(data) {
-    const rows = data.admins || data.workers || (Array.isArray(data) ? data : []);
+  renderPayrollTable(data, isHead) {
+    const rows = data.items || data.admins || data.workers || (Array.isArray(data) ? data : []);
     if (!rows.length) return `<div class="adm-card"><p class="muted-text" style="text-align:center;padding:24px">Ma'lumot yo'q</p></div>`;
     return `<div class="adm-card">
       <h3 class="adm-card-title">Xodimlar bo'yicha</h3>
-      <div class="payroll-table">
-        <div class="pt-head"><span>Xodim</span><span>Arizalar</span><span>Summa</span></div>
+      <div class="payroll-table ${isHead?'pt-head-mode':''}">
+        <div class="pt-head"><span>Xodim</span><span>Arizalar</span><span>Jami</span>${isHead?'<span>To\'lanmagan</span><span></span>':''}</div>
         ${rows.map(w => `<div class="pt-row">
           <div class="pt-name"><div class="pt-av">${initials(w.full_name||w.name)}</div>${esc(w.full_name||w.name||'')}</div>
-          <span>${w.count||w.completed_count||0} ta</span>
-          <b>${fmtSom(w.total||w.amount||w.salary||0)}</b>
+          <span>${w.completed||w.count||w.completed_count||0} ta</span>
+          <b>${fmtSom(w.total_salary||w.total||w.amount||w.salary||0)}</b>
+          ${isHead ? `
+            <b class="${(w.unpaid||0)>0?'pt-unpaid':'pt-paid'}">${fmtSom(w.unpaid||0)}</b>
+            ${(w.unpaid||0)>0 ? `<button class="btn btn-primary btn-sm" onclick="Admin.payrollPay('${w.admin_id}','${esc(w.full_name||'')}',${w.unpaid})">To'landi</button>` : `<span class="pt-ok">${I.checkCircle}</span>`}
+          ` : ''}
         </div>`).join('')}
       </div>
     </div>`;
+  },
+  async payrollPay(adminId, name, unpaid) {
+    if (!confirm(`${esc(name)} uchun ${fmtSom(unpaid)} to'lab berdingizmi?`)) return;
+    try {
+      await req('/payroll/pay', { method:'POST', body:{ admin_id: adminId }, token: adminToken() });
+      toast("To'landi deb belgilandi", 'ok');
+      this.viewPayroll();
+    } catch (e) { toast(e.message, 'err'); }
   },
 
   // ============================================================
@@ -1329,7 +1367,10 @@ const Admin = {
         </div>
 
         <div class="adm-card" style="max-width:640px">
-          <h3 class="adm-card-title">To'lanadigan bonuslar (${ov.items.length})</h3>
+          <div class="adm-card-title-row">
+            <h3 class="adm-card-title">To'lanadigan bonuslar (${ov.items.length})</h3>
+            <span class="bonus-total-unpaid">${fmtSom(ov.total_unpaid||0)}</span>
+          </div>
           <div class="bonus-list">${ovRows}</div>
         </div>
 
