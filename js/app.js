@@ -303,7 +303,11 @@ const App = {
             <div class="bx-step"><span class="bx-num">2</span><span>Do'stingiz shu havola orqali ariza to'ldiradi</span></div>
             <div class="bx-step bx-step-key"><span class="bx-num">3</span><span><b>To'lov qilib, ariza yakunlangach</b> — bonus tushadi</span></div>
           </div>
-          ${contact ? `<div class="bx-contact-note">${I.send} Bonusni yechib olish uchun: <a href="${esc(contact)}" target="_blank">murojaat qiling</a></div>` : ''}
+          ${contact ? `<a href="${esc(contact)}" target="_blank" class="bx-contact-note">
+            <div class="bcn-ic">${I.send}</div>
+            <div class="bcn-txt"><b>Bonusni yechib olish uchun</b><span>Murojaat qiling</span></div>
+            <div class="bcn-arrow">${I.arrowRight}</div>
+          </a>` : ''}
           ${completed ? `
             <div class="bx-link"><input class="inp" id="refLink" readonly value="${esc(link)}"><button class="btn btn-primary btn-sm" onclick="App.shareRef()">${I.send} Ulashish</button></div>
             <div class="bx-calc">
