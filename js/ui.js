@@ -2,6 +2,53 @@
    UI yordamchilari — ikonlar, toast, helperlar
    ============================================================ */
 
+// Socket.io client kutubxonasini backenddan dinamik yuklash (CDN shart emas —
+// server o'zi /socket.io/socket.io.js orqali taqdim etadi)
+let _socketIOLoading = null;
+function loadSocketIO() {
+  if (window.io) return Promise.resolve(window.io);
+  if (_socketIOLoading) return _socketIOLoading;
+  _socketIOLoading = new Promise((resolve, reject) => {
+    const s = document.createElement('script');
+    s.src = `${SOCKET}/socket.io/socket.io.js`;
+    s.onload = () => resolve(window.io);
+    s.onerror = () => reject(new Error('socket.io yuklanmadi'));
+    document.head.appendChild(s);
+  });
+  return _socketIOLoading;
+}
+
+// Hujjat rasmi to'g'ri o'qilganini tekshirish: 14 xonali JSHSHIR YOKI
+// pasport seriya (2 harf + 7 raqam) matnda uchrasa — hujjat qabul qilinadi.
+// Aks holda "qayta suratga oling" xabari ko'rsatiladi.
+function isDocTextValid(text) {
+  const t = String(text || '');
+  const hasJshshir = /\b\d{14}\b/.test(t);
+  const hasSeria = /\b[A-Za-zА-Яа-яЁёʻ']{2}\s*\d{7}\b/.test(t);
+  return hasJshshir || hasSeria;
+}
+
+// Diqqat tortuvchi qisqa ovozli signal (Web Audio API — fayl kerak emas)
+let _audioCtx = null;
+function playNotifSound() {
+  try {
+    _audioCtx = _audioCtx || new (window.AudioContext || window.webkitAudioContext)();
+    if (_audioCtx.state === 'suspended') _audioCtx.resume();
+    const t = _audioCtx.currentTime;
+    [0, 0.14].forEach((delay, i) => {
+      const o = _audioCtx.createOscillator();
+      const g = _audioCtx.createGain();
+      o.connect(g); g.connect(_audioCtx.destination);
+      o.type = 'sine';
+      o.frequency.value = i === 0 ? 880 : 1175;
+      g.gain.setValueAtTime(0.0001, t + delay);
+      g.gain.exponentialRampToValueAtTime(0.18, t + delay + 0.02);
+      g.gain.exponentialRampToValueAtTime(0.0001, t + delay + 0.28);
+      o.start(t + delay); o.stop(t + delay + 0.3);
+    });
+  } catch (e) { /* audio ruxsati yo'q — sukut */ }
+}
+
 // SVG ikonlar kutubxonasi (stroke-based, currentColor)
 const I = {
   shield: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2 l8 3 v6 c0 6 -4 9 -8 11 c-4 -2 -8 -5 -8 -11 V5z"/></svg>',
