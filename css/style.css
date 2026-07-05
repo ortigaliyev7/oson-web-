@@ -1011,6 +1011,9 @@ body.no-scroll{overflow:hidden}
 .bx-step.bx-step-key .bx-num{background:var(--green-700);color:#fff}
 .bx-step.bx-step-key span{color:var(--ink)}
 .bx-step.bx-step-key b{color:var(--green-700)}
+.bx-contact-note{display:flex;align-items:center;gap:8px;margin-bottom:12px;padding:10px 12px;background:var(--green-50);border:1px solid var(--green-100);border-radius:10px;font-size:12.5px;color:var(--ink-2)}
+.bx-contact-note svg{width:16px;height:16px;flex-shrink:0;color:var(--green-700)}
+.bx-contact-note a{color:var(--green-700);font-weight:700;text-decoration:underline}
 .bx-link{display:flex;gap:8px;margin-bottom:12px}
 .bx-link .inp{flex:1;font-size:12.5px}
 .bx-calc{background:var(--green-50);border-radius:12px;padding:12px}
