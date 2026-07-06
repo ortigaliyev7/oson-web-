@@ -823,6 +823,7 @@ const Admin = {
         ${errBox}
         <div class="modal-actions">
           <button class="btn btn-ghost" onclick="closeModal()">Yopish</button>
+          ${g.error ? `<button class="btn btn-ghost" onclick="Admin.grossRestart()">${I.refresh} Qaytadan boshlash</button>` : ''}
           <button class="btn btn-primary" id="gConnBtn" onclick="Admin.grossConnect()">Portalga ulanish</button>
         </div>`;
     }
@@ -835,12 +836,13 @@ const Admin = {
         ${errBox}
         <div class="modal-actions">
           <button class="btn btn-ghost" onclick="closeModal()">Bekor</button>
-          <button class="btn btn-ghost" onclick="Admin.grossConnect()">${I.refresh} Yangilash</button>
+          <button class="btn btn-ghost" onclick="Admin.grossRestart()">${I.refresh} Qaytadan boshlash</button>
           <button class="btn btn-primary" id="gLoginBtn" onclick="Admin.grossDoLogin()">Kirish</button>
         </div>`;
     }
     else if (g.step === 'form') {
       const f = g.fields || {};
+      const sessionLost = g.error && /sessiya|qaytadan kirish/i.test(g.error);
       inner = `
         <p class="gross-help">Robot quyidagi 3 ta ma'lumotni portalga kiritadi. Portal qolganini davlat bazasidan o'zi tortadi. Kerak bo'lsa tahrirlang:</p>
         <div class="field"><label>Haydovchi pasport seriyasi</label>
@@ -852,7 +854,8 @@ const Admin = {
         ${errBox}
         <div class="modal-actions">
           <button class="btn btn-ghost" onclick="closeModal()">Bekor</button>
-          <button class="btn btn-primary" id="gLookupBtn" onclick="Admin.grossLookup()">Ma'lumotlarni tortib olish</button>
+          <button class="btn btn-ghost" onclick="Admin.grossRestart()">${I.refresh} Qaytadan boshlash</button>
+          ${sessionLost ? '' : `<button class="btn btn-primary" id="gLookupBtn" onclick="Admin.grossLookup()">Ma'lumotlarni tortib olish</button>`}
         </div>`;
     }
     else if (g.step === 'review') {
@@ -899,6 +902,17 @@ const Admin = {
       this._gross.step = 'login';
       this.renderGross();
     } catch (e) { setLoading(btn, false); this._gross.error = e.message; this.renderGross(); }
+  },
+
+  // Noldan qaytadan boshlash — eski sessiyani tozalab, yangi CAPTCHA bilan qayta kirish
+  async grossRestart() {
+    this._gross = { step: 'loading', captcha: null, data: null, screenshot: null, error: null, fields: this._gross && this._gross.fields };
+    this.renderGross();
+    try { await GrossAPI.logout(); } catch {}
+    this._gross.step = 'login-intro';
+    this.renderGross();
+    // Darhol yangi CAPTCHA yuklaymiz
+    this.grossConnect();
   },
 
   async grossDoLogin() {
