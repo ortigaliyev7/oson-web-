@@ -5,7 +5,7 @@
 function clientToken() { return localStorage.getItem(LS.CLIENT_TOKEN); }
 function adminToken()  { return localStorage.getItem(LS.ADMIN_TOKEN); }
 
-async function req(path, { method = 'GET', body = null, token = null, isForm = false } = {}) {
+async function req(path, { method = 'GET', body = null, token = null, isForm = false, timeout = 15000 } = {}) {
   const headers = {};
   if (token) headers['Authorization'] = `Bearer ${token}`;
   let payload = body;
@@ -15,7 +15,7 @@ async function req(path, { method = 'GET', body = null, token = null, isForm = f
   }
   let res;
   const ctrl = new AbortController();
-  const timer = setTimeout(() => ctrl.abort(), 15000); // 15s — osilib qolmasligi uchun
+  const timer = setTimeout(() => ctrl.abort(), timeout); // default 15s; sekin amallar uzunroq beradi
   try {
     res = await fetch(`${API}${path}`, { method, headers, body: payload, signal: ctrl.signal });
   } catch (e) {
@@ -132,15 +132,17 @@ const AdminAPI = {
 };
 
 /* ---------- GROSS ROBOT (osago.gross.uz) ---------- */
+// Gross amallari brauzer avtomatlashtirish (proksi orqali) — sekin, uzun timeout kerak
+const GROSS_TIMEOUT = 120000; // 120s
 const GrossAPI = {
   status:      () => req('/gross/status', { token: adminToken() }),
-  check:       () => req('/gross/check', { method:'POST', token: adminToken() }),
-  loginStart:  () => req('/gross/login/start', { method:'POST', token: adminToken() }),
-  loginSubmit: (captcha) => req('/gross/login/submit', { method:'POST', body:{ captcha }, token: adminToken() }),
-  logout:      () => req('/gross/logout', { method:'POST', token: adminToken() }),
+  check:       () => req('/gross/check', { method:'POST', token: adminToken(), timeout: GROSS_TIMEOUT }),
+  loginStart:  () => req('/gross/login/start', { method:'POST', token: adminToken(), timeout: GROSS_TIMEOUT }),
+  loginSubmit: (captcha) => req('/gross/login/submit', { method:'POST', body:{ captcha }, token: adminToken(), timeout: GROSS_TIMEOUT }),
+  logout:      () => req('/gross/logout', { method:'POST', token: adminToken(), timeout: GROSS_TIMEOUT }),
   job:         (id) => req(`/gross/apps/${id}/job`, { token: adminToken() }),
-  lookup:      (id, fields) => req(`/gross/apps/${id}/lookup`, { method:'POST', body: fields, token: adminToken() }),
-  confirm:     (id) => req(`/gross/apps/${id}/confirm`, { method:'POST', token: adminToken() }),
+  lookup:      (id, fields) => req(`/gross/apps/${id}/lookup`, { method:'POST', body: fields, token: adminToken(), timeout: GROSS_TIMEOUT }),
+  confirm:     (id) => req(`/gross/apps/${id}/confirm`, { method:'POST', token: adminToken(), timeout: GROSS_TIMEOUT }),
 };
 
 // Skrinshot/upload yo'lini to'liq URL ga aylantirish
