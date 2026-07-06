@@ -844,13 +844,15 @@ const Admin = {
       const f = g.fields || {};
       const sessionLost = g.error && /sessiya|qaytadan kirish/i.test(g.error);
       inner = `
-        <p class="gross-help">Robot quyidagi 3 ta ma'lumotni portalga kiritadi. Portal qolganini davlat bazasidan o'zi tortadi. Kerak bo'lsa tahrirlang:</p>
-        <div class="field"><label>Haydovchi pasport seriyasi</label>
-          <input class="inp" id="gPassport" value="${esc(f.passportSeria||'')}" placeholder="AA1234567"></div>
-        <div class="field"><label>Texpassport seriyasi</label>
-          <input class="inp" id="gTech" value="${esc(f.techSeria||'')}" placeholder="AAF1234567"></div>
+        <p class="gross-help">Robot avval avto raqami va texpassport seriyasini kiritib "Маълумот юклаш" bosadi. Portal qolganini davlat bazasidan o'zi tortadi. Kerak bo'lsa tahrirlang:</p>
         <div class="field"><label>Avto davlat raqami</label>
-          <input class="inp" id="gPlate" value="${esc(f.plate||'')}" placeholder="01A123BC"></div>
+          <input class="inp" id="gPlate" value="${esc(f.plate||'')}" placeholder="01A234BC"></div>
+        <div class="field-row">
+          <div class="field"><label>Texpassport seriyasi (3 harf)</label>
+            <input class="inp" id="gTech" value="${esc(f.techSeria||'')}" placeholder="AAF"></div>
+          <div class="field"><label>Raqami (7 raqam)</label>
+            <input class="inp" id="gNum" value="${esc(f.techNumber||'')}" placeholder="1234567"></div>
+        </div>
         ${errBox}
         <div class="modal-actions">
           <button class="btn btn-ghost" onclick="closeModal()">Bekor</button>
@@ -932,12 +934,13 @@ const Admin = {
 
   async grossLookup() {
     // form step'da inputlardan o'qiymiz; review step'da mavjud fields'dan
-    const p = document.getElementById('gPassport');
-    if (p) {
+    const plateEl = document.getElementById('gPlate');
+    if (plateEl) {
       this._gross.fields = {
-        passportSeria: p.value.trim(),
+        plate: plateEl.value.trim(),
         techSeria: (document.getElementById('gTech')?.value || '').trim(),
-        plate: (document.getElementById('gPlate')?.value || '').trim(),
+        techNumber: (document.getElementById('gNum')?.value || '').trim(),
+        ownerPassport: (this._gross.fields && this._gross.fields.ownerPassport) || '',
       };
     }
     const btn = document.getElementById('gLookupBtn') || document.getElementById('gConfirmBtn');
