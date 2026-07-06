@@ -540,6 +540,7 @@ const Admin = {
               <div class="dr"><span>Yil</span><b>${esc(tex.tex_year||tex.year||'—')}</b></div>
               <div class="dr"><span>VIN</span><b>${esc(tex.tex_vin||tex.vin||'—')}</b></div>
               <div class="dr"><span>STIR</span><b>${esc(tex.tex_stir||tex.stir||'—')}</b></div>
+              <div class="dr"><span>Egasi pasport seriyasi</span><b>${esc(a.owner_seria||a.owner_jshshir||'—')}</b></div>
             </div>
           </div>
 
@@ -593,6 +594,7 @@ const Admin = {
     const map = [
       ['photo_tex_front','Texpassport old'],
       ['photo_tex_back','Texpassport orqa'],
+      ['photo_owner_passport','Egasi pasporti'],
       ['photo_owner_front','Egasi hujjati old'],
       ['photo_owner_back','Egasi hujjati orqa'],
       ['photo_renew_policy','Eski polis'],

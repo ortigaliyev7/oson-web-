@@ -1212,10 +1212,76 @@ const App = {
           <input class="inp" id="t_stir" placeholder="000000000" inputmode="numeric" value="${esc(d.tex.stir||'')}" oninput="App.texField('stir',this.value)"></div>
       </div>
 
+      <div class="owner-sec">
+        <h3 class="owner-title">Avtomobil egasining pasporti</h3>
+        <p class="owner-sub">Avtomobil kimning nomida bo'lsa — o'sha odamning pasporti. Old (rasmli) tomonini yuklang yoki seriyasini kiriting.</p>
+        <div class="upload-zone" id="ownerUpload" onclick="document.getElementById('ownerFile').click()">
+          <input type="file" id="ownerFile" accept="image/*" hidden onchange="App.onOwnerPhoto(event)">
+          <div id="ownerPreview">
+            <div class="uz-ic">${I.camera}</div>
+            <div class="uz-title">Pasport old tomoni</div>
+            <div class="uz-hint">Rasmga oling yoki galereyadan tanlang</div>
+          </div>
+          ${this.uzCamButton('ownerFileCam', "App.onOwnerPhoto(event)", 'ownerFile')}
+        </div>
+        <div id="ownerOcrStatus" class="ocr-status" style="display:none"></div>
+        <div class="field" style="margin-top:12px"><label>Pasport seriyasi <span class="opt">(AA1234567)</span></label>
+          <input class="inp" id="o_seria" placeholder="AA1234567" value="${esc((d.owner&&d.owner.seria)||'')}" oninput="App.ownerField('seria',this.value)"></div>
+      </div>
+
       <button class="btn btn-primary btn-block btn-lg" style="margin-top:24px" onclick="App.texNext()">Davom etish</button>
       </div></div>`;
     if (d.texPhotoData) this.showTexPreview('front', d.texPhotoData);
     if (d.texBackPhotoData) this.showTexPreview('back', d.texBackPhotoData);
+    if (d.owner && d.owner.photo) this.showOwnerPreview(d.owner.photo);
+  },
+  ownerField(k, v) {
+    this.draft.owner = this.draft.owner || {};
+    this.draft.owner[k] = v;
+    this.saveDraftSoon();
+  },
+  showOwnerPreview(dataUrl) {
+    const box = document.getElementById('ownerPreview');
+    if (box) box.innerHTML = `<img src="${dataUrl}" class="uz-img" alt="pasport">
+      <div class="uz-change">${I.refresh}<span>Almashtirish</span></div>`;
+  },
+  onOwnerPhoto(e) {
+    const f = e.target.files && e.target.files[0];
+    if (!f) return;
+    const box = document.getElementById('ownerPreview');
+    if (box) box.innerHTML = `<div class="uz-loading"><span class="spinner"></span><span>Yuklanmoqda...</span></div>`;
+    compressImage(f, 1280, 0.7, (dataUrl) => {
+      this.draft.owner = this.draft.owner || {};
+      this.draft.owner.photo = dataUrl;
+      this.saveDraft();
+      this.showOwnerPreview(dataUrl);
+      this.runOwnerOcr(dataUrl);
+    });
+  },
+  async runOwnerOcr(dataUrl) {
+    const status = document.getElementById('ownerOcrStatus');
+    if (status) { status.style.display = 'flex'; status.className = 'ocr-status loading'; status.innerHTML = `<span class="spinner"></span><span>Pasport o'qilmoqda...</span>`; }
+    try {
+      const r = await ClientAPI.ocr(dataUrl, 'auto');
+      const f = (r && r.fields) || {};
+      this.draft.owner = this.draft.owner || {};
+      // Seriya (2 harf + 7 raqam) yoki JSHSHIR (14 raqam)
+      const seria = f.seria || f.passport_seria || '';
+      const jshshir = f.jshshir || '';
+      if (seria && !this.draft.owner.seria) {
+        this.draft.owner.seria = seria;
+        const inp = document.getElementById('o_seria'); if (inp) { inp.value = seria; inp.classList.add('ocr-filled'); }
+      }
+      if (jshshir) this.draft.owner.jshshir = jshshir;
+      this.draft.owner._valid = isDocTextValid(r && r.text);
+      this.saveDraft();
+      if (status) {
+        if (this.draft.owner._valid) { status.className = 'ocr-status ok'; status.innerHTML = `${I.check}<span>Pasport ma'lumoti aniqlandi — tekshiring</span>`; }
+        else { status.className = 'ocr-status warn'; status.innerHTML = `<span>Qayta suratga oling — yaxshi ko'rinmayapti (yoki seriyani qo'lda kiriting)</span>`; }
+      }
+    } catch (err) {
+      if (status) { status.className = 'ocr-status warn'; status.innerHTML = `<span>Avtomatik o'qib bo'lmadi — seriyani qo'lda kiriting</span>`; }
+    }
   },
   texField(k, v) {
     this.draft.tex = this.draft.tex||{};
@@ -1309,6 +1375,12 @@ const App = {
     const prefilled = this.draft._prefilled && this.draft.tex && this.draft.tex.plate;
     if (!this.draft.texPhotoData && !prefilled) {
       return toast('Texpassport old tomoni rasmini yuklang', 'err');
+    }
+    // Avtomobil egasining pasporti: seriya YOKI rasm bo'lishi shart
+    const o = this.draft.owner || {};
+    const hasOwner = (o.seria && o.seria.trim()) || o.jshshir || o.photo;
+    if (!hasOwner && !prefilled) {
+      return toast("Avtomobil egasining pasport seriyasini yoki rasmini yuklang", 'err');
     }
     this.saveDraft();
     this.flowNext('tex');
@@ -1703,6 +1775,13 @@ const App = {
       fd.append('tex_year', t.year || '');
       fd.append('tex_vin', t.vin || '');
       fd.append('tex_stir', t.stir || '');
+      // Avtomobil egasining pasporti (Gross portali uchun shart)
+      const own = d.owner || {};
+      fd.append('owner_seria', own.seria || '');
+      fd.append('owner_jshshir', own.jshshir || '');
+      if (own.photo) {
+        fd.append('photo_owner_passport', dataURLtoBlob(own.photo), 'owner_passport.jpg');
+      }
       // rasmlar — dataURL -> Blob
       if (d.texPhotoData) {
         fd.append('photo_tex_front', dataURLtoBlob(d.texPhotoData), 'tex_front.jpg');
