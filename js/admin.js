@@ -1458,15 +1458,15 @@ const Admin = {
         ['bsh_yengil', 'Viloyat · Yengil'],
         ['bsh_yuk', 'Viloyat · Yuk'],
       ];
-      const rateRow = ([key, lab]) => {
-        const r = (cfg.rates && cfg.rates[key]) || { mode:'percent', value:0 };
+      const rateRow = (table, prefix) => ([key, lab]) => {
+        const r = (table && table[key]) || { mode:'percent', value:0 };
         return `<div class="bonus-rate-row">
           <span class="brr-lab">${lab}</span>
-          <select class="inp brr-mode" id="rmode_${key}">
+          <select class="inp brr-mode" id="${prefix}mode_${key}">
             <option value="percent" ${r.mode==='percent'?'selected':''}>Foiz %</option>
             <option value="fixed" ${r.mode==='fixed'?'selected':''}>So'm</option>
           </select>
-          <input class="inp brr-val" id="rval_${key}" inputmode="numeric" value="${r.value||0}">
+          <input class="inp brr-val" id="${prefix}val_${key}" inputmode="numeric" value="${r.value||0}">
         </div>`;
       };
       const ovRows = ov.items.length ? ov.items.map(u => `
@@ -1510,13 +1510,31 @@ const Admin = {
         </div>
 
         <div class="adm-card setting-card" style="max-width:640px">
-          <h3 class="adm-card-title">Bonus stavkalari (hudud × avto)</h3>
-          <p style="color:var(--ink-2);font-size:13px;margin-bottom:12px">Har biri foiz (%) yoki qat'iy so'm summa</p>
-          ${RATES.map(rateRow).join('')}
+          <h3 class="adm-card-title">Taklif havolasi — bonus stavkalari (hudud × avto)</h3>
+          <p style="color:var(--ink-2);font-size:13px;margin-bottom:12px">Mijoz o'z havolasini ulashib do'stini taklif qilsa. Har biri foiz (%) yoki qat'iy so'm summa</p>
+          ${RATES.map(rateRow(cfg.rates, 'r')).join('')}
           <div class="field" style="margin-top:14px">
             <label>Bonus olish uchun murojaat (Telegram havolasi)</label>
             <input class="inp" id="refContact" value="${esc(cfg.payout_contact||'')}" placeholder="https://t.me/...">
           </div>
+          <button class="btn btn-primary" style="margin-top:14px" onclick="Admin.bonusSaveConfig()">Saqlash</button>
+        </div>
+
+        <div class="adm-card setting-card" style="max-width:640px">
+          <div class="setting-row">
+            <div class="setting-txt"><h3>Boshqa odam uchun — alohida bonus</h3><p>Mijoz ilova ichida "Boshqa odam uchun" bo'limidan to'g'ridan-to'g'ri do'stiga sug'urta qilib bersa</p></div>
+            <button class="toggle ${cfg.direct_enabled?'on':''}" id="tgDirect" onclick="Admin.bonusToggle('direct_enabled',${!cfg.direct_enabled})"><span class="toggle-knob"></span></button>
+          </div>
+          ${cfg.first_insurance ? `
+          <div class="bonus-rate-row" style="margin-top:12px">
+            <span class="brr-lab">Birinchi sug'urta stavkasi</span>
+            <select class="inp brr-mode" id="drmode_first_insurance">
+              <option value="percent" ${cfg.direct_first_insurance_rate.mode==='percent'?'selected':''}>Foiz %</option>
+              <option value="fixed" ${cfg.direct_first_insurance_rate.mode==='fixed'?'selected':''}>So'm</option>
+            </select>
+            <input class="inp brr-val" id="drval_first_insurance" inputmode="numeric" value="${cfg.direct_first_insurance_rate.value||0}">
+          </div>` : ''}
+          <div style="margin-top:12px">${RATES.map(rateRow(cfg.direct_rates, 'dr')).join('')}</div>
           <button class="btn btn-primary" style="margin-top:14px" onclick="Admin.bonusSaveConfig()">Saqlash</button>
         </div>
 
@@ -1544,7 +1562,7 @@ const Admin = {
       toast('Saqlandi', 'ok');
       // first_insurance yoqilsa/o'chirilsa stavka qatori ko'rinishi o'zgaradi — qayta chizamiz
       if (key === 'first_insurance') { this.viewBonus(); return; }
-      const id = key==='enabled'?'tgBonus':'tgDisc';
+      const id = { enabled:'tgBonus', allow_discount:'tgDisc', direct_enabled:'tgDirect' }[key];
       const el = document.getElementById(id);
       el.className = 'toggle ' + (val?'on':'');
       el.setAttribute('onclick', `Admin.bonusToggle('${key}',${!val})`);
@@ -1552,20 +1570,30 @@ const Admin = {
   },
   async bonusSaveConfig() {
     const keys = ['tsh_yengil','tsh_yuk','bsh_yengil','bsh_yuk'];
-    const rates = {};
-    keys.forEach(k => {
-      rates[k] = {
-        mode: document.getElementById('rmode_'+k).value,
-        value: Number(document.getElementById('rval_'+k).value) || 0,
-      };
-    });
+    const readRates = (prefix) => {
+      const rates = {};
+      keys.forEach(k => {
+        const modeEl = document.getElementById(prefix+'mode_'+k);
+        const valEl = document.getElementById(prefix+'val_'+k);
+        if (!modeEl || !valEl) return;
+        rates[k] = { mode: modeEl.value, value: Number(valEl.value) || 0 };
+      });
+      return rates;
+    };
+    const rates = readRates('r');
+    const direct_rates = readRates('dr');
     const payout_contact = document.getElementById('refContact').value.trim();
     if (payout_contact && !/^https?:\/\//i.test(payout_contact)) return toast('Havola https:// bilan boshlanishi kerak', 'err');
-    const body = { rates, payout_contact };
+    const body = { rates, direct_rates, payout_contact };
     const fiMode = document.getElementById('rmode_first_insurance');
     const fiVal = document.getElementById('rval_first_insurance');
     if (fiMode && fiVal) {
       body.first_insurance_rate = { mode: fiMode.value, value: Number(fiVal.value) || 0 };
+    }
+    const dfiMode = document.getElementById('drmode_first_insurance');
+    const dfiVal = document.getElementById('drval_first_insurance');
+    if (dfiMode && dfiVal) {
+      body.direct_first_insurance_rate = { mode: dfiMode.value, value: Number(dfiVal.value) || 0 };
     }
     try {
       await AdminAPI.refSaveConfig(body);
