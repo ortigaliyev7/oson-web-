@@ -245,6 +245,7 @@ const Admin = {
     this.root.innerHTML = this.shell('dashboard', this.loadingBlock());
     try {
       const s = await req('/stats', { token: adminToken() });
+      const funnel = await req('/analytics/funnel', { token: adminToken() }).catch(() => null);
       let owedCards = '';
       if (this.admin.role === 'head') {
         try {
@@ -286,7 +287,9 @@ const Admin = {
         <div class="adm-card">
           <h3 class="adm-card-title">So'nggi kunlar</h3>
           <div class="day-chart">${this.renderDayChart(s.byDay)}</div>
-        </div>` : ''}`;
+        </div>` : ''}
+
+        ${funnel ? this.renderFunnelCard(funnel) : ''}`;
       this.root.innerHTML = this.shell('dashboard', content);
       this.animateCounts();
     } catch (e) {
@@ -342,6 +345,40 @@ const Admin = {
         <div class="dc-label">${label}</div>
       </div>`;
     }).join('');
+  },
+  renderFunnelCard(f) {
+    const started = f.started || 1;
+    const stages = [
+      { label: 'Boshlangan', count: f.started },
+      { label: 'Yuborilgan', count: f.submitted },
+      { label: 'Yakunlangan', count: f.completed },
+    ];
+    const funnelRows = stages.map((s) => {
+      const pct = Math.round((s.count / started) * 100);
+      return `<div class="funnel-row">
+        <div class="funnel-lab"><span>${s.label}</span><b>${s.count} <span class="muted-text">(${pct}%)</span></b></div>
+        <div class="funnel-track"><div class="funnel-fill" style="width:${pct}%"></div></div>
+      </div>`;
+    }).join('');
+
+    const maxStep = Math.max(...(f.abandoned_by_step||[]).map(x=>x.count), 1);
+    const stepRows = (f.abandoned_by_step||[]).length
+      ? f.abandoned_by_step.map((x) => `
+        <div class="funnel-row">
+          <div class="funnel-lab"><span>${esc(x.label)}</span><b>${x.count}</b></div>
+          <div class="funnel-track"><div class="funnel-fill amber" style="width:${Math.round((x.count/maxStep)*100)}%"></div></div>
+        </div>`).join('')
+      : `<p class="muted-text">Hozircha tashlab ketilgan ariza yo'q</p>`;
+
+    return `
+      <div class="adm-card">
+        <h3 class="adm-card-title">Konversiya voronkasi</h3>
+        ${funnelRows}
+      </div>
+      <div class="adm-card">
+        <h3 class="adm-card-title">Qaysi bosqichda ko'p tashlab ketishadi (${f.abandoned_in_progress||0} ta jarayonda)</h3>
+        ${stepRows}
+      </div>`;
   },
 
   // ============================================================
