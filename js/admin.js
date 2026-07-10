@@ -1300,10 +1300,14 @@ const Admin = {
     document.body.className = 'admin-body';
     this.root.innerHTML = this.shell('settings', this.loadingBlock());
     try {
-      const s = await AdminAPI.settings();
+      const [s, backups] = await Promise.all([
+        AdminAPI.settings(),
+        AdminAPI.backupList().catch(() => ({ items: [] })),
+      ]);
       const maintenance = !!s.maintenance_mode;
       const renewal = s.renewal_enabled !== false;
       const reqLicense = s.require_driver_license === true;
+      this._backups = backups.items || [];
       const content = `
         <h1 class="adm-h1">Sozlamalar</h1>
 
@@ -1371,6 +1375,15 @@ const Admin = {
           <div id="testiList">${this.renderTestimonialRows(Array.isArray(s.testimonials) ? s.testimonials : [])}</div>
           <button class="btn btn-outline btn-sm" style="margin-top:10px" onclick="Admin.addTestimonialRow()">+ Sharh qo'shish</button>
           <button class="btn btn-primary btn-sm" style="margin-top:10px" onclick="Admin.saveTestimonials()">Saqlash</button>
+        </div>
+
+        <div class="adm-card setting-card" style="max-width:600px">
+          <div class="setting-txt" style="margin-bottom:12px">
+            <h3>Zaxira nusxa (backup)</h3>
+            <p>Ma'lumotlar bazasi har kuni avtomatik serverning o'z diskiga saqlanadi (oxirgi 14 kun). Tashqi joyga (kompyuteringizga) saqlab qo'yish uchun quyidagidan yuklab oling.</p>
+          </div>
+          <button class="btn btn-outline btn-sm" id="bkRunBtn" onclick="Admin.backupRun()">${I.refresh} Hozir zaxira olish</button>
+          <div id="bkList" style="margin-top:14px">${this.renderBackupList()}</div>
         </div>`;
       this.root.innerHTML = this.shell('settings', content);
     } catch (e) {
@@ -1439,6 +1452,37 @@ const Admin = {
       el.className = 'toggle ' + (enabled?'on':'');
       el.setAttribute('onclick', `Admin.toggleDriverLicense(${!enabled})`);
       toast(enabled?'Guvohnoma so\'raladi':'Guvohnoma so\'ralmaydi', 'ok');
+    } catch (e) { toast(e.message, 'err'); }
+  },
+  renderBackupList() {
+    const items = this._backups || [];
+    if (!items.length) return `<p class="muted-text">Hozircha zaxira nusxa yo'q</p>`;
+    return `<div class="bonus-list">${items.map(b => `
+      <div class="bonus-user-row">
+        <div><b>${esc(b.name)}</b><span>${fmtDate(b.createdAt)} · ${b.sizeKb} KB</span></div>
+        <button class="btn btn-ghost btn-sm" onclick="Admin.backupDownload('${b.name}')">${I.download}</button>
+      </div>`).join('')}</div>`;
+  },
+  async backupRun() {
+    const btn = document.getElementById('bkRunBtn');
+    setLoading(btn, true, 'Olinmoqda...');
+    try {
+      await AdminAPI.backupRun();
+      toast('Zaxira nusxa olindi', 'ok');
+      this.viewSettings();
+    } catch (e) {
+      setLoading(btn, false);
+      toast(e.message, 'err');
+    }
+  },
+  async backupDownload(name) {
+    try {
+      const blob = await AdminAPI.backupDownload(name);
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url; a.download = name;
+      document.body.appendChild(a); a.click(); a.remove();
+      URL.revokeObjectURL(url);
     } catch (e) { toast(e.message, 'err'); }
   },
 
