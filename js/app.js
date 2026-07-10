@@ -902,7 +902,7 @@ const App = {
     try {
       const r = await ClientAPI.notifications(this.user.phone);
       const list = Array.isArray(r) ? r : (r.items || r.notifications || []);
-      this.notifCount = list.filter(n => !n.read).length;
+      this.notifCount = list.filter(n => !n.is_read).length;
       // badge yangilash
       document.querySelectorAll('.bn-badge').forEach(b => {});
     } catch {}
@@ -2012,17 +2012,24 @@ const App = {
       if (!list.length) {
         box.innerHTML = this.emptyBlock(I.bell, 'Bildirishnoma yo\'q', 'Yangiliklar shu yerda ko\'rinadi');
       } else {
-        list.sort((a,b)=> new Date(b.created_at||0) - new Date(a.created_at||0));
-        box.innerHTML = list.map(n => `
-          <div class="notif-item ${n.read?'':'unread'}" ${n.app_id?`onclick="App.go('/status/${n.app_id}')"`:''}>
+        list.sort((a,b)=> new Date(b.created_at||b.createdAt||0) - new Date(a.created_at||a.createdAt||0));
+        box.innerHTML = list.map(n => {
+          const d = n.data || {};
+          const appId = n.app_id || d.app_id;
+          const media = d.image ? `<img class="ni-media" src="${esc(d.image)}" onclick="event.stopPropagation()">`
+            : d.video ? `<video class="ni-media" src="${esc(d.video)}" controls onclick="event.stopPropagation()"></video>` : '';
+          return `
+          <div class="notif-item ${n.is_read?'':'unread'}" ${appId?`onclick="App.go('/status/${appId}')"`:''}>
             <div class="ni-ic">${I.bell}</div>
             <div class="ni-body">
               <h4>${esc(n.title||'Bildirishnoma')}</h4>
               <p>${esc(n.message||n.body||'')}</p>
-              <span class="ni-time">${fmtDate(n.created_at)}</span>
+              ${media}
+              <span class="ni-time">${fmtDate(n.created_at||n.createdAt)}</span>
             </div>
-            ${n.read?'':'<span class="ni-dot"></span>'}
-          </div>`).join('');
+            ${n.is_read?'':'<span class="ni-dot"></span>'}
+          </div>`;
+        }).join('');
       }
       // o'qilgan deb belgilash
       ClientAPI.markRead(this.user.phone).catch(()=>{});
