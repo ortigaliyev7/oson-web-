@@ -45,11 +45,45 @@ const App = {
       }
     });
     await this.initTelegramWebApp();
+    this.initTheme();
 
     this.route();
     this.loadSettings();
     this.initPWA();
     if (this.isAuthed && this.isAuthed()) this.initSocket();
+  },
+
+  // === TEMA VA RANG — yorug'/quyuq + accent rang tanlovi ===
+  initTheme() {
+    this.applyTheme();
+    if (window.matchMedia) {
+      matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () => {
+        if (this.getThemePref() === 'system') this.applyTheme();
+      });
+    }
+  },
+  getThemePref() { return localStorage.getItem('oson_theme') || 'system'; },
+  getAccentPref() { return localStorage.getItem('oson_accent') || 'green'; },
+  applyTheme() {
+    const t = this.getThemePref();
+    const resolved = t === 'system' ? (matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light') : t;
+    document.documentElement.setAttribute('data-theme', resolved);
+    document.documentElement.setAttribute('data-accent', this.getAccentPref());
+    try {
+      const meta = document.querySelector('meta[name="theme-color"]');
+      const accent = getComputedStyle(document.documentElement).getPropertyValue('--green-700').trim();
+      if (meta && accent) meta.setAttribute('content', accent);
+    } catch (e) {}
+  },
+  setTheme(t) {
+    localStorage.setItem('oson_theme', t);
+    this.applyTheme();
+    this.viewProfile();
+  },
+  setAccent(a) {
+    localStorage.setItem('oson_accent', a);
+    this.applyTheme();
+    this.viewProfile();
   },
 
   // === TELEGRAM MINI APP — botda ulangan mijozni avtomatik kirg'izish ===
@@ -2122,6 +2156,14 @@ const App = {
     document.body.className = '';
     const u = this.user || {};
     const name = u.name || u.full_name || '';
+    const theme = this.getThemePref();
+    const accent = this.getAccentPref();
+    const ACCENTS = [
+      ['green',  '#14856A', 'Yashil'],
+      ['blue',   '#1768AC', "Ko'k"],
+      ['purple', '#6C36AC', 'Binafsha'],
+      ['orange', '#A84E14', 'Olovrang'],
+    ];
     this.root.innerHTML = this.topbar('Profil') + `
       <div class="app-shell"><div class="wrap app-main app-view">
         <div class="profile-head">
@@ -2145,6 +2187,26 @@ const App = {
             <div class="psi-ic" style="background:#F3E8FF;color:#6B21A8">${I.help}</div>
             <div class="psi-body"><h4>Yordam</h4><p>Savol va aloqa</p></div>
             ${I.arrowRight}
+          </div>
+        </div>
+
+        <div class="profile-section appearance-card">
+          <h4 class="ps-title">Ko'rinish</h4>
+          <div class="appear-row">
+            <span class="appear-lab">Tema</span>
+            <div class="cc-toggle theme-pills">
+              <button class="cc-opt ${theme==='light'?'on':''}" onclick="App.setTheme('light')">Yorug'</button>
+              <button class="cc-opt ${theme==='dark'?'on':''}" onclick="App.setTheme('dark')">Quyuq</button>
+              <button class="cc-opt ${theme==='system'?'on':''}" onclick="App.setTheme('system')">Tizim</button>
+            </div>
+          </div>
+          <div class="appear-row">
+            <span class="appear-lab">Rang</span>
+            <div class="accent-swatches">
+              ${ACCENTS.map(([id, hex, lab]) => `
+                <button class="accent-dot ${accent===id?'sel':''}" style="background:${hex}" onclick="App.setAccent('${id}')" aria-label="${lab}" title="${lab}">${accent===id?I.check:''}</button>
+              `).join('')}
+            </div>
           </div>
         </div>
 
