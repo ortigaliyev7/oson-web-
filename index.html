@@ -5,9 +5,6 @@
   <script>
   (function(){
     try {
-      var t = localStorage.getItem('oson_theme') || 'system';
-      var resolved = t === 'system' ? (matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light') : t;
-      document.documentElement.setAttribute('data-theme', resolved);
       document.documentElement.setAttribute('data-accent', localStorage.getItem('oson_accent') || 'green');
     } catch (e) {}
   })();

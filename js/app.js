@@ -53,32 +53,18 @@ const App = {
     if (this.isAuthed && this.isAuthed()) this.initSocket();
   },
 
-  // === TEMA VA RANG — yorug'/quyuq + accent rang tanlovi ===
+  // === RANG — accent rang tanlovi ===
   initTheme() {
     this.applyTheme();
-    if (window.matchMedia) {
-      matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () => {
-        if (this.getThemePref() === 'system') this.applyTheme();
-      });
-    }
   },
-  getThemePref() { return localStorage.getItem('oson_theme') || 'system'; },
   getAccentPref() { return localStorage.getItem('oson_accent') || 'green'; },
   applyTheme() {
-    const t = this.getThemePref();
-    const resolved = t === 'system' ? (matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light') : t;
-    document.documentElement.setAttribute('data-theme', resolved);
     document.documentElement.setAttribute('data-accent', this.getAccentPref());
     try {
       const meta = document.querySelector('meta[name="theme-color"]');
       const accent = getComputedStyle(document.documentElement).getPropertyValue('--green-700').trim();
       if (meta && accent) meta.setAttribute('content', accent);
     } catch (e) {}
-  },
-  setTheme(t) {
-    localStorage.setItem('oson_theme', t);
-    this.applyTheme();
-    this.viewProfile();
   },
   setAccent(a) {
     localStorage.setItem('oson_accent', a);
@@ -2156,7 +2142,6 @@ const App = {
     document.body.className = '';
     const u = this.user || {};
     const name = u.name || u.full_name || '';
-    const theme = this.getThemePref();
     const accent = this.getAccentPref();
     const ACCENTS = [
       ['green',  '#14856A', 'Yashil'],
@@ -2192,14 +2177,6 @@ const App = {
 
         <div class="profile-section appearance-card">
           <h4 class="ps-title">Ko'rinish</h4>
-          <div class="appear-row">
-            <span class="appear-lab">Tema</span>
-            <div class="cc-toggle theme-pills">
-              <button class="cc-opt ${theme==='light'?'on':''}" onclick="App.setTheme('light')">Yorug'</button>
-              <button class="cc-opt ${theme==='dark'?'on':''}" onclick="App.setTheme('dark')">Quyuq</button>
-              <button class="cc-opt ${theme==='system'?'on':''}" onclick="App.setTheme('system')">Tizim</button>
-            </div>
-          </div>
           <div class="appear-row">
             <span class="appear-lab">Rang</span>
             <div class="accent-swatches">

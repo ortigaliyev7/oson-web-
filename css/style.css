@@ -46,30 +46,7 @@
   --maxw: 1180px;
 }
 
-:root { color-scheme: light; }
-:root[data-theme="dark"] { color-scheme: dark; }
-
-/* ===== Quyuq tema (dark) — neytrallar va soyalar ===== */
-:root[data-theme="dark"] {
-  --ink:    #EAF3EF;
-  --ink-2:  #AEC4BC;
-  --muted:  #7E9990;
-  --line:   #223832;
-  --line-2: #2C463E;
-  --paper:  #0B1512;
-  --card:   #101E19;
-
-  --gold:   #E0BB4A;
-  --gold-l: #3A2E0A;
-
-  --danger-l: #3A1414;
-
-  --shadow-sm: 0 1px 3px rgba(0,0,0,.28), 0 1px 2px rgba(0,0,0,.18);
-  --shadow:    0 4px 24px rgba(0,0,0,.36), 0 1px 4px rgba(0,0,0,.2);
-  --shadow-lg: 0 16px 48px rgba(0,0,0,.46), 0 4px 12px rgba(0,0,0,.26);
-}
-
-/* ===== Rang variantlari — asosiy (accent) rang, tema o'qidan mustaqil ===== */
+/* ===== Rang variantlari — asosiy (accent) rang ===== */
 :root[data-accent="blue"] {
   --green-900: #0B3159; --green-800: #0D3E6E; --green-700: #12538D;
   --green-600: #1768AC; --green-500: #1D77BE; --green-300: #86BEE0;
@@ -741,7 +718,6 @@ img, svg { display:block; max-width:100%; }
 .appear-row{display:flex;align-items:center;justify-content:space-between;gap:12px}
 .appear-row+.appear-row{margin-top:16px}
 .appear-lab{font-size:14px;color:var(--ink-2);font-weight:500;flex-shrink:0}
-.theme-pills{flex:1;max-width:260px}
 .accent-swatches{display:flex;gap:10px}
 .accent-dot{width:30px;height:30px;border-radius:50%;border:2px solid transparent;cursor:pointer;display:flex;align-items:center;justify-content:center;color:#fff;transition:transform .15s,border-color .15s;padding:0}
 .accent-dot svg{width:15px;height:15px}
@@ -974,7 +950,6 @@ body.no-scroll{overflow:hidden}
 /* "Kuting..." o'tish indikatori */
 .step-loading{position:fixed;inset:0;z-index:2000;display:flex;align-items:center;justify-content:center;
   background:rgba(246,250,248,.55);opacity:0;pointer-events:none;transition:opacity .15s}
-:root[data-theme="dark"] .step-loading{background:rgba(11,21,18,.6)}
 .step-loading.show{opacity:1}
 .sl-box{display:flex;flex-direction:column;align-items:center;gap:12px;padding:22px 30px;
   background:var(--card);border-radius:16px;box-shadow:0 12px 40px rgba(15,40,30,.18);font-size:14px;font-weight:600;color:var(--ink-2)}
@@ -1099,7 +1074,6 @@ body.no-scroll{overflow:hidden}
 .bx-contact-note .bcn-txt{flex:1;min-width:0}
 .bx-contact-note .bcn-txt b{display:block;font-size:13.5px;color:var(--ink)}
 .bx-contact-note .bcn-txt span{font-size:12.5px;color:#8A6D1A;font-weight:700}
-:root[data-theme="dark"] .bx-contact-note .bcn-txt span{color:#E0BB4A}
 .bx-contact-note .bcn-arrow{width:20px;height:20px;flex-shrink:0;color:var(--gold)}
 .bx-link{display:flex;gap:8px;margin-bottom:12px}
 .bx-link .inp{flex:1;font-size:12.5px}
@@ -1132,7 +1106,6 @@ body.no-scroll{overflow:hidden}
 .toggle.on .toggle-knob{left:25px}
 
 .pay-sms-note{display:flex;align-items:center;gap:12px;padding:16px;margin-bottom:16px;background:var(--gold-l);color:#92400E;border-radius:var(--r-lg);font-size:14px;font-weight:600}
-:root[data-theme="dark"] .pay-sms-note{color:#E0BB4A}
 .pay-sms-note svg{width:22px;height:22px;flex-shrink:0}
 
 /* Haydovchi hujjat turi (ID karta / biometrik pasport) */
