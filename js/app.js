@@ -284,8 +284,25 @@ const App = {
     const price = getPrice(veh, region, '1 yil cheklovli') || 0;
     let amount = rate.mode === 'fixed' ? (+rate.value||0) : Math.round(price * (+rate.value||0) / 100);
     const out = document.getElementById('bcResult');
-    if (out) out.innerHTML = `Har do'st uchun: <b>${fmtSom(amount)}</b>` +
-      (rate.mode==='percent' ? ` <span class="bc-note">(1 yillik polisdan, ${rate.value}%)</span>` : '');
+    if (!out) return;
+    const themeClass = via === 'direct' ? 'ac-gold' : 'ac-green';
+    const badge = via === 'direct' ? '🎁 TAXMINIY BONUS' : '💰 TAXMINIY BONUS';
+    const lab = via === 'direct' ? "Bu turdagi sug'urta uchun taxminan" : "Har bir do'st uchun taxminan";
+    const sub = via === 'direct'
+      ? "To'g'ridan-to'g'ri sug'urta qilib bersangiz"
+      : `1 yillik polisdan${rate.mode==='percent' ? ` (${rate.value}%)` : ''}`;
+    out.innerHTML = `
+      <div class="bonus-amount-card ${themeClass}">
+        <div class="dbc-badge">${badge}</div>
+        <div class="dbc-top">
+          <div class="dbc-ic">${I.trophy}</div>
+          <div class="dbc-txt">
+            <span class="dbc-lab">${lab}</span>
+            <b class="dbc-amt">${fmtSom(amount)}</b>
+            <span class="dbc-sub">${sub}</span>
+          </div>
+        </div>
+      </div>`;
   },
   async shareRef() {
     const link = this.refShareLink();
@@ -1737,7 +1754,7 @@ const App = {
       if (!box.isConnected) return; // foydalanuvchi "O'zim uchun"ga qaytgan bo'lishi mumkin
       if (!est.enabled || !est.amount) { box.innerHTML = ''; return; }
       box.innerHTML = `
-        <div class="direct-bonus-card">
+        <div class="bonus-amount-card ac-gold">
           <div class="dbc-badge">🎁 SIZGA BONUS</div>
           <div class="dbc-top">
             <div class="dbc-ic">${I.trophy}</div>

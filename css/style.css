@@ -1002,21 +1002,25 @@ body.no-scroll{overflow:hidden}
 .bonus-promo .bp-step.bp-key b{color:#FFD65A}
 @media (prefers-reduced-motion: reduce){.bonus-promo::before,.bonus-promo .bp-ic{animation:none}}
 
-/* "Boshqa odam uchun" tanlanganda — shu ariza uchun bonus, yorqin va alohida */
-.direct-bonus-card{position:relative;overflow:hidden;margin-top:14px;padding:16px;border-radius:18px;background:linear-gradient(135deg,#F6A609,#E08A00 55%,#C97300);color:#fff;box-shadow:0 10px 26px rgba(224,138,0,.35),inset 0 1px 0 rgba(255,255,255,.2);animation:dbcPop .35s cubic-bezier(.2,.9,.3,1.3)}
-.direct-bonus-card::before{content:'';position:absolute;inset:0;background:linear-gradient(115deg,transparent 30%,rgba(255,255,255,.22) 45%,transparent 60%);background-size:250% 250%;animation:dbcShine 4.5s ease-in-out infinite;pointer-events:none}
-.direct-bonus-card .dbc-badge{position:absolute;top:12px;right:14px;font-size:10px;font-weight:800;letter-spacing:.03em;background:rgba(255,255,255,.22);padding:4px 9px;border-radius:99px;z-index:1}
-.direct-bonus-card .dbc-top{display:flex;align-items:center;gap:13px;position:relative;z-index:1;padding-right:64px}
-.direct-bonus-card .dbc-ic{width:42px;height:42px;flex-shrink:0;display:flex;align-items:center;justify-content:center;background:rgba(255,255,255,.22);border-radius:13px;animation:dbcIconPulse 2.2s ease-in-out infinite}
-.direct-bonus-card .dbc-ic svg{width:24px;height:24px}
-.direct-bonus-card .dbc-txt{display:flex;flex-direction:column;gap:1px}
-.direct-bonus-card .dbc-lab{font-size:12px;opacity:.92}
-.direct-bonus-card .dbc-amt{font-family:'Sora',sans-serif;font-size:22px;font-weight:800;line-height:1.25}
-.direct-bonus-card .dbc-sub{font-size:11.5px;opacity:.88;line-height:1.35}
+/* Bonus summasi kartasi — "Boshqa odam uchun" preview VA kalkulyator natijasi
+   uchun bir xil, yorqin, animatsiyali dizayn. Rang bonus turiga qarab o'zgaradi:
+   .ac-gold = to'g'ridan-to'g'ri, .ac-green = taklif havolasi */
+.bonus-amount-card{position:relative;overflow:hidden;margin-top:14px;padding:16px;border-radius:18px;color:#fff;animation:dbcPop .35s cubic-bezier(.2,.9,.3,1.3)}
+.bonus-amount-card.ac-gold{background:linear-gradient(135deg,#F6A609,#E08A00 55%,#C97300);box-shadow:0 10px 26px rgba(224,138,0,.35),inset 0 1px 0 rgba(255,255,255,.2)}
+.bonus-amount-card.ac-green{background:linear-gradient(135deg,#12987A,#0B6B54 60%,#0A5A46);box-shadow:0 10px 26px rgba(15,110,86,.35),inset 0 1px 0 rgba(255,255,255,.2)}
+.bonus-amount-card::before{content:'';position:absolute;inset:0;background:linear-gradient(115deg,transparent 30%,rgba(255,255,255,.22) 45%,transparent 60%);background-size:250% 250%;animation:dbcShine 4.5s ease-in-out infinite;pointer-events:none}
+.bonus-amount-card .dbc-badge{position:absolute;top:12px;right:14px;font-size:10px;font-weight:800;letter-spacing:.03em;background:rgba(255,255,255,.22);padding:4px 9px;border-radius:99px;z-index:1}
+.bonus-amount-card .dbc-top{display:flex;align-items:center;gap:13px;position:relative;z-index:1;padding-right:64px}
+.bonus-amount-card .dbc-ic{width:42px;height:42px;flex-shrink:0;display:flex;align-items:center;justify-content:center;background:rgba(255,255,255,.22);border-radius:13px;animation:dbcIconPulse 2.2s ease-in-out infinite}
+.bonus-amount-card .dbc-ic svg{width:24px;height:24px}
+.bonus-amount-card .dbc-txt{display:flex;flex-direction:column;gap:1px}
+.bonus-amount-card .dbc-lab{font-size:12px;opacity:.92}
+.bonus-amount-card .dbc-amt{font-family:'Sora',sans-serif;font-size:22px;font-weight:800;line-height:1.25}
+.bonus-amount-card .dbc-sub{font-size:11.5px;opacity:.88;line-height:1.35}
 @keyframes dbcShine{0%{background-position:200% 0}100%{background-position:-50% 0}}
 @keyframes dbcIconPulse{0%,100%{transform:scale(1)}50%{transform:scale(1.1)}}
 @keyframes dbcPop{0%{opacity:0;transform:translateY(-6px) scale(.97)}100%{opacity:1;transform:translateY(0) scale(1)}}
-@media (prefers-reduced-motion: reduce){.direct-bonus-card,.direct-bonus-card::before,.direct-bonus-card .dbc-ic{animation:none}}
+@media (prefers-reduced-motion: reduce){.bonus-amount-card,.bonus-amount-card::before,.bonus-amount-card .dbc-ic{animation:none}}
 .bx-balance{background:linear-gradient(135deg,#0F8A6B,#0B6B54);color:#fff;border-radius:18px;padding:22px;text-align:center;margin-bottom:16px}
 .bx-bal-lab{font-size:14px;opacity:.9}
 .bx-bal-val{font-family:'Sora',sans-serif;font-size:34px;font-weight:800;margin:4px 0}
