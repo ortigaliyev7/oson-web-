@@ -135,6 +135,17 @@ const AdminAPI = {
   broadcastList:   () => req('/broadcast/admin', { token: adminToken() }),
   broadcastSend:   (formData) => req('/broadcast/admin', { method:'POST', body: formData, isForm:true, token: adminToken(), timeout: 60000 }),
   broadcastDelete: (id) => req(`/broadcast/admin/${id}`, { method:'DELETE', token: adminToken() }),
+
+  // --- Zaxira nusxa (backup) ---
+  backupList: () => req('/backup/list', { token: adminToken() }),
+  backupRun:  () => req('/backup/run', { method:'POST', token: adminToken(), timeout: 30000 }),
+  backupDownload: async (name) => {
+    const res = await fetch(`${API_BASE}/api/backup/download/${encodeURIComponent(name)}`, {
+      headers: { Authorization: `Bearer ${adminToken()}` },
+    });
+    if (!res.ok) throw new Error('Yuklab bo\'lmadi (' + res.status + ')');
+    return res.blob();
+  },
 };
 
 /* ---------- GROSS ROBOT (osago.gross.uz) ---------- */
