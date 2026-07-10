@@ -82,6 +82,9 @@ const ClientAPI = {
 
   // Ariza yuborish (multipart FormData)
   submitApp: (formData) => req('/apps', { method:'POST', body: formData, isForm: true }),
+
+  // Mijoz sharhi (polis tayyor bo'lgach)
+  submitReview: (data) => req('/reviews', { method:'POST', body: data }),
 };
 
 /* ---------- ADMIN AUTH ---------- */
@@ -146,6 +149,11 @@ const AdminAPI = {
     if (!res.ok) throw new Error('Yuklab bo\'lmadi (' + res.status + ')');
     return res.blob();
   },
+
+  // --- Mijoz sharhlari (moderatsiya) ---
+  reviewsList:   () => req('/reviews/admin', { token: adminToken() }),
+  reviewApprove: (id) => req(`/reviews/admin/${id}/approve`, { method:'POST', token: adminToken() }),
+  reviewReject:  (id) => req(`/reviews/admin/${id}/reject`, { method:'POST', token: adminToken() }),
 };
 
 /* ---------- GROSS ROBOT (osago.gross.uz) ---------- */

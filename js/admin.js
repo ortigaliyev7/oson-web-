@@ -1300,14 +1300,16 @@ const Admin = {
     document.body.className = 'admin-body';
     this.root.innerHTML = this.shell('settings', this.loadingBlock());
     try {
-      const [s, backups] = await Promise.all([
+      const [s, backups, reviews] = await Promise.all([
         AdminAPI.settings(),
         AdminAPI.backupList().catch(() => ({ items: [] })),
+        AdminAPI.reviewsList().catch(() => ({ items: [] })),
       ]);
       const maintenance = !!s.maintenance_mode;
       const renewal = s.renewal_enabled !== false;
       const reqLicense = s.require_driver_license === true;
       this._backups = backups.items || [];
+      const pendingReviews = (reviews.items || []).filter(r => r.status === 'pending');
       const content = `
         <h1 class="adm-h1">Sozlamalar</h1>
 
@@ -1365,6 +1367,14 @@ const Admin = {
             <input class="inp" id="supportTg" value="${esc(s.contact_admin_tg_url||'')}" placeholder="https://t.me/online_sugurtambot">
           </div>
           <button class="btn btn-primary btn-sm" style="margin-top:12px" onclick="Admin.saveSupportTg()">Saqlash</button>
+        </div>
+
+        <div class="adm-card setting-card" style="max-width:600px">
+          <div class="setting-txt" style="margin-bottom:12px">
+            <h3>Yangi sharhlar (tasdiqlash kutmoqda) ${pendingReviews.length ? `<span class="flag-badge">${pendingReviews.length}</span>` : ''}</h3>
+            <p>Mijozlar polis tayyor bo'lgach avtomatik so'ralgan sharhlar. Tasdiqlansa, pastdagi ro'yxatga qo'shiladi.</p>
+          </div>
+          <div id="pendingReviewsList">${this.renderPendingReviews(pendingReviews)}</div>
         </div>
 
         <div class="adm-card setting-card" style="max-width:600px">
@@ -1452,6 +1462,33 @@ const Admin = {
       el.className = 'toggle ' + (enabled?'on':'');
       el.setAttribute('onclick', `Admin.toggleDriverLicense(${!enabled})`);
       toast(enabled?'Guvohnoma so\'raladi':'Guvohnoma so\'ralmaydi', 'ok');
+    } catch (e) { toast(e.message, 'err'); }
+  },
+  renderPendingReviews(items) {
+    if (!items.length) return `<p class="muted-text">Hozircha yangi sharh yo'q</p>`;
+    return items.map(r => `
+      <div class="pending-review-row">
+        <div class="prr-stars">${'★'.repeat(r.rating)}${'☆'.repeat(5-r.rating)}</div>
+        ${r.text ? `<p class="prr-text">"${esc(r.text)}"</p>` : `<p class="prr-text muted-text">Matnsiz, faqat baho</p>`}
+        <div class="prr-meta">${esc(r.name||'Mijoz')} · ${fmtPhone(r.phone)} · ${fmtDate(r.createdAt)}</div>
+        <div class="prr-actions">
+          <button class="btn btn-primary btn-sm" onclick="Admin.reviewApprove('${r._id}')">Tasdiqlash</button>
+          <button class="btn btn-ghost btn-sm" onclick="Admin.reviewReject('${r._id}')">Rad etish</button>
+        </div>
+      </div>`).join('');
+  },
+  async reviewApprove(id) {
+    try {
+      await AdminAPI.reviewApprove(id);
+      toast('Tasdiqlandi va saytga qo\'shildi', 'ok');
+      this.viewSettings();
+    } catch (e) { toast(e.message, 'err'); }
+  },
+  async reviewReject(id) {
+    try {
+      await AdminAPI.reviewReject(id);
+      toast('Rad etildi', 'ok');
+      this.viewSettings();
     } catch (e) { toast(e.message, 'err'); }
   },
   renderBackupList() {

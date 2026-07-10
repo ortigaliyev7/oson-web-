@@ -621,6 +621,10 @@ img, svg { display:block; max-width:100%; }
 .status-banner h3{font-size:19px;font-weight:700;color:var(--ink);margin-bottom:3px}
 .status-banner p{font-size:13.5px;color:var(--ink-2)}
 
+.review-card{background:var(--card);border:1.5px solid var(--line);border-radius:var(--r-lg);padding:18px 20px;margin-top:18px}
+.review-stars{display:flex;gap:6px;margin-bottom:12px}
+.rv-star{font-size:30px;line-height:1;color:var(--line-2);cursor:pointer;transition:color .12s,transform .12s}
+.rv-star.on{color:var(--gold);transform:scale(1.1)}
 .status-meta-card{background:var(--card);border:1.5px solid var(--line);border-radius:var(--r-lg);padding:16px 20px;margin-bottom:16px}
 .smc-row{display:flex;justify-content:space-between;align-items:center;padding:8px 0;font-size:14.5px}
 .smc-row span{color:var(--muted)}
@@ -1121,5 +1125,6 @@ body.no-scroll{overflow:hidden}
 .testimonials{display:flex;gap:12px;margin-top:14px;overflow-x:auto;padding-bottom:4px;scrollbar-width:none}
 .testimonials::-webkit-scrollbar{display:none}
 .testimonial-card{flex:0 0 78%;padding:14px 16px;background:var(--card);border:1px solid var(--line);border-radius:14px}
+.tc-stars{color:var(--gold);font-size:13px;letter-spacing:1px;margin-bottom:4px}
 .testimonial-card p{font-size:13.5px;color:var(--ink);line-height:1.5;margin-bottom:8px}
 .tc-author{font-size:12px;font-weight:700;color:var(--ink-2)}
