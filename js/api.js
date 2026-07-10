@@ -70,7 +70,7 @@ const ClientAPI = {
 
   // Referral bonus (mijoz)
   refConfig:   () => req('/referral/config'),
-  refEstimate: (region, vehicle, price) => req(`/referral/estimate?region=${encodeURIComponent(region||'')}&vehicle=${encodeURIComponent(vehicle||'')}&price=${encodeURIComponent(price||0)}`),
+  refEstimate: (region, vehicle, price, via) => req(`/referral/estimate?region=${encodeURIComponent(region||'')}&vehicle=${encodeURIComponent(vehicle||'')}&price=${encodeURIComponent(price||0)}&via=${encodeURIComponent(via||'link')}`),
   refUser:     (phone) => req(`/referral/user/${encodeURIComponent(phone)}`),
 
   // Web Push (brauzer bildirishnomasi)

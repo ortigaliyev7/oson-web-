@@ -266,11 +266,20 @@ const App = {
     const digits = String(this.user && this.user.phone || '').replace(/\D/g, '').slice(-9);
     return `https://osugurta.uz/?ref=${digits}`;
   },
+  setBcVia(via) {
+    this._bcVia = via;
+    const l = document.getElementById('bcViaLink'), d = document.getElementById('bcViaDirect');
+    if (l) l.className = 'cc-opt' + (via==='link'?' on':'');
+    if (d) d.className = 'cc-opt' + (via==='direct'?' on':'');
+    this.refCalc();
+  },
   refCalc() {
     const cfg = this._refCfg; if (!cfg) return;
+    const via = this._bcVia === 'direct' ? 'direct' : 'link';
+    const table = via === 'direct' ? cfg.direct_rates : cfg.rates;
     const zone = document.getElementById('bcZone').value;   // tsh | bsh
     const veh  = document.getElementById('bcVeh').value;     // yengil | yuk
-    const rate = (cfg.rates && cfg.rates[`${zone}_${veh}`]) || { mode:'percent', value:0 };
+    const rate = (table && table[`${zone}_${veh}`]) || { mode:'percent', value:0 };
     const region = zone === 'tsh' ? 'Toshkent shahri' : 'Samarqand';
     const price = getPrice(veh, region, '1 yil cheklovli') || 0;
     let amount = rate.mode === 'fixed' ? (+rate.value||0) : Math.round(price * (+rate.value||0) / 100);
@@ -331,6 +340,11 @@ const App = {
           ${completed ? `
             <div class="bx-link"><input class="inp" id="refLink" readonly value="${esc(link)}"><button class="btn btn-primary btn-sm" onclick="App.shareRef()">${I.send} Ulashish</button></div>
             <div class="bx-calc">
+              ${cfg.direct_enabled ? `
+              <div class="cc-toggle bx-via-toggle">
+                <button class="cc-opt on" id="bcViaLink" onclick="App.setBcVia('link')">Taklif havolasi</button>
+                <button class="cc-opt" id="bcViaDirect" onclick="App.setBcVia('direct')">To'g'ridan-to'g'ri</button>
+              </div>` : ''}
               <div class="bx-calc-row">
                 <select class="inp" id="bcZone" onchange="App.refCalc()"><option value="bsh">Viloyat</option><option value="tsh">Toshkent</option></select>
                 <select class="inp" id="bcVeh" onchange="App.refCalc()"><option value="yengil">Yengil avto</option><option value="yuk">Yuk avto</option></select>
@@ -1685,6 +1699,7 @@ const App = {
             <input class="inp" id="otherName" placeholder="Ism Familiya" value="${esc(d.otherName||'')}" oninput="App.draft.otherName=this.value;App.saveDraftSoon()">
           </div>
           <p class="cc-hint">Do'stingiz yoki boshqa odam uchun polis — uning raqamini kiriting</p>
+          <div id="directBonusPreview"></div>
         `}
       </div>
 
@@ -1709,6 +1724,31 @@ const App = {
       <p class="confirm-note">Yuborish orqali siz ma'lumotlaringiz to'g'riligini tasdiqlaysiz</p>
       </div></div>`;
     this.renderBonusDiscount();
+    this.renderDirectBonusPreview();
+  },
+  // "Boshqa odam uchun" tanlanganda — shu ariza uchun olinadigan bonusni yorqin ko'rsatish
+  async renderDirectBonusPreview() {
+    const d = this.draft;
+    const box = document.getElementById('directBonusPreview');
+    if (!box) return;
+    if (d.forSelf !== false) return;
+    try {
+      const est = await ClientAPI.refEstimate(d.region, d.vehicle, d.price, 'direct');
+      if (!box.isConnected) return; // foydalanuvchi "O'zim uchun"ga qaytgan bo'lishi mumkin
+      if (!est.enabled || !est.amount) { box.innerHTML = ''; return; }
+      box.innerHTML = `
+        <div class="direct-bonus-card">
+          <div class="dbc-badge">🎁 SIZGA BONUS</div>
+          <div class="dbc-top">
+            <div class="dbc-ic">${I.trophy}</div>
+            <div class="dbc-txt">
+              <span class="dbc-lab">Bu sug'urta uchun sizga</span>
+              <b class="dbc-amt">${fmtSom(est.amount)}</b>
+              <span class="dbc-sub">polis tayyor bo'lgach bonus balansingizga qo'shiladi</span>
+            </div>
+          </div>
+        </div>`;
+    } catch { box.innerHTML = ''; }
   },
   // Karta to'lovda bonusni chegirma sifatida taklif qilish
   async renderBonusDiscount() {
