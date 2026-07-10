@@ -2,6 +2,16 @@
 <html lang="uz">
 <head>
   <meta charset="UTF-8">
+  <script>
+  (function(){
+    try {
+      var t = localStorage.getItem('oson_theme') || 'system';
+      var resolved = t === 'system' ? (matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light') : t;
+      document.documentElement.setAttribute('data-theme', resolved);
+      document.documentElement.setAttribute('data-accent', localStorage.getItem('oson_accent') || 'green');
+    } catch (e) {}
+  })();
+  </script>
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <meta name="theme-color" content="#0F6E56">
   <title>Oson Sug'urtam — OSAGO avto sug'urtasini onlayn rasmiylashtiring</title>
