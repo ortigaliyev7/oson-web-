@@ -48,6 +48,7 @@ const ClientAPI = {
   sendCode: (phone) => req('/user-auth/send-code', { method:'POST', body:{ phone } }),
   verify:   (phone, code) => req('/user-auth/verify', { method:'POST', body:{ phone, code } }),
   startSession: () => req('/user-auth/start-session', { method:'POST', body:{} }),
+  telegramWebApp: (initData) => req('/user-auth/telegram-webapp', { method:'POST', body:{ initData } }),
   checkSession: (token) => req('/user-auth/session/' + encodeURIComponent(token)),
   ocr: (dataUrl, type) => {
     const fd = new FormData();
