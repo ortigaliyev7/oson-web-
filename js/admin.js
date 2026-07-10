@@ -1469,12 +1469,12 @@ const Admin = {
       };
       const ovRows = ov.items.length ? ov.items.map(u => `
         <div class="bonus-user-row">
-          <div><b>${esc(u.name)}</b><span>${fmtPhone(u.phone)}</span></div>
+          <div onclick="Admin.bonusHistory('${u.phone}','${esc(u.name)}')" style="cursor:pointer"><b>${esc(u.name)}</b><span>${fmtPhone(u.phone)}</span></div>
           <div class="bur-bal">${fmtSom(u.balance)}</div>
           <button class="btn btn-primary btn-sm" onclick="Admin.bonusPayout('${u.phone}', ${u.balance})">To'landi</button>
         </div>`).join('') : `<p class="muted-text" style="padding:14px">Hozircha to'lanadigan bonus yo'q</p>`;
       const rtRows = rt.items.length ? rt.items.map((u,i) => `
-        <div class="bonus-rank-row">
+        <div class="bonus-rank-row" onclick="Admin.bonusHistory('${u.phone}','${esc(u.name)}')" style="cursor:pointer">
           <span class="brk-n">${i+1}</span>
           <div><b>${esc(u.name)}</b><span>${fmtPhone(u.phone)}</span></div>
           <div class="brk-c">${u.referral_count} ta · ${fmtSom(u.total_earned)}</div>
@@ -1577,6 +1577,31 @@ const Admin = {
       toast('To\'landi deb belgilandi', 'ok');
       this.viewBonus();
     } catch (e) { toast(e.message, 'err'); }
+  },
+  async bonusHistory(phone, name) {
+    showModal(`<h3 class="modal-title">${esc(name)} — bonus tarixi</h3><div id="bonusHistBody" style="padding:8px 0">${this.loadingBlock ? this.loadingBlock() : 'Yuklanmoqda...'}</div>
+      <div class="modal-actions"><button class="btn btn-ghost" onclick="closeModal()">Yopish</button></div>`);
+    try {
+      const ub = await ClientAPI.refUser(phone);
+      const txs = ub.transactions || [];
+      const rows = txs.length ? txs.map(t => `
+        <div class="bx-tx">
+          <div><b>${t.type==='earned'?'Bonus qo\'shildi':t.type==='paid'?'To\'lab berildi':t.type==='discount'?'Chegirma':'—'}</b>
+            <span>${fmtDate(t.createdAt)}</span>
+            ${t.note ? `<span class="bx-tx-note">${esc(t.note)}</span>` : ''}</div>
+          <div class="bx-amt ${t.amount<0?'neg':''}">${t.amount>0?'+':''}${fmtSom(Math.abs(t.amount))}</div>
+        </div>`).join('') : `<p class="muted-text" style="text-align:center;padding:16px">Hozircha tranzaksiya yo'q</p>`;
+      const body = document.getElementById('bonusHistBody');
+      if (body) body.innerHTML = `
+        <div style="display:flex;justify-content:space-between;padding:8px 2px 14px;border-bottom:1px solid var(--line);margin-bottom:6px">
+          <span class="muted-text">Balans: <b style="color:var(--ink)">${fmtSom(ub.balance)}</b></span>
+          <span class="muted-text">Jami ishlangan: <b style="color:var(--ink)">${fmtSom(ub.total_earned)}</b></span>
+        </div>
+        ${rows}`;
+    } catch (e) {
+      const body = document.getElementById('bonusHistBody');
+      if (body) body.innerHTML = `<p class="muted-text" style="padding:14px">${esc(e.message)}</p>`;
+    }
   },
 
   // ============================================================

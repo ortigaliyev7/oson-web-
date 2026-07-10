@@ -282,7 +282,8 @@ const App = {
       const txHtml = (ub.transactions||[]).length ? ub.transactions.map(t => `
         <div class="bx-tx">
           <div><b>${t.type==='earned'?'Bonus qo\'shildi':t.type==='paid'?'To\'lab berildi':t.type==='discount'?'Chegirma':'—'}</b>
-            <span>${fmtDate(t.createdAt)}</span></div>
+            <span>${fmtDate(t.createdAt)}</span>
+            ${t.note ? `<span class="bx-tx-note">${esc(t.note)}</span>` : ''}</div>
           <div class="bx-amt ${t.amount<0?'neg':''}">${t.amount>0?'+':''}${fmtSom(Math.abs(t.amount))}</div>
         </div>`).join('') : `<p class="muted-text" style="text-align:center;padding:16px">Hozircha tranzaksiya yo'q</p>`;
 
@@ -1749,7 +1750,10 @@ const App = {
         const rl = localStorage.getItem('oson_ref');
         if (rl && rl !== clientPhone) referredBy = rl;
       }
-      if (referredBy && referredBy !== clientPhone) fd.append('referred_by', referredBy);
+      if (referredBy && referredBy !== clientPhone) {
+        fd.append('referred_by', referredBy);
+        fd.append('referred_via', d.forSelf === false ? 'direct' : 'link');
+      }
       // Bonusni chegirma sifatida (faqat karta to'lovda)
       if (d.forSelf !== false && d.bonus_used > 0 && d.pay_method === 'card') {
         fd.append('bonus_used', String(d.bonus_used));
