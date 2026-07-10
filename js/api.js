@@ -129,6 +129,11 @@ const AdminAPI = {
   refOverview:   () => req('/referral/admin/overview', { token: adminToken() }),
   refRating:     () => req('/referral/admin/rating', { token: adminToken() }),
   refPayout:     (phone) => req(`/referral/admin/payout/${encodeURIComponent(phone)}`, { method:'POST', token: adminToken() }),
+
+  // --- Ommaviy xabar (broadcast) ---
+  broadcastList:   () => req('/broadcast/admin', { token: adminToken() }),
+  broadcastSend:   (formData) => req('/broadcast/admin', { method:'POST', body: formData, isForm:true, token: adminToken(), timeout: 60000 }),
+  broadcastDelete: (id) => req(`/broadcast/admin/${id}`, { method:'DELETE', token: adminToken() }),
 };
 
 /* ---------- GROSS ROBOT (osago.gross.uz) ---------- */

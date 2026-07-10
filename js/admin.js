@@ -86,6 +86,7 @@ const Admin = {
       case 'staff':   return this.viewStaff();
       case 'paymethods': return this.viewPayMethods();
       case 'bonus':   return this.viewBonus();
+      case 'broadcast': return this.viewBroadcast();
       case 'settings': return this.viewSettings();
       case 'profile': return this.viewProfile();
       default:        return this.go('/apps');
@@ -160,6 +161,7 @@ const Admin = {
     if (this.admin.role === 'head') {
       nav.push({ k:'paymethods', ic:I.card, lab:"To'lov usullari", path:'/paymethods' });
       nav.push({ k:'bonus', ic:I.trophy, lab:'Bonuslar', path:'/bonus' });
+      nav.push({ k:'broadcast', ic:I.bell, lab:'Xabarnoma', path:'/broadcast' });
       nav.push({ k:'settings', ic:I.settings, lab:'Sozlamalar', path:'/settings' });
     }
     nav.push({ k:'profile', ic:I.user, lab:'Profil', path:'/profile' });
@@ -1602,6 +1604,84 @@ const Admin = {
       const body = document.getElementById('bonusHistBody');
       if (body) body.innerHTML = `<p class="muted-text" style="padding:14px">${esc(e.message)}</p>`;
     }
+  },
+
+  // ============================================================
+  // OMMAVIY XABAR (BROADCAST)
+  // ============================================================
+  async viewBroadcast() {
+    this.root.innerHTML = this.shell('broadcast', this.loadingBlock());
+    try {
+      const list = await AdminAPI.broadcastList();
+      this._broadcasts = list.items || [];
+      const content = `
+        <h1 class="adm-h1">Ommaviy xabar</h1>
+
+        <div class="adm-card setting-card" style="max-width:640px">
+          <h3 class="adm-card-title">Yangi xabar yuborish</h3>
+          <p style="color:var(--ink-2);font-size:13px;margin-bottom:12px">Barcha ro'yxatdan o'tgan mijozlarga yuboriladi (ilova ichi + Telegram)</p>
+          <div class="field"><label>Sarlavha</label><input class="inp" id="bcTitle" placeholder="Masalan: Yangi aksiya!"></div>
+          <div class="field"><label>Matn</label><textarea class="inp" id="bcMessage" rows="4" placeholder="Xabar matni..."></textarea></div>
+          <div class="field"><label>Rasm (ixtiyoriy)</label><input class="inp" type="file" id="bcImage" accept="image/*"></div>
+          <div class="field"><label>Qisqa video (ixtiyoriy)</label><input class="inp" type="file" id="bcVideo" accept="video/*"></div>
+          <div class="field"><label>Video havolasi (ixtiyoriy)</label><input class="inp" id="bcVideoUrl" placeholder="https://..."></div>
+          <button class="btn btn-primary" style="margin-top:14px" id="bcSendBtn" onclick="Admin.broadcastSend()">${I.send} Yuborish</button>
+        </div>
+
+        <div class="adm-card" style="max-width:640px">
+          <h3 class="adm-card-title">Yuborilgan xabarlar (${this._broadcasts.length})</h3>
+          <div id="bcList">${this.renderBroadcastList()}</div>
+        </div>`;
+      this.root.innerHTML = this.shell('broadcast', content);
+    } catch (e) {
+      this.root.innerHTML = this.shell('broadcast', this.errorBlock(e.message));
+    }
+  },
+  renderBroadcastList() {
+    const list = this._broadcasts || [];
+    if (!list.length) return `<p class="muted-text" style="padding:14px">Hozircha xabar yuborilmagan</p>`;
+    return list.map(b => `
+      <div class="broadcast-row">
+        ${b.image ? `<img class="broadcast-thumb" src="${grossFileUrl(b.image)}">` : (b.video ? `<video class="broadcast-thumb" src="${grossFileUrl(b.video)}" muted></video>` : '')}
+        <div class="broadcast-info">
+          <b>${esc(b.title)}</b>
+          <span>${esc((b.message||'').slice(0,80))}${(b.message||'').length>80?'…':''}</span>
+          <span class="muted-text">${fmtDate(b.createdAt)} · ${b.sent_count||0} ta mijozga yuborildi</span>
+        </div>
+        <button class="btn btn-ghost btn-sm" onclick="Admin.broadcastDelete('${b._id}')">${I.x}</button>
+      </div>`).join('');
+  },
+  async broadcastSend() {
+    const title = document.getElementById('bcTitle').value.trim();
+    const message = document.getElementById('bcMessage').value.trim();
+    if (!title || !message) return toast('Sarlavha va matnni kiriting', 'err');
+    const imageFile = document.getElementById('bcImage').files[0];
+    const videoFile = document.getElementById('bcVideo').files[0];
+    const videoUrl = document.getElementById('bcVideoUrl').value.trim();
+    const btn = document.getElementById('bcSendBtn');
+    setLoading(btn, true, 'Yuborilmoqda...');
+    try {
+      const fd = new FormData();
+      fd.append('title', title);
+      fd.append('message', message);
+      if (imageFile) fd.append('image', imageFile);
+      if (videoFile) fd.append('video', videoFile);
+      if (videoUrl) fd.append('video_url', videoUrl);
+      await AdminAPI.broadcastSend(fd);
+      toast('Xabar yuborilmoqda', 'ok');
+      this.viewBroadcast();
+    } catch (e) {
+      setLoading(btn, false);
+      toast(e.message, 'err');
+    }
+  },
+  async broadcastDelete(id) {
+    if (!confirm("Bu xabarni o'chirmoqchimisiz? Mijozlar kabinetidan va Telegramdan ham o'chadi.")) return;
+    try {
+      await AdminAPI.broadcastDelete(id);
+      toast("O'chirildi", 'ok');
+      this.viewBroadcast();
+    } catch (e) { toast(e.message, 'err'); }
   },
 
   // ============================================================
