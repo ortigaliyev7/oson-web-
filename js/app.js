@@ -406,11 +406,11 @@ const App = {
   // Topbar (ichki sahifalar)
   topbar(title, backTo) {
     const back = backTo
-      ? `<div class="app-back" onclick="App.go('${backTo}')">${I.arrowLeft}<span>Orqaga</span></div>`
+      ? `<div class="app-back" onclick="App.go('${backTo}')">${I.arrowLeft}<span>${tt('Orqaga')}</span></div>`
       : `<div class="logo"><div class="logo-mark">${logoMarkSVG()}</div></div>`;
     return `<div class="app-topbar"><div class="wrap app-topbar-inner">
       ${back}
-      ${title ? `<div class="app-title">${esc(title)}</div>` : ''}
+      ${title ? `<div class="app-title">${esc(tt(title))}</div>` : ''}
       <div style="width:80px"></div>
     </div></div>`;
   },
@@ -418,10 +418,10 @@ const App = {
   // Pastki navigatsiya
   bottomNav(active) {
     const items = [
-      { k:'dashboard', ic:I.home, lab:'Asosiy', path:'/dashboard' },
-      { k:'apps', ic:I.doc, lab:'Arizalar', path:'/apps' },
-      { k:'notifications', ic:I.bell, lab:'Xabar', path:'/notifications', badge:this.notifCount },
-      { k:'profile', ic:I.user, lab:'Profil', path:'/profile' },
+      { k:'dashboard', ic:I.home, lab:tt('Asosiy'), path:'/dashboard' },
+      { k:'apps', ic:I.doc, lab:tt('Arizalar'), path:'/apps' },
+      { k:'notifications', ic:I.bell, lab:tt('Xabar'), path:'/notifications', badge:this.notifCount },
+      { k:'profile', ic:I.user, lab:tt('Profil'), path:'/profile' },
     ];
     return `<div class="bottom-nav">${items.map(it => `
       <div class="bn-item ${active===it.k?'active':''}" onclick="App.go('${it.path}')">
@@ -439,52 +439,56 @@ const App = {
     <nav class="nav"><div class="wrap nav-inner">
       <div class="logo"><div class="logo-mark">${logoMarkSVG()}</div>Oson Sug'urtam</div>
       <div class="nav-links">
-        <a href="#features">Imkoniyatlar</a>
-        <a href="#how">Qanday ishlaydi</a>
-        <a href="#contact">Aloqa</a>
+        <a href="#features">${tt('Imkoniyatlar')}</a>
+        <a href="#how">${tt('Qanday ishlaydi')}</a>
+        <a href="#contact">${tt('Aloqa')}</a>
       </div>
-      <button class="btn btn-primary btn-sm" onclick="App.go('/login')">Kirish</button>
+      <div class="nav-lang-switch">
+        <button class="${getLang()!=='ru'?'on':''}" onclick="App.setLang('uz')">UZ</button>
+        <button class="${getLang()==='ru'?'on':''}" onclick="App.setLang('ru')">RU</button>
+      </div>
+      <button class="btn btn-primary btn-sm" onclick="App.go('/login')">${tt('Kirish')}</button>
     </div></nav>
 
     <header class="hero"><div class="hero-bg"></div><div class="wrap hero-grid">
       <div class="hero-text">
-        <div class="hero-eyebrow">${I.shieldCheck} O'zbekistonda raqamli sug'urta</div>
-        <h1>Avto sug'urta <span class="accent">bir necha daqiqada</span></h1>
-        <p class="hero-sub">Ofisga borib navbatda turmang. Hujjatni suratga oling, biz polisingizni rasmiylashtiramiz va to'g'ridan-to'g'ri sug'urta kompaniyasiga davlat narxida to'laysiz.</p>
+        <div class="hero-eyebrow">${I.shieldCheck} ${tt("O'zbekistonda raqamli sug'urta")}</div>
+        <h1>${tt('Avto sug\'urta')} <span class="accent">${tt('bir necha daqiqada')}</span></h1>
+        <p class="hero-sub">${tt("Ofisga borib navbatda turmang. Hujjatni suratga oling, biz polisingizni rasmiylashtiramiz va to'g'ridan-to'g'ri sug'urta kompaniyasiga davlat narxida to'laysiz.")}</p>
         <div class="hero-cta">
-          <button class="btn btn-primary btn-lg" onclick="App.go('/login')">${I.arrowRight} Boshlash</button>
-          <a href="#how" class="btn btn-outline btn-lg">Qanday ishlaydi</a>
+          <button class="btn btn-primary btn-lg" onclick="App.go('/login')">${I.arrowRight} ${tt('Boshlash')}</button>
+          <a href="#how" class="btn btn-outline btn-lg">${tt('Qanday ishlaydi')}</a>
         </div>
         <div class="hero-trust">
-          <div><div class="t-num">3 daq</div><div class="t-lab">O'rtacha vaqt</div></div>
-          <div><div class="t-num">14 ta</div><div class="t-lab">Barcha hudud</div></div>
-          <div><div class="t-num">100%</div><div class="t-lab">Xavfsiz</div></div>
+          <div><div class="t-num">3 ${tt('daq')}</div><div class="t-lab">${tt("O'rtacha vaqt")}</div></div>
+          <div><div class="t-num">14 ${tt('ta')}</div><div class="t-lab">${tt('Barcha hudud')}</div></div>
+          <div><div class="t-num">100%</div><div class="t-lab">${tt('Xavfsiz')}</div></div>
         </div>
       </div>
       <div class="hero-visual">
         <div class="phone"><div class="phone-screen"><div class="phone-notch"></div>
           ${this.phoneMockContent()}
         </div></div>
-        <div class="phone-float float-1"><div class="pf-ic" style="background:var(--green-100);color:var(--green-700)">${I.shieldCheck}</div>Polis tayyor</div>
-        <div class="phone-float float-2"><div class="pf-ic" style="background:#E0F7FF;color:#0052FF">${I.card}</div>To'lov qabul qilindi</div>
-        <div class="phone-float float-3"><div class="pf-ic" style="background:var(--gold-l);color:var(--gold)">${I.clock}</div>3 daqiqada</div>
+        <div class="phone-float float-1"><div class="pf-ic" style="background:var(--green-100);color:var(--green-700)">${I.shieldCheck}</div>${tt('Polis tayyor')}</div>
+        <div class="phone-float float-2"><div class="pf-ic" style="background:#E0F7FF;color:#0052FF">${I.card}</div>${tt("To'lov qabul qilindi")}</div>
+        <div class="phone-float float-3"><div class="pf-ic" style="background:var(--gold-l);color:var(--gold)">${I.clock}</div>3 ${tt('daqiqada')}</div>
       </div>
     </div></header>
 
     <section class="section" id="features"><div class="wrap">
       <div class="section-head">
-        <div class="section-eyebrow">Imkoniyatlar</div>
-        <h2>Hammasi bitta ilovada</h2>
-        <p>Sug'urta rasmiylashtirish uchun kerak bo'lgan barcha narsa — qulay va tez</p>
+        <div class="section-eyebrow">${tt('Imkoniyatlar')}</div>
+        <h2>${tt('Hammasi bitta ilovada')}</h2>
+        <p>${tt("Sug'urta rasmiylashtirish uchun kerak bo'lgan barcha narsa — qulay va tez")}</p>
       </div>
       <div class="features-grid">
         ${[
-          {ic:I.phone, t:'Telegram orqali kirish', d:"Telefon raqamingizni ulang — tasdiqlash kodi avtomatik keladi. SMS to'lovsiz va parolsiz."},
-          {ic:I.camera, t:'Suratga oling', d:'Texpassport rasmini oling — ma\'lumotlar avtomatik aniqlanadi. Qo\'lda kiritish shart emas.'},
-          {ic:I.clock, t:'Tezkor narx', d:'Avto turi, hudud va muddatni tanlang — narx darhol ko\'rsatiladi. Yashirin to\'lov yo\'q.'},
-          {ic:I.refresh, t:'Bir qadamda yangilash', d:'Eski polis rasmini yuklang — qolgan ma\'lumotlar saqlanadi.'},
-          {ic:I.card, t:'Qulay to\'lov', d:'Payme, Click yoki bank kartasi orqali to\'g\'ridan-to\'g\'ri kompaniyaga.'},
-          {ic:I.pdf, t:'PDF polis', d:'Tayyor polis PDF formatda. Xohlagan vaqtda yuklab oling va ko\'rsating.'},
+          {ic:I.phone, t:tt('Telegram orqali kirish'), d:tt("Telefon raqamingizni ulang — tasdiqlash kodi avtomatik keladi. SMS to'lovsiz va parolsiz.")},
+          {ic:I.camera, t:tt('Suratga oling'), d:tt('Texpassport rasmini oling — ma\'lumotlar avtomatik aniqlanadi. Qo\'lda kiritish shart emas.')},
+          {ic:I.clock, t:tt('Tezkor narx'), d:tt('Avto turi, hudud va muddatni tanlang — narx darhol ko\'rsatiladi. Yashirin to\'lov yo\'q.')},
+          {ic:I.refresh, t:tt('Bir qadamda yangilash'), d:tt('Eski polis rasmini yuklang — qolgan ma\'lumotlar saqlanadi.')},
+          {ic:I.card, t:tt('Qulay to\'lov'), d:tt('Payme, Click yoki bank kartasi orqali to\'g\'ridan-to\'g\'ri kompaniyaga.')},
+          {ic:I.pdf, t:tt('PDF polis'), d:tt('Tayyor polis PDF formatda. Xohlagan vaqtda yuklab oling va ko\'rsating.')},
         ].map(f => `<div class="feature">
           <div class="feature-ic">${f.ic}</div>
           <h3>${f.t}</h3><p>${f.d}</p>
@@ -494,16 +498,16 @@ const App = {
 
     <section class="section" id="how" style="background:#fff"><div class="wrap">
       <div class="section-head">
-        <div class="section-eyebrow">Jarayon</div>
-        <h2>To'rt oddiy qadam</h2>
-        <p>Arizadan polisgacha — soddalashtirilgan jarayon</p>
+        <div class="section-eyebrow">${tt('Jarayon')}</div>
+        <h2>${tt("To'rt oddiy qadam")}</h2>
+        <p>${tt("Arizadan polisgacha — soddalashtirilgan jarayon")}</p>
       </div>
       <div class="steps-rail">
         ${[
-          {t:'Kirish', d:'Telefon raqamingiz orqali tizimga kiring'},
-          {t:'Ariza to\'ldirish', d:'Avto ma\'lumotlari va hujjat rasmlarini yuboring'},
-          {t:'To\'lov', d:'Payme, Click yoki karta orqali to\'lang'},
-          {t:'Polisni oling', d:'Tayyor polisni PDF formatda yuklab oling'},
+          {t:tt('Kirish'), d:tt('Telefon raqamingiz orqali tizimga kiring')},
+          {t:tt('Ariza to\'ldirish'), d:tt('Avto ma\'lumotlari va hujjat rasmlarini yuboring')},
+          {t:tt('To\'lov'), d:tt('Payme, Click yoki karta orqali to\'lang')},
+          {t:tt('Polisni oling'), d:tt('Tayyor polisni PDF formatda yuklab oling')},
         ].map((s,i) => `<div class="step-card">
           <div class="step-num">${i+1}</div>
           <h3>${s.t}</h3><p>${s.d}</p>
@@ -513,9 +517,9 @@ const App = {
 
     <section class="section"><div class="wrap">
       <div class="cta-banner">
-        <h2>Hoziroq boshlang</h2>
-        <p>Bir necha daqiqada sug'urta polisingizni rasmiylashtiring. Tez, qulay va ishonchli.</p>
-        <button class="btn btn-white btn-lg" onclick="App.go('/login')">${I.arrowRight} Ariza topshirish</button>
+        <h2>${tt('Hoziroq boshlang')}</h2>
+        <p>${tt("Bir necha daqiqada sug'urta polisingizni rasmiylashtiring. Tez, qulay va ishonchli.")}</p>
+        <button class="btn btn-white btn-lg" onclick="App.go('/login')">${I.arrowRight} ${tt('Ariza topshirish')}</button>
       </div>
     </div></section>
 
@@ -523,28 +527,28 @@ const App = {
       <div class="footer-grid">
         <div>
           <div class="logo"><div class="logo-mark">${logoMarkSVG()}</div>Oson Sug'urtam</div>
-          <p>O'zbekistonda avtomobil sug'urtasini onlayn rasmiylashtirish xizmati. «EVAZ» MChJ.</p>
+          <p>${tt("O'zbekistonda avtomobil sug'urtasini onlayn rasmiylashtirish xizmati. «EVAZ» MChJ.")}</p>
         </div>
         <div>
-          <h4>Xizmatlar</h4>
+          <h4>${tt('Xizmatlar')}</h4>
           <div class="footer-links">
-            <a href="#features">Yangi polis</a>
-            <a href="#features">Polisni yangilash</a>
-            <a href="#how">Qanday ishlaydi</a>
+            <a href="#features">${tt('Yangi polis')}</a>
+            <a href="#features">${tt('Polisni yangilash')}</a>
+            <a href="#how">${tt('Qanday ishlaydi')}</a>
           </div>
         </div>
         <div>
-          <h4>Aloqa</h4>
+          <h4>${tt('Aloqa')}</h4>
           <div class="footer-links">
             <a href="tel:+998907772477">+998 90 777 24 77</a>
-            <a href="${BOT_LINK}" target="_blank" rel="noopener">Telegram orqali yozish</a>
-            <a href="privacy-policy.html">Maxfiylik siyosati</a>
+            <a href="${BOT_LINK}" target="_blank" rel="noopener">${tt('Telegram orqali yozish')}</a>
+            <a href="privacy-policy.html">${tt('Maxfiylik siyosati')}</a>
           </div>
         </div>
       </div>
       <div class="footer-bottom">
         <span>© 2026 «EVAZ» MChJ</span>
-        <span>Farg'ona viloyati, O'zbekiston</span>
+        <span>${tt("Farg'ona viloyati, O'zbekiston")}</span>
       </div>
     </div></footer>`;
   },
@@ -556,13 +560,13 @@ const App = {
           <div style="width:48px;height:48px">${logoMarkSVG()}</div>
         </div>
         <div style="font-family:'Sora';font-weight:800;font-size:22px">Oson Sug'urtam</div>
-        <div style="font-size:13px;opacity:.8;margin-top:4px">Avto sug'urta</div>
+        <div style="font-size:13px;opacity:.8;margin-top:4px">${tt('Avto sug\'urta')}</div>
       </div>
       <div style="margin-top:auto;background:rgba(255,255,255,.12);border-radius:16px;padding:16px;backdrop-filter:blur(8px)">
-        <div style="font-size:12px;opacity:.8">Ariza #A-1042</div>
+        <div style="font-size:12px;opacity:.8">${tt('Ariza')} #A-1042</div>
         <div style="display:flex;align-items:center;gap:8px;margin-top:8px">
           <div style="width:28px;height:28px;background:#2BB673;border-radius:50%;display:grid;place-items:center">${I.check}</div>
-          <div style="font-weight:600;font-size:14px">Polis tayyor</div>
+          <div style="font-weight:600;font-size:14px">${tt('Polis tayyor')}</div>
         </div>
       </div>
     </div>`;
@@ -580,8 +584,8 @@ const App = {
       <div class="auth-visual">
         <div class="logo"><div class="logo-mark">${logoMarkSVG()}</div>Oson Sug'urtam</div>
         <div class="auth-visual-mid">
-          <h2>Sug'urta endi<br>oson va tez</h2>
-          <p>Telegram orqali bir tugma bilan kiring va bir necha daqiqada polisingizni rasmiylashtiring.</p>
+          <h2>${tt('Sug\'urta endi')}<br>${tt('oson va tez')}</h2>
+          <p>${tt("Telegram orqali bir tugma bilan kiring va bir necha daqiqada polisingizni rasmiylashtiring.")}</p>
         </div>
         <div style="position:relative;z-index:2;font-size:13px;opacity:.7">© 2026 «EVAZ» MChJ</div>
         <div class="auth-shield">${I.shield}</div>
@@ -595,29 +599,29 @@ const App = {
 
   loginPhoneStep() {
     return `
-      <div class="app-back" onclick="App.go('/')" style="margin-bottom:20px">${I.arrowLeft}<span>Bosh sahifa</span></div>
-      <h1>Tizimga kirish</h1>
-      <p class="sub">Telegram orqali bir tugma bilan kiring — telefon raqamini yozish shart emas</p>
+      <div class="app-back" onclick="App.go('/')" style="margin-bottom:20px">${I.arrowLeft}<span>${tt('Bosh sahifa')}</span></div>
+      <h1>${tt('Tizimga kirish')}</h1>
+      <p class="sub">${tt("Telegram orqali bir tugma bilan kiring — telefon raqamini yozish shart emas")}</p>
 
       <div class="tg-login-hero">
         <div class="tg-login-logo">${telegramLogoSVG()}</div>
-        <h3>Telegram orqali kirish</h3>
-        <p>Telegram'da "Boshlash" va "Raqamni ulash" tugmalarini bossangiz — raqamingiz avtomatik bog'lanadi va kod darrov keladi.</p>
+        <h3>${tt('Telegram orqali kirish')}</h3>
+        <p>${tt('Telegram\'da "Boshlash" va "Raqamni ulash" tugmalarini bossangiz — raqamingiz avtomatik bog\'lanadi va kod darrov keladi.')}</p>
       </div>
 
       <div class="tg-steps tg-steps-compact">
-        <div class="tg-step"><span class="tg-step-n">1</span><div>Pastdagi tugmani bosing — Telegram ochiladi</div></div>
-        <div class="tg-step"><span class="tg-step-n">2</span><div><b>"Boshlash"</b> va <b>"📱 Raqamni ulash"</b>ni bosing</div></div>
-        <div class="tg-step"><span class="tg-step-n">3</span><div>Kod keladi — bu yerda avtomatik davom etadi</div></div>
+        <div class="tg-step"><span class="tg-step-n">1</span><div>${tt('Pastdagi tugmani bosing — Telegram ochiladi')}</div></div>
+        <div class="tg-step"><span class="tg-step-n">2</span><div><b>"${tt('Boshlash')}"</b> ${tt('va')} <b>"📱 ${tt('Raqamni ulash')}"</b>${tt('ni bosing')}</div></div>
+        <div class="tg-step"><span class="tg-step-n">3</span><div>${tt('Kod keladi — bu yerda avtomatik davom etadi')}</div></div>
       </div>
 
       <a class="btn btn-tg btn-block btn-lg tg-login-btn disabled" id="tgLoginBtn" target="_blank" rel="noopener"
          onclick="App.onTgLoginClick(event)">
-        ${telegramLogoSVG()} <span>Telegram orqali kirish</span>
+        ${telegramLogoSVG()} <span>${tt('Telegram orqali kirish')}</span>
       </a>
 
       <div class="login-alt">
-        <a onclick="App.showPhoneEntry()">Telegram'siz, telefon raqami bilan kirish</a>
+        <a onclick="App.showPhoneEntry()">${tt("Telegram'siz, telefon raqami bilan kirish")}</a>
       </div>`;
   },
 
@@ -625,11 +629,11 @@ const App = {
     this.stopSessionPoll();
     const box = document.getElementById('authBox');
     box.innerHTML = `
-      <div class="app-back" onclick="App.viewLogin()" style="margin-bottom:20px">${I.arrowLeft}<span>Orqaga</span></div>
-      <h1>Telefon bilan kirish</h1>
-      <p class="sub">Telefon raqamingizni kiriting — tasdiqlash kodi yuboramiz</p>
+      <div class="app-back" onclick="App.viewLogin()" style="margin-bottom:20px">${I.arrowLeft}<span>${tt('Orqaga')}</span></div>
+      <h1>${tt('Telefon bilan kirish')}</h1>
+      <p class="sub">${tt("Telefon raqamingizni kiriting — tasdiqlash kodi yuboramiz")}</p>
       <div class="field">
-        <label class="label">Telefon raqam</label>
+        <label class="label">${tt('Telefon raqam')}</label>
         <div class="phone-input">
           <span class="phone-prefix">+998</span>
           <input id="phoneInput" type="tel" inputmode="numeric" maxlength="9" placeholder="90 123 45 67"
@@ -639,11 +643,11 @@ const App = {
       <div class="tg-info">
         <div class="tg-info-ic">${telegramLogoSVG()}</div>
         <div class="tg-info-txt">
-          <b>Kod Telegram orqali keladi</b>
-          <span>Avval Telegram'da raqamingizni ulagan bo'lsangiz, kod darrov keladi</span>
+          <b>${tt('Kod Telegram orqali keladi')}</b>
+          <span>${tt("Avval Telegram'da raqamingizni ulagan bo'lsangiz, kod darrov keladi")}</span>
         </div>
       </div>
-      <button class="btn btn-primary btn-block btn-lg" id="sendBtn" onclick="App.sendCode()">Kod olish ${I.arrowRight}</button>`;
+      <button class="btn btn-primary btn-block btn-lg" id="sendBtn" onclick="App.sendCode()">${tt('Kod olish')} ${I.arrowRight}</button>`;
     setTimeout(() => { const i = document.getElementById('phoneInput'); if (i) i.focus(); }, 100);
   },
 
@@ -777,8 +781,8 @@ const App = {
           <span class="tg-ring"></span><span class="tg-ring"></span>
           <div class="tg-logo">${telegramLogoSVG()}</div>
         </div>
-        <h1 class="tg-title">Kodni kiriting</h1>
-        <p class="tg-sub"><b>${esc(fmtPhone(this.loginFullPhone))}</b> raqamiga yuborilgan<br>6 xonali kodni kiriting</p>
+        <h1 class="tg-title">${tt('Kodni kiriting')}</h1>
+        <p class="tg-sub"><b>${esc(fmtPhone(this.loginFullPhone))}</b> ${tt('raqamiga yuborilgan')}<br>${tt('6 xonali kodni kiriting')}</p>
       </div>`;
 
     // Kod yetkazilmagan bo'lsa (telegram_id yo'q, gateway/SMS sozlanmagan) — botni ochish taklifi
@@ -857,67 +861,67 @@ const App = {
     this.root.innerHTML = `
       ${this.topbar('')}
       <div class="app-shell"><div class="wrap app-main app-view">
-        <div class="greeting">Assalomu alaykum,</div>
+        <div class="greeting">${tt('Assalomu alaykum,')}</div>
         <div class="greeting-name">${esc(firstName)}!</div>
 
         <div class="hero-card">
-          <h2>Sug'urta polisini rasmiylashtiring</h2>
-          <p>Bir necha daqiqada, ofisga bormasdan</p>
+          <h2>${tt("Sug'urta polisini rasmiylashtiring")}</h2>
+          <p>${tt("Bir necha daqiqada, ofisga bormasdan")}</p>
           <div class="hc-shield">${I.shieldCheck}</div>
         </div>
 
         <div class="onb-wrap">
           <div class="action-card ${isFirstVisit?'onb-highlight':''}" onclick="App.dismissOnboarding();App.startNewApp()">
             <div class="ac-plus">${I.plus}</div>
-            <div><h3>Yangi ariza</h3><p>3-5 daqiqada to'ldiring</p></div>
+            <div><h3>${tt('Yangi ariza')}</h3><p>${tt("3-5 daqiqada to'ldiring")}</p></div>
             <div class="ac-arrow">${I.arrowRight}</div>
           </div>
           ${isFirstVisit ? `
           <div class="onb-hint">
-            <span>👆 Sug'urta olish uchun shu yerdan boshlang!</span>
+            <span>👆 ${tt("Sug'urta olish uchun shu yerdan boshlang!")}</span>
             <button onclick="App.dismissOnboarding()">${I.x}</button>
           </div>` : ''}
         </div>
 
         <div class="bonus-promo" onclick="App.go('/bonus')">
-          <div class="bp-badge">💰 DAROMAD</div>
+          <div class="bp-badge">💰 ${tt('DAROMAD')}</div>
           <div class="bp-top">
             <div class="bp-ic">${I.trophy}</div>
-            <div class="bp-txt"><h3>Do'stingizni taklif qiling — pul ishlang!</h3><p>Bu — sizning shaxsiy daromad manbaingiz</p></div>
+            <div class="bp-txt"><h3>${tt("Do'stingizni taklif qiling — pul ishlang!")}</h3><p>${tt("Bu — sizning shaxsiy daromad manbaingiz")}</p></div>
             <div class="ac-arrow">${I.arrowRight}</div>
           </div>
           <div class="bp-steps">
-            <div class="bp-step"><span class="bp-num">1</span><span>Havolangizni do'stingizga yuboring</span></div>
-            <div class="bp-step"><span class="bp-num">2</span><span>Do'stingiz sug'urta arizasini to'ldiradi</span></div>
-            <div class="bp-step bp-key"><span class="bp-num">3</span><span><b>To'lov qilib, ariza yakunlangach</b> — sizga bonus tushadi</span></div>
+            <div class="bp-step"><span class="bp-num">1</span><span>${tt("Havolangizni do'stingizga yuboring")}</span></div>
+            <div class="bp-step"><span class="bp-num">2</span><span>${tt("Do'stingiz sug'urta arizasini to'ldiradi")}</span></div>
+            <div class="bp-step bp-key"><span class="bp-num">3</span><span><b>${tt("To'lov qilib, ariza yakunlangach")}</b> — ${tt('sizga bonus tushadi')}</span></div>
           </div>
         </div>
 
         <div class="tiles">
           <div class="tile" onclick="App.go('/apps')">
             <div class="tile-ic" style="background:#DBEAFE;color:#1E40AF">${I.doc}</div>
-            <h4>Arizalarim</h4><p>Holatlarni kuzating</p>
+            <h4>${tt('Arizalarim')}</h4><p>${tt('Holatlarni kuzating')}</p>
           </div>
           <div class="tile" onclick="App.go('/notifications')">
             <div class="tile-ic" style="background:var(--gold-l);color:var(--gold)">${I.bell}</div>
             ${this.notifCount?`<span class="tile-badge">${this.notifCount}</span>`:''}
-            <h4>Bildirishnoma</h4><p>Yangiliklar</p>
+            <h4>${tt('Bildirishnoma')}</h4><p>${tt('Yangiliklar')}</p>
           </div>
           <div class="tile" onclick="App.startRenew()">
             <div class="tile-ic" style="background:var(--green-100);color:var(--green-700)">${I.refresh}</div>
-            <h4>Polisni yangilash</h4><p>Tez yangilash</p>
+            <h4>${tt('Polisni yangilash')}</h4><p>${tt('Tez yangilash')}</p>
           </div>
           <div class="tile" onclick="App.go('/profile')">
             <div class="tile-ic" style="background:#F3E8FF;color:#6B21A8">${I.user}</div>
-            <h4>Profil</h4><p>Sozlamalar</p>
+            <h4>${tt('Profil')}</h4><p>${tt('Sozlamalar')}</p>
           </div>
         </div>
 
         <div class="card card-pad" style="margin-top:20px;display:flex;gap:16px;align-items:center;background:var(--green-50);border-color:var(--green-100)">
           <div style="width:48px;height:48px;color:var(--green-700);flex-shrink:0">${I.shieldCheck}</div>
           <div>
-            <h4 style="font-size:15px;margin-bottom:2px">100% xavfsiz</h4>
-            <p style="font-size:13.5px;color:var(--ink-2)">Ma'lumotlaringiz shifrlangan kanallar orqali himoyalangan</p>
+            <h4 style="font-size:15px;margin-bottom:2px">${tt('100% xavfsiz')}</h4>
+            <p style="font-size:13.5px;color:var(--ink-2)">${tt("Ma'lumotlaringiz shifrlangan kanallar orqali himoyalangan")}</p>
           </div>
         </div>
 
@@ -1076,10 +1080,10 @@ const App = {
     return `
       ${this.topbar(title)}
       <div class="app-shell"><div class="wrap app-main app-view">
-        <div class="flow-back" onclick="App.flowPrev('${step}')">${I.arrowLeft}<span>Orqaga</span></div>
+        <div class="flow-back" onclick="App.flowPrev('${step}')">${I.arrowLeft}<span>${tt('Orqaga')}</span></div>
         <div class="flow-progress">
           <div class="fp-track"><div class="fp-fill" style="width:${pct}%"></div></div>
-          <div class="fp-label">${idx+1} / ${total} qadam</div>
+          <div class="fp-label">${idx+1} / ${total} ${tt('qadam')}</div>
         </div>`;
   },
 
@@ -1106,17 +1110,17 @@ const App = {
   flowType() {
     const d = this.draft;
     this.root.innerHTML = this.flowHeader('type', 'Ariza turi') + `
-      <h2 class="flow-q">Qanday ariza?</h2>
-      <p class="flow-sub">Yangi polis yoki mavjudini yangilash</p>
+      <h2 class="flow-q">${tt('Qanday ariza?')}</h2>
+      <p class="flow-sub">${tt('Yangi polis yoki mavjudini yangilash')}</p>
       <div class="choice-list">
         <div class="choice ${d.app_type==='new'?'sel':''}" onclick="App.selectAndGo(this,'app_type','new','/new/tex')">
           <div class="choice-ic" style="background:var(--green-100);color:var(--green-700)">${I.plus}</div>
-          <div class="choice-txt"><h4>Yangi polis</h4><p>Birinchi marta rasmiylashtirish</p></div>
+          <div class="choice-txt"><h4>${tt('Yangi polis')}</h4><p>${tt('Birinchi marta rasmiylashtirish')}</p></div>
           <div class="choice-rad"></div>
         </div>
         <div class="choice ${d.app_type==='renew'?'sel':''}" onclick="App.selectAndGo(this,'app_type','renew','/new/oldpolicy')">
           <div class="choice-ic" style="background:#DBEAFE;color:#1E40AF">${I.refresh}</div>
-          <div class="choice-txt"><h4>Polisni yangilash</h4><p>Eski polis asosida tez yangilash</p></div>
+          <div class="choice-txt"><h4>${tt('Polisni yangilash')}</h4><p>${tt('Eski polis asosida tez yangilash')}</p></div>
           <div class="choice-rad"></div>
         </div>
       </div>
@@ -1174,13 +1178,13 @@ const App = {
   flowVehicle() {
     const d = this.draft;
     this.root.innerHTML = this.flowHeader('vehicle', 'Avtomobil turi') + `
-      <h2 class="flow-q">Avtomobil turini tanlang</h2>
-      <p class="flow-sub">Sug'urta narxi turga bog'liq</p>
+      <h2 class="flow-q">${tt("Avtomobil turini tanlang")}</h2>
+      <p class="flow-sub">${tt("Sug'urta narxi turga bog'liq")}</p>
       <div class="choice-list">
         ${VEHICLES.map(v => `
           <div class="choice ${d.vehicle===v.id?'sel':''}" onclick="App.selectAndNext(this,'vehicle','${v.id}','vehicle')">
             <div class="choice-ic" style="background:var(--green-100);color:var(--green-700)">${v.id==='yuk'?I.truck:I.car}</div>
-            <div class="choice-txt"><h4>${v.name}</h4><p>${v.desc}</p></div>
+            <div class="choice-txt"><h4>${tt(v.name)}</h4><p>${tt(v.desc)}</p></div>
             <div class="choice-rad"></div>
           </div>`).join('')}
       </div>
@@ -1192,16 +1196,16 @@ const App = {
     const d = this.draft;
     const auto = d.regionAuto && d.region === d.regionAuto;
     this.root.innerHTML = this.flowHeader('region', 'Hudud') + `
-      <h2 class="flow-q">Hududingizni tasdiqlang</h2>
-      <p class="flow-sub">${auto ? "Davlat raqamidan avtomatik aniqlandi — noto'g'ri bo'lsa o'zgartiring" : "Avtomobil ro'yxatdan o'tgan hudud"}</p>
-      ${auto ? `<div class="region-auto">${I.checkCircle}<span>Aniqlandi: <b>${esc(d.region)}</b></span></div>` : ''}
+      <h2 class="flow-q">${tt("Hududingizni tasdiqlang")}</h2>
+      <p class="flow-sub">${tt(auto ? "Davlat raqamidan avtomatik aniqlandi — noto'g'ri bo'lsa o'zgartiring" : "Avtomobil ro'yxatdan o'tgan hudud")}</p>
+      ${auto ? `<div class="region-auto">${I.checkCircle}<span>${tt('Aniqlandi')}: <b>${esc(tt(d.region))}</b></span></div>` : ''}
       <div class="region-grid">
         ${REGIONS.map((r, i) => `
           <div class="region-chip ${d.region===r.name?'sel':''}" data-i="${i}" onclick="App.pickRegion(${i})">
-            ${esc(r.name)}
+            ${esc(tt(r.name))}
           </div>`).join('')}
       </div>
-      ${d.region ? `<button class="btn btn-primary btn-block btn-lg" style="margin-top:20px" onclick="App.flowNext('region')">Davom etish</button>` : ''}
+      ${d.region ? `<button class="btn btn-primary btn-block btn-lg" style="margin-top:20px" onclick="App.flowNext('region')">${tt('Davom etish')}</button>` : ''}
       </div></div>`;
   },
   pickRegion(i) {
@@ -1216,17 +1220,17 @@ const App = {
     const d = this.draft;
     if (!d.vehicle || !d.region) { this.go('/new/vehicle'); return; }
     this.root.innerHTML = this.flowHeader('duration', 'Muddat') + `
-      <h2 class="flow-q">Sug'urta muddati</h2>
-      <p class="flow-sub">Muddat va qoplamani tanlang</p>
+      <h2 class="flow-q">${tt("Sug'urta muddati")}</h2>
+      <p class="flow-sub">${tt("Muddat va qoplamani tanlang")}</p>
       <div class="dur-list">
         ${DURATIONS.map(dur => {
           const price = getPrice(d.vehicle, d.region, dur.id);
           return `
           <div class="dur-card ${d.duration===dur.id?'sel':''}" onclick="App.selectAndNext(this,'duration','${dur.id}','duration')">
-            ${dur.popular?`<span class="dur-pop">Mashhur</span>`:''}
+            ${dur.popular?`<span class="dur-pop">${tt('Mashhur')}</span>`:''}
             <div class="dur-main">
-              <div class="dur-label">${dur.label}</div>
-              <div class="dur-sub">${dur.sub}</div>
+              <div class="dur-label">${tt(dur.label)}</div>
+              <div class="dur-sub">${tt(dur.sub)}</div>
             </div>
             <div class="dur-price">${fmtSom(price)}</div>
             <div class="choice-rad"></div>
@@ -1241,8 +1245,8 @@ const App = {
     const d = this.draft;
     d.tex = d.tex || {};
     this.root.innerHTML = this.flowHeader('tex', 'Texpassport') + `
-      <h2 class="flow-q">Avtomobil ma'lumotlari</h2>
-      <p class="flow-sub">Texpassport rasmini oling — ma'lumotlar avtomatik aniqlanadi</p>
+      <h2 class="flow-q">${tt("Avtomobil ma'lumotlari")}</h2>
+      <p class="flow-sub">${tt("Texpassport rasmini oling — ma'lumotlar avtomatik aniqlanadi")}</p>
 
       <div class="tex-uploads">
         <div class="upload-zone tex-up" id="texUpload" onclick="document.getElementById('texFile').click()">
@@ -1462,8 +1466,8 @@ const App = {
   flowOldPolicy() {
     const d = this.draft;
     this.root.innerHTML = this.flowHeader('oldpolicy', 'Eski polis') + `
-      <h2 class="flow-q">Eski polisingiz</h2>
-      <p class="flow-sub">Mavjud polis rasmini yuklang (1 ta rasm)</p>
+      <h2 class="flow-q">${tt("Eski polisingiz")}</h2>
+      <p class="flow-sub">${tt("Mavjud polis rasmini yuklang (1 ta rasm)")}</p>
       <div class="upload-zone" id="oldUpload" onclick="document.getElementById('oldFile').click()">
         <input type="file" id="oldFile" accept="image/*" hidden onchange="App.onOldPolicy(event)">
         <div id="oldPreview">
@@ -1543,10 +1547,10 @@ const App = {
         ? "Ixtiyoriy — yangi haydovchi qo'shmoqchi bo'lsangiz, hujjatini yuklang (5 tagacha)"
         : "Cheklangan sug'urta — har bir haydovchi hujjati suratga olinadi (5 tagacha)";
     this.root.innerHTML = this.flowHeader('drivers', title) + `
-      <h2 class="flow-q">${title}</h2>
-      <p class="flow-sub">${sub}</p>
+      <h2 class="flow-q">${tt(title)}</h2>
+      <p class="flow-sub">${tt(sub)}</p>
       <div id="driversList">${this.renderDrivers()}</div>
-      ${(!unlimited && d.drivers.length < 5) ? `<button class="btn btn-ghost btn-block" onclick="App.addDriver()">${I.plus} Haydovchi qo'shish</button>` : ''}
+      ${(!unlimited && d.drivers.length < 5) ? `<button class="btn btn-ghost btn-block" onclick="App.addDriver()">${I.plus} ${tt("Haydovchi qo'shish")}</button>` : ''}
       <button class="btn btn-primary btn-block btn-lg" style="margin-top:16px" onclick="App.driversNext()">Davom etish</button>
       </div></div>`;
     d.drivers.forEach((dr, i) => {
@@ -1683,8 +1687,8 @@ const App = {
   flowPayment() {
     const d = this.draft;
     this.root.innerHTML = this.flowHeader('payment', "To'lov usuli") + `
-      <h2 class="flow-q">To'lov usulini tanlang</h2>
-      <p class="flow-sub">Sug'urta kompaniyasiga to'lov</p>
+      <h2 class="flow-q">${tt("To'lov usulini tanlang")}</h2>
+      <p class="flow-sub">${tt("Sug'urta kompaniyasiga to'lov")}</p>
       <div class="choice-list">
         ${PAY_METHODS.map(p => `
           <div class="choice ${d.pay_method===p.id?'sel':''}" onclick="App.pick('pay_method','${p.id}','/new/confirm')">
@@ -1714,52 +1718,52 @@ const App = {
     this.saveDraft();
     const myPhone = this.user.phone || '';
     this.root.innerHTML = this.flowHeader('confirm', 'Tasdiqlash') + `
-      <h2 class="flow-q">Arizani tasdiqlang</h2>
-      <p class="flow-sub">Ma'lumotlarni tekshiring</p>
+      <h2 class="flow-q">${tt('Arizani tasdiqlang')}</h2>
+      <p class="flow-sub">${tt("Ma'lumotlarni tekshiring")}</p>
 
       <div class="client-card">
-        <div class="cc-title">Polis kim uchun?</div>
+        <div class="cc-title">${tt('Polis kim uchun?')}</div>
         <div class="cc-toggle">
-          <button class="cc-opt ${d.forSelf?'on':''}" onclick="App.setForSelf(true)">O'zim uchun</button>
-          <button class="cc-opt ${!d.forSelf?'on':''}" onclick="App.setForSelf(false)">Boshqa odam uchun</button>
+          <button class="cc-opt ${d.forSelf?'on':''}" onclick="App.setForSelf(true)">${tt("O'zim uchun")}</button>
+          <button class="cc-opt ${!d.forSelf?'on':''}" onclick="App.setForSelf(false)">${tt('Boshqa odam uchun')}</button>
         </div>
         ${d.forSelf ? `
           <div class="cc-me">${I.phone}<span>${fmtPhone(myPhone)}</span></div>
         ` : `
-          <div class="field" style="margin-top:12px"><label>Mijoz telefon raqami</label>
+          <div class="field" style="margin-top:12px"><label>${tt('Mijoz telefon raqami')}</label>
             <div class="phone-input">
               <span class="phone-prefix">+998</span>
               <input id="otherPhone" type="tel" inputmode="numeric" maxlength="9" placeholder="90 123 45 67"
                 value="${esc(d.otherPhoneRaw||'')}" oninput="App.onOtherPhone(this)">
             </div>
           </div>
-          <div class="field"><label>Mijoz ismi <span class="opt">(ixtiyoriy)</span></label>
+          <div class="field"><label>${tt('Mijoz ismi')} <span class="opt">(${tt('ixtiyoriy')})</span></label>
             <input class="inp" id="otherName" placeholder="Ism Familiya" value="${esc(d.otherName||'')}" oninput="App.draft.otherName=this.value;App.saveDraftSoon()">
           </div>
-          <p class="cc-hint">Do'stingiz yoki boshqa odam uchun polis — uning raqamini kiriting</p>
+          <p class="cc-hint">${tt("Do'stingiz yoki boshqa odam uchun polis — uning raqamini kiriting")}</p>
           <div id="directBonusPreview"></div>
         `}
       </div>
 
       <div class="summary-card">
-        <div class="sum-row"><span>Ariza turi</span><b>${d.app_type==='renew'?'Yangilash':'Yangi polis'}</b></div>
-        <div class="sum-row"><span>Avtomobil</span><b>${esc(vehicleName)}</b></div>
-        <div class="sum-row"><span>Hudud</span><b>${esc(d.region||'')}</b></div>
-        <div class="sum-row"><span>Muddat</span><b>${durObj.label||''} · ${durObj.sub||''}</b></div>
-        <div class="sum-row"><span>Davlat raqami</span><b>${esc((d.tex&&d.tex.plate)||'')}</b></div>
-        <div class="sum-row"><span>${this.isUnlimited()?'Avtomobil egasi':'Haydovchilar'}</span><b>${this.isUnlimited()?'1 ta':(d.drivers||[]).length+' ta'}</b></div>
-        <div class="sum-row"><span>To'lov</span><b>${payObj.label||''}</b></div>
-        ${d.bonus_used ? `<div class="sum-row"><span>Bonus chegirma</span><b style="color:var(--green-700)">−${fmtSom(d.bonus_used)}</b></div>` : ''}
+        <div class="sum-row"><span>${tt('Ariza turi')}</span><b>${d.app_type==='renew'?tt('Yangilash'):tt('Yangi polis')}</b></div>
+        <div class="sum-row"><span>${tt('Avtomobil')}</span><b>${esc(vehicleName)}</b></div>
+        <div class="sum-row"><span>${tt('Hudud')}</span><b>${esc(tt(d.region||''))}</b></div>
+        <div class="sum-row"><span>${tt('Muddat')}</span><b>${durObj.label||''} · ${durObj.sub||''}</b></div>
+        <div class="sum-row"><span>${tt('Davlat raqami')}</span><b>${esc((d.tex&&d.tex.plate)||'')}</b></div>
+        <div class="sum-row"><span>${this.isUnlimited()?tt('Avtomobil egasi'):tt('Haydovchilar')}</span><b>${this.isUnlimited()?'1':(d.drivers||[]).length} ${tt('ta')}</b></div>
+        <div class="sum-row"><span>${tt("To'lov")}</span><b>${payObj.label||''}</b></div>
+        ${d.bonus_used ? `<div class="sum-row"><span>${tt('Bonus chegirma')}</span><b style="color:var(--green-700)">−${fmtSom(d.bonus_used)}</b></div>` : ''}
         <div class="sum-divider"></div>
-        <div class="sum-total"><span>Jami narx</span><b>${fmtSom(Math.max(0, price - (d.bonus_used||0)))}</b></div>
+        <div class="sum-total"><span>${tt('Jami narx')}</span><b>${fmtSom(Math.max(0, price - (d.bonus_used||0)))}</b></div>
       </div>
 
       <div id="bonusDiscount"></div>
 
       <button class="btn btn-primary btn-block btn-lg" id="submitBtn" style="margin-top:20px" onclick="App.submitApplication()">
-        Arizani yuborish
+        ${tt('Arizani yuborish')}
       </button>
-      <p class="confirm-note">Yuborish orqali siz ma'lumotlaringiz to'g'riligini tasdiqlaysiz</p>
+      <p class="confirm-note">${tt("Yuborish orqali siz ma'lumotlaringiz to'g'riligini tasdiqlaysiz")}</p>
       </div></div>`;
     this.renderBonusDiscount();
     this.renderDirectBonusPreview();
@@ -1986,10 +1990,10 @@ const App = {
     const policyUrl = a.policy_file ? `${UPLOADS}/${a.policy_file}` : (a.policy_url || '');
 
     const banner = isRejected
-      ? `<div class="status-banner err"><div class="sb-ic">${I.x}</div><div><h3>Rad etildi</h3><p>${esc(a.reject_reason||a.reason||'Iltimos, qaytadan ariza yuboring')}</p></div></div>`
+      ? `<div class="status-banner err"><div class="sb-ic">${I.x}</div><div><h3>${tt('Rad etildi')}</h3><p>${esc(a.reject_reason||a.reason||tt('Iltimos, qaytadan ariza yuboring'))}</p></div></div>`
       : isReady
-        ? `<div class="status-banner ok"><div class="sb-ic">${I.check}</div><div><h3>Tayyor!</h3><p>Polisingiz tayyor — yuklab oling</p></div></div>`
-        : `<div class="status-banner wait"><div class="sb-ic">${I.clock}</div><div><h3>${STATUS_LABEL[st]||'Jarayonda'}</h3><p>Arizangiz ko'rib chiqilmoqda</p></div></div>`;
+        ? `<div class="status-banner ok"><div class="sb-ic">${I.check}</div><div><h3>${tt('Tayyor!')}</h3><p>${tt("Polisingiz tayyor — yuklab oling")}</p></div></div>`
+        : `<div class="status-banner wait"><div class="sb-ic">${I.clock}</div><div><h3>${tt(STATUS_LABEL[st]||'Jarayonda')}</h3><p>${tt("Arizangiz ko'rib chiqilmoqda")}</p></div></div>`;
 
     const timeline = FLOW_STEPS.map((s, i) => {
       const done = i <= curIdx && !isRejected;
@@ -2002,7 +2006,7 @@ const App = {
             ${!last?`<div class="tl-line ${i<curIdx?'done':''}"></div>`:''}
           </div>
           <div class="tl-content ${active?'active':''}">
-            <div class="tl-title">${STATUS_LABEL[s]}</div>
+            <div class="tl-title">${tt(STATUS_LABEL[s])}</div>
           </div>
         </div>`;
     }).join('');
@@ -2010,14 +2014,14 @@ const App = {
     document.getElementById('statusBox').innerHTML = `
       ${banner}
       <div class="status-meta-card">
-        <div class="smc-row"><span>Ariza raqami</span><b>${esc(String(num))}</b></div>
-        <div class="smc-row"><span>Holat</span>${statusBadge(st)}</div>
+        <div class="smc-row"><span>${tt('Ariza raqami')}</span><b>${esc(String(num))}</b></div>
+        <div class="smc-row"><span>${tt('Holat')}</span>${statusBadge(st)}</div>
       </div>
 
       ${policyUrl && isReady ? `
         <a class="policy-dl" href="${policyUrl}" target="_blank" download>
           <div class="pd-ic">${I.pdf}</div>
-          <div class="pd-body"><h4>Polis hujjati</h4><p>PDF · Yuklab olish</p></div>
+          <div class="pd-body"><h4>${tt('Polis hujjati')}</h4><p>PDF · ${tt('Yuklab olish')}</p></div>
           <div class="pd-arrow">${I.download}</div>
         </a>` : ''}
 
@@ -2026,30 +2030,30 @@ const App = {
         const last = links.length ? links[links.length - 1] : null;
         if (!last || !(st === 'payment_pending' || st === 'approved')) return '';
         if (last.provider === 'sms') {
-          return `<div class="pay-sms-note">${I.phone}<span>To'lov uchun SMS orqali havola yuborildi — telefoningizni tekshiring</span></div>`;
+          return `<div class="pay-sms-note">${I.phone}<span>${tt("To'lov uchun SMS orqali havola yuborildi — telefoningizni tekshiring")}</span></div>`;
         }
         if (!last.link) return '';
         return `
         <a class="pay-link-btn" href="${esc(last.link)}" target="_blank">
-          ${I.card}<span>To'lovni amalga oshirish — ${fmtSom(last.amount||a.price||0)}</span>
+          ${I.card}<span>${tt("To'lovni amalga oshirish")} — ${fmtSom(last.amount||a.price||0)}</span>
         </a>`;
       })()}
 
-      <h3 class="section-h">Jarayon bosqichlari</h3>
+      <h3 class="section-h">${tt('Jarayon bosqichlari')}</h3>
       <div class="timeline">${timeline}</div>
 
       ${isReady && !a.review_submitted ? `
       <div class="review-card">
-        <h3 class="section-h">Xizmatimizni baholang</h3>
+        <h3 class="section-h">${tt('Xizmatimizni baholang')}</h3>
         <div class="review-stars" id="reviewStars">
           ${[1,2,3,4,5].map(n=>`<span class="rv-star" data-n="${n}" onclick="App.setReviewStar(${n})">★</span>`).join('')}
         </div>
-        <textarea class="inp" id="reviewText" rows="3" placeholder="Fikringizni yozing (ixtiyoriy)"></textarea>
-        <button class="btn btn-primary btn-block" id="reviewSubmitBtn" style="margin-top:10px" onclick="App.submitReview('${a.id}')">Yuborish</button>
+        <textarea class="inp" id="reviewText" rows="3" placeholder="${tt('Fikringizni yozing')} (${tt('ixtiyoriy')})"></textarea>
+        <button class="btn btn-primary btn-block" id="reviewSubmitBtn" style="margin-top:10px" onclick="App.submitReview('${a.id}')">${tt('Yuborish')}</button>
       </div>` : ''}
 
       <button class="btn btn-ghost btn-block" style="margin-top:8px" onclick="App.go('/chat/${a.id}')">
-        ${I.chat} Operator bilan bog'lanish
+        ${I.chat} ${tt("Operator bilan bog'lanish")}
       </button>`;
     this._reviewRating = 0;
   },
@@ -2195,25 +2199,32 @@ const App = {
         <div class="profile-section">
           <div class="ps-item" onclick="App.editProfile()">
             <div class="psi-ic" style="background:var(--green-100);color:var(--green-700)">${I.edit}</div>
-            <div class="psi-body"><h4>Ma'lumotlarni tahrirlash</h4><p>Ism va aloqa</p></div>
+            <div class="psi-body"><h4>${tt("Ma'lumotlarni tahrirlash")}</h4><p>${tt('Ism va aloqa')}</p></div>
             ${I.arrowRight}
           </div>
           <div class="ps-item" onclick="App.go('/apps')">
             <div class="psi-ic" style="background:#DBEAFE;color:#1E40AF">${I.doc}</div>
-            <div class="psi-body"><h4>Arizalarim</h4><p>Barcha arizalar</p></div>
+            <div class="psi-body"><h4>${tt('Arizalarim')}</h4><p>${tt('Barcha arizalar')}</p></div>
             ${I.arrowRight}
           </div>
           <div class="ps-item" onclick="App.openSupport()">
             <div class="psi-ic" style="background:#F3E8FF;color:#6B21A8">${I.help}</div>
-            <div class="psi-body"><h4>Yordam</h4><p>Savol va aloqa</p></div>
+            <div class="psi-body"><h4>${tt('Yordam')}</h4><p>${tt('Savol va aloqa')}</p></div>
             ${I.arrowRight}
           </div>
         </div>
 
         <div class="profile-section appearance-card">
-          <h4 class="ps-title">Ko'rinish</h4>
+          <h4 class="ps-title">${tt("Ko'rinish")}</h4>
           <div class="appear-row">
-            <span class="appear-lab">Rang</span>
+            <span class="appear-lab">${tt('Til')}</span>
+            <div class="cc-toggle lang-pills">
+              <button class="cc-opt ${getLang()!=='ru'?'on':''}" onclick="App.setLang('uz')">O'zbek</button>
+              <button class="cc-opt ${getLang()==='ru'?'on':''}" onclick="App.setLang('ru')">Русский</button>
+            </div>
+          </div>
+          <div class="appear-row">
+            <span class="appear-lab">${tt('Rang')}</span>
             <div class="accent-swatches">
               ${ACCENTS.map(([id, hex, lab]) => `
                 <button class="accent-dot ${accent===id?'sel':''}" style="background:${hex}" onclick="App.setAccent('${id}')" aria-label="${lab}" title="${lab}">${accent===id?I.check:''}</button>
@@ -2222,8 +2233,12 @@ const App = {
           </div>
         </div>
 
-        <button class="btn btn-ghost btn-block btn-danger" onclick="App.confirmLogout()">${I.logout} Chiqish</button>
+        <button class="btn btn-ghost btn-block btn-danger" onclick="App.confirmLogout()">${I.logout} ${tt('Chiqish')}</button>
       </div></div>${this.bottomNav('profile')}`;
+  },
+  setLang(l) {
+    setLangPref(l);
+    this.route();
   },
   editProfile() {
     const u = this.user || {};
