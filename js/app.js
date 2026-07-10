@@ -2144,10 +2144,8 @@ const App = {
     const name = u.name || u.full_name || '';
     const accent = this.getAccentPref();
     const ACCENTS = [
-      ['green',  '#14856A', 'Yashil'],
-      ['blue',   '#1768AC', "Ko'k"],
-      ['purple', '#6C36AC', 'Binafsha'],
-      ['orange', '#A84E14', 'Olovrang'],
+      ['green', '#14856A', 'Yashil'],
+      ['blue',  '#1768AC', "Ko'k"],
     ];
     this.root.innerHTML = this.topbar('Profil') + `
       <div class="app-shell"><div class="wrap app-main app-view">
