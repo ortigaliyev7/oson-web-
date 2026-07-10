@@ -53,18 +53,6 @@
   --green-100: #E1EEF8; --green-50:  #F0F7FC;
   --shadow-green: 0 8px 28px rgba(18,83,141,.28);
 }
-:root[data-accent="purple"] {
-  --green-900: #351959; --green-800: #421F6E; --green-700: #572A8D;
-  --green-600: #6C36AC; --green-500: #7940BE; --green-300: #C3A6E0;
-  --green-100: #F0E7F8; --green-50:  #F8F3FC;
-  --shadow-green: 0 8px 28px rgba(87,42,141,.28);
-}
-:root[data-accent="orange"] {
-  --green-900: #5C2A0A; --green-800: #75350D; --green-700: #964512;
-  --green-600: #A84E14; --green-500: #C7601D; --green-300: #E8AD7B;
-  --green-100: #FBEBDD; --green-50:  #FDF5EE;
-  --shadow-green: 0 8px 28px rgba(150,69,18,.28);
-}
 
 * { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
 html { scroll-behavior:smooth; overflow-x:hidden; }
@@ -1011,7 +999,7 @@ body.no-scroll{overflow:hidden}
 .region-auto svg{width:20px;height:20px;flex-shrink:0}
 
 /* ===== Bonus (mijoz) — premium promo karta ===== */
-.bonus-promo{position:relative;overflow:hidden;padding:18px;margin-top:14px;border-radius:20px;cursor:pointer;background:linear-gradient(135deg,var(--green-500),var(--green-700) 60%,var(--green-900));color:#fff;box-shadow:var(--shadow-green),inset 0 1px 0 rgba(255,255,255,.15);border:1px solid rgba(255,255,255,.12)}
+.bonus-promo{position:relative;overflow:hidden;padding:18px;margin-top:14px;border-radius:20px;cursor:pointer;background:linear-gradient(135deg,var(--green-600),var(--green-800) 60%,var(--green-900));color:#fff;box-shadow:var(--shadow-green),inset 0 1px 0 rgba(255,255,255,.15);border:1px solid rgba(255,255,255,.12)}
 .bonus-promo::before{content:'';position:absolute;inset:0;background:linear-gradient(115deg,transparent 30%,rgba(255,255,255,.16) 45%,transparent 60%);background-size:250% 250%;animation:bpShine 5s ease-in-out infinite;pointer-events:none}
 @keyframes bpShine{0%{background-position:200% 0}100%{background-position:-50% 0}}
 .bonus-promo .bp-badge{position:absolute;top:14px;right:16px;font-size:10.5px;font-weight:800;letter-spacing:.03em;background:rgba(255,255,255,.18);color:#fff;padding:4px 9px;border-radius:99px;z-index:1}
@@ -1036,7 +1024,7 @@ body.no-scroll{overflow:hidden}
    .ac-gold = to'g'ridan-to'g'ri, .ac-green = taklif havolasi */
 .bonus-amount-card{position:relative;overflow:hidden;margin-top:14px;padding:16px;border-radius:18px;color:#fff;animation:dbcPop .35s cubic-bezier(.2,.9,.3,1.3)}
 .bonus-amount-card.ac-gold{background:linear-gradient(135deg,#F6A609,#E08A00 55%,#C97300);box-shadow:0 10px 26px rgba(224,138,0,.35),inset 0 1px 0 rgba(255,255,255,.2)}
-.bonus-amount-card.ac-green{background:linear-gradient(135deg,var(--green-500),var(--green-700) 60%,var(--green-900));box-shadow:var(--shadow-green),inset 0 1px 0 rgba(255,255,255,.2)}
+.bonus-amount-card.ac-green{background:linear-gradient(135deg,var(--green-600),var(--green-800) 60%,var(--green-900));box-shadow:var(--shadow-green),inset 0 1px 0 rgba(255,255,255,.2)}
 .bonus-amount-card::before{content:'';position:absolute;inset:0;background:linear-gradient(115deg,transparent 30%,rgba(255,255,255,.22) 45%,transparent 60%);background-size:250% 250%;animation:dbcShine 4.5s ease-in-out infinite;pointer-events:none}
 .bonus-amount-card .dbc-badge{position:absolute;top:12px;right:14px;font-size:10px;font-weight:800;letter-spacing:.03em;background:rgba(255,255,255,.22);padding:4px 9px;border-radius:99px;z-index:1}
 .bonus-amount-card .dbc-top{display:flex;align-items:center;gap:13px;position:relative;z-index:1;padding-right:64px}
@@ -1050,7 +1038,7 @@ body.no-scroll{overflow:hidden}
 @keyframes dbcIconPulse{0%,100%{transform:scale(1)}50%{transform:scale(1.1)}}
 @keyframes dbcPop{0%{opacity:0;transform:translateY(-6px) scale(.97)}100%{opacity:1;transform:translateY(0) scale(1)}}
 @media (prefers-reduced-motion: reduce){.bonus-amount-card,.bonus-amount-card::before,.bonus-amount-card .dbc-ic{animation:none}}
-.bx-balance{background:linear-gradient(135deg,#0F8A6B,#0B6B54);color:#fff;border-radius:18px;padding:22px;text-align:center;margin-bottom:16px}
+.bx-balance{background:linear-gradient(135deg,var(--green-600),var(--green-800));color:#fff;border-radius:18px;padding:22px;text-align:center;margin-bottom:16px}
 .bx-bal-lab{font-size:14px;opacity:.9}
 .bx-bal-val{font-family:'Sora',sans-serif;font-size:34px;font-weight:800;margin:4px 0}
 .bx-bal-sub{font-size:12.5px;opacity:.85}
