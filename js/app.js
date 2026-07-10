@@ -8,7 +8,7 @@ const App = {
   draft: null,        // ariza qoralamasi
   notifCount: 0,
 
-  init() {
+  async init() {
     this.root = document.getElementById('app');
     this.appSettings = {};
     // Referral havolasi (?ref=RAQAM) — do'st shu havola orqali kelsa saqlaymiz
@@ -44,10 +44,29 @@ const App = {
         setTimeout(() => { this._sessionEnding = false; }, 1500);
       }
     });
+    await this.initTelegramWebApp();
+
     this.route();
     this.loadSettings();
     this.initPWA();
     if (this.isAuthed && this.isAuthed()) this.initSocket();
+  },
+
+  // === TELEGRAM MINI APP — botda ulangan mijozni avtomatik kirg'izish ===
+  async initTelegramWebApp() {
+    try {
+      const tg = window.Telegram && window.Telegram.WebApp;
+      if (!tg || !tg.initData) return; // oddiy brauzerda ochilgan — hech narsa qilmaymiz
+      tg.ready();
+      tg.expand();
+      if (this.isAuthed()) return; // allaqachon kirgan
+      const r = await ClientAPI.telegramWebApp(tg.initData);
+      if (r && r.ok && r.token) {
+        this.user = r.user;
+        localStorage.setItem(LS.CLIENT_TOKEN, r.token);
+        localStorage.setItem(LS.CLIENT_USER, JSON.stringify(this.user));
+      }
+    } catch (e) { /* avtomatik kirish ixtiyoriy — muvaffaqiyatsiz bo'lsa oddiy login ekrani ko'rinadi */ }
   },
 
   // === REAL VAQT (Socket.io) — status/to'lov/polis/xabar darhol yangilanadi ===
