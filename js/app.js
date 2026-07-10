@@ -951,6 +951,7 @@ const App = {
         <div class="testimonials">
           ${testimonials.slice(0, 5).map(t => `
           <div class="testimonial-card">
+            ${t.rating ? `<div class="tc-stars">${'★'.repeat(Math.round(t.rating))}${'☆'.repeat(5-Math.round(t.rating))}</div>` : ''}
             <p>"${esc(t.text || '')}"</p>
             <div class="tc-author">${esc(t.name || 'Mijoz')}${t.city ? ', ' + esc(t.city) : ''}</div>
           </div>`).join('')}
@@ -2037,9 +2038,45 @@ const App = {
       <h3 class="section-h">Jarayon bosqichlari</h3>
       <div class="timeline">${timeline}</div>
 
+      ${isReady && !a.review_submitted ? `
+      <div class="review-card">
+        <h3 class="section-h">Xizmatimizni baholang</h3>
+        <div class="review-stars" id="reviewStars">
+          ${[1,2,3,4,5].map(n=>`<span class="rv-star" data-n="${n}" onclick="App.setReviewStar(${n})">★</span>`).join('')}
+        </div>
+        <textarea class="inp" id="reviewText" rows="3" placeholder="Fikringizni yozing (ixtiyoriy)"></textarea>
+        <button class="btn btn-primary btn-block" id="reviewSubmitBtn" style="margin-top:10px" onclick="App.submitReview('${a.id}')">Yuborish</button>
+      </div>` : ''}
+
       <button class="btn btn-ghost btn-block" style="margin-top:8px" onclick="App.go('/chat/${a.id}')">
         ${I.chat} Operator bilan bog'lanish
       </button>`;
+    this._reviewRating = 0;
+  },
+  setReviewStar(n) {
+    this._reviewRating = n;
+    document.querySelectorAll('#reviewStars .rv-star').forEach((el, i) => {
+      el.classList.toggle('on', i < n);
+    });
+  },
+  async submitReview(appId) {
+    if (!this._reviewRating) return toast('Yulduzcha bilan baholang', 'err');
+    const btn = document.getElementById('reviewSubmitBtn');
+    setLoading(btn, true);
+    try {
+      await ClientAPI.submitReview({
+        phone: this.user.phone, app_id: appId,
+        rating: this._reviewRating,
+        text: document.getElementById('reviewText').value.trim(),
+        name: this.user.name || this.user.full_name || '',
+      });
+      toast('Rahmat! Sharhingiz yuborildi', 'ok');
+      const card = document.querySelector('.review-card');
+      if (card) card.remove();
+    } catch (e) {
+      setLoading(btn, false);
+      toast(e.message, 'err');
+    }
   },
 
   // ============================================================
