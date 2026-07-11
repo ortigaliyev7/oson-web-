@@ -352,12 +352,26 @@ const App = {
           <div class="bx-amt ${t.amount<0?'neg':''}">${t.amount>0?'+':''}${fmtSom(Math.abs(t.amount))}</div>
         </div>`).join('') : `<p class="muted-text" style="text-align:center;padding:16px">Hozircha tranzaksiya yo'q</p>`;
 
+      const tier = ub.tier || {};
+      const rankTxt = ub.rank ? `Reytingda: <b>#${ub.rank}</b> / ${ub.rank_total} ta` : 'Hali reytingda emassiz';
+      const nextTxt = tier.next
+        ? `Keyingi daraja — ${tier.next.icon} ${esc(tier.next.label)}: yana <b>${tier.next.remaining}</b> ta do'st kerak`
+        : (ub.referral_count > 0 ? '🎉 Eng yuqori darajadasiz!' : "Do'st taklif qilib daraja oshiring");
+
       const body = `
         <div class="bx-balance">
           <div class="bx-bal-lab">Sizning bonusingiz</div>
           <div class="bx-bal-val">${fmtSom(ub.balance)}</div>
           <div class="bx-bal-sub">Jami ishlangan: ${fmtSom(ub.total_earned)} · Do'stlar: ${ub.referral_count||0}</div>
           ${ub.balance > 0 && contact ? `<a href="${esc(contact)}" target="_blank" class="btn btn-light btn-sm" style="margin-top:12px">${I.send} Bonusni olish uchun murojaat</a>` : ''}
+        </div>
+
+        <div class="bx-rank-card">
+          <div class="bx-rank-badge tier-${esc(tier.id||'yangi')}">
+            <span class="bx-rank-ic">${tier.icon||'🔰'}</span>
+            <div class="bx-rank-txt"><b>${esc(tier.label||'Yangi')} daraja</b><span>${rankTxt}</span></div>
+          </div>
+          <div class="bx-rank-hint">${nextTxt}</div>
         </div>
 
         ${cfg.enabled ? `
