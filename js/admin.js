@@ -1565,6 +1565,7 @@ const Admin = {
   // ============================================================
   async viewBonus() {
     this.root.innerHTML = this.shell('bonus', this.loadingBlock());
+    this._bonusSearch = '';
     try {
       const [cfg, ov, rt] = await Promise.all([
         AdminAPI.refConfig(), AdminAPI.refOverview(), AdminAPI.refRating(),
@@ -1587,21 +1588,6 @@ const Admin = {
           <input class="inp brr-val" id="${prefix}val_${key}" inputmode="numeric" value="${r.value||0}">
         </div>`;
       };
-      const ovRows = ov.items.length ? ov.items.map(u => `
-        <div class="bonus-user-row">
-          <div onclick="Admin.bonusHistory('${u.phone}','${esc(u.name)}')" style="cursor:pointer">
-            <b>${esc(u.name)} ${u.flagged?`<span class="flag-badge" title="Shubhali faoliyat — to'lashdan oldin tarixni tekshiring">⚠️ Tekshiring</span>`:''}</b>
-            <span>${fmtPhone(u.phone)}</span>
-          </div>
-          <div class="bur-bal">${fmtSom(u.balance)}</div>
-          <button class="btn btn-primary btn-sm" onclick="Admin.bonusPayout('${u.phone}', ${u.balance})">To'landi</button>
-        </div>`).join('') : `<p class="muted-text" style="padding:14px">Hozircha to'lanadigan bonus yo'q</p>`;
-      const rtRows = rt.items.length ? rt.items.map((u,i) => `
-        <div class="bonus-rank-row" onclick="Admin.bonusHistory('${u.phone}','${esc(u.name)}')" style="cursor:pointer">
-          <span class="brk-n">${i+1}</span>
-          <div><b>${esc(u.name)}</b><span>${fmtPhone(u.phone)}</span></div>
-          <div class="brk-c">${u.referral_count} ta · ${fmtSom(u.total_earned)}</div>
-        </div>`).join('') : `<p class="muted-text" style="padding:14px">Hali taklif yo'q</p>`;
 
       const content = `
         <h1 class="adm-h1">Bonuslar (referral)</h1>
@@ -1661,20 +1647,66 @@ const Admin = {
 
         <div class="adm-card" style="max-width:640px">
           <div class="adm-card-title-row">
-            <h3 class="adm-card-title">To'lanadigan bonuslar (${ov.items.length})</h3>
-            <span class="bonus-total-unpaid">${fmtSom(ov.total_unpaid||0)}</span>
+            <h3 class="adm-card-title">To'lanadigan bonuslar (<span id="bonusOvCount">${ov.items.length}</span>)</h3>
+            <span class="bonus-total-unpaid" id="bonusOvUnpaid">${fmtSom(ov.total_unpaid||0)}</span>
           </div>
-          <div class="bonus-list">${ovRows}</div>
+          <div class="bonus-search">
+            <input class="inp" id="bonusSearchInp" placeholder="Ism yoki telefon bo'yicha qidirish..." oninput="Admin.onBonusSearch(this.value)">
+          </div>
+          <div class="bonus-list" id="bonusOvList">${this.renderBonusOvRows(ov.items)}</div>
         </div>
 
         <div class="adm-card" style="max-width:640px">
           <h3 class="adm-card-title">🏆 Eng ko'p taklif qilganlar</h3>
-          <div class="bonus-list">${rtRows}</div>
+          <div class="bonus-list" id="bonusRtList">${this.renderBonusRtRows(rt.items)}</div>
         </div>`;
       this.root.innerHTML = this.shell('bonus', content);
     } catch (e) {
       this.root.innerHTML = this.shell('bonus', this.errorBlock(e.message));
     }
+  },
+  tierBadge(tier) {
+    if (!tier || !tier.id) return '';
+    return `<span class="tier-badge tier-${esc(tier.id)}">${tier.icon||''} ${esc(tier.label||'')}</span>`;
+  },
+  renderBonusOvRows(items) {
+    if (!items.length) return `<p class="muted-text" style="padding:14px">Hozircha to'lanadigan bonus yo'q</p>`;
+    return items.map(u => `
+      <div class="bonus-user-row">
+        <div onclick="Admin.bonusHistory('${u.phone}','${esc(u.name)}')" style="cursor:pointer">
+          <b>${esc(u.name)} ${this.tierBadge(u.tier)} ${u.flagged?`<span class="flag-badge" title="Shubhali faoliyat — to'lashdan oldin tarixni tekshiring">⚠️ Tekshiring</span>`:''}</b>
+          <span>${fmtPhone(u.phone)}</span>
+        </div>
+        <div class="bur-bal">${fmtSom(u.balance)}</div>
+        <button class="btn btn-primary btn-sm" onclick="Admin.bonusPayout('${u.phone}', ${u.balance})">To'landi</button>
+      </div>`).join('');
+  },
+  renderBonusRtRows(items) {
+    if (!items.length) return `<p class="muted-text" style="padding:14px">Hali taklif yo'q</p>`;
+    return items.map(u => `
+      <div class="bonus-rank-row" onclick="Admin.bonusHistory('${u.phone}','${esc(u.name)}')" style="cursor:pointer">
+        <span class="brk-n">#${u.rank}</span>
+        <div><b>${esc(u.name)} ${this.tierBadge(u.tier)}</b><span>${fmtPhone(u.phone)}</span></div>
+        <div class="brk-c">${u.referral_count} ta · ${fmtSom(u.total_earned)}</div>
+      </div>`).join('');
+  },
+  onBonusSearch(v) {
+    this._bonusSearch = v;
+    clearTimeout(this._bonusSearchT);
+    this._bonusSearchT = setTimeout(() => this.runBonusSearch(v.trim()), 300);
+  },
+  async runBonusSearch(q) {
+    try {
+      const [ov, rt] = await Promise.all([ AdminAPI.refOverview(q), AdminAPI.refRating(q) ]);
+      const ovList = document.getElementById('bonusOvList');
+      const rtList = document.getElementById('bonusRtList');
+      const ovCount = document.getElementById('bonusOvCount');
+      const ovUnpaid = document.getElementById('bonusOvUnpaid');
+      if (ovList) ovList.innerHTML = this.renderBonusOvRows(ov.items);
+      if (rtList) rtList.innerHTML = this.renderBonusRtRows(rt.items);
+      if (ovCount) ovCount.textContent = ov.items.length;
+      if (ovUnpaid) ovUnpaid.textContent = fmtSom(ov.total_unpaid||0);
+    } catch (e) { toast(e.message, 'err'); }
   },
   async bonusToggle(key, val) {
     try {
@@ -1858,6 +1890,6 @@ const Admin = {
         </div>
         <button class="btn btn-ghost btn-block btn-danger" style="margin-top:20px" onclick="Admin.logout()">${I.logout} Chiqish</button>
       </div>`;
-    this.root.innerHTML = this.shell('profile', content);
+    this.root.innerHTML = this.shell('admin', content);
   },
 };
