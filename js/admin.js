@@ -1890,6 +1890,6 @@ const Admin = {
         </div>
         <button class="btn btn-ghost btn-block btn-danger" style="margin-top:20px" onclick="Admin.logout()">${I.logout} Chiqish</button>
       </div>`;
-    this.root.innerHTML = this.shell('admin', content);
+    this.root.innerHTML = this.shell('profile', content);
   },
 };
