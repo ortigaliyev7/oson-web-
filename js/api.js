@@ -130,8 +130,8 @@ const AdminAPI = {
   // --- Referral bonus (admin) ---
   refConfig:     () => req('/referral/admin/config', { token: adminToken() }),
   refSaveConfig: (cfg) => req('/referral/admin/config', { method:'PATCH', body: cfg, token: adminToken() }),
-  refOverview:   () => req('/referral/admin/overview', { token: adminToken() }),
-  refRating:     () => req('/referral/admin/rating', { token: adminToken() }),
+  refOverview:   (q) => req('/referral/admin/overview' + (q ? `?q=${encodeURIComponent(q)}` : ''), { token: adminToken() }),
+  refRating:     (q) => req('/referral/admin/rating' + (q ? `?q=${encodeURIComponent(q)}` : ''), { token: adminToken() }),
   refPayout:     (phone) => req(`/referral/admin/payout/${encodeURIComponent(phone)}`, { method:'POST', token: adminToken() }),
 
   // --- Ommaviy xabar (broadcast) ---

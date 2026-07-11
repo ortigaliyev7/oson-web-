@@ -281,7 +281,7 @@ img, svg { display:block; max-width:100%; }
    MIJOZ APP (ichki)
    ============================================================ */
 .app-shell { min-height:100vh; padding-bottom:90px; }
-.app-topbar { position:sticky; top:0; z-index:50; background:var(--paper); border-bottom:1px solid var(--line); }
+.app-topbar { position:sticky; top:0; z-index:50; background:rgba(246,250,248,.85); backdrop-filter:blur(14px); -webkit-backdrop-filter:blur(14px); border-bottom:1px solid var(--line); }
 .app-topbar-inner { height:64px; display:flex; align-items:center; justify-content:space-between; }
 .app-back { display:inline-flex; align-items:center; gap:8px; color:var(--ink-2); font-weight:600; font-size:15px; cursor:pointer; padding:8px 12px; border-radius:10px; transition:background .2s; }
 .app-back:hover { background:var(--green-50); }
@@ -925,7 +925,7 @@ body.no-scroll{overflow:hidden}
 /* Mobil unumdorlik — yopishqoq elementlarda blur'ni o'chirish (qotishni oldini oladi) */
 @media (max-width:768px){
   .nav{background:var(--paper);backdrop-filter:none;-webkit-backdrop-filter:none}
-  .app-topbar{backdrop-filter:none;-webkit-backdrop-filter:none}
+  .app-topbar{background:var(--paper);backdrop-filter:none;-webkit-backdrop-filter:none}
 }
 
 /* ════════════════════════════════════════════════
@@ -1089,6 +1089,21 @@ body.no-scroll{overflow:hidden}
 .bx-tx-note{display:block;font-size:12px;color:var(--ink-2);opacity:.85;margin-top:2px}
 .bx-amt{font-weight:700;color:var(--green-700)}
 .bx-amt.neg{color:var(--ink-2)}
+
+/* Reyting/daraja (tier) kartasi — mijozning bonus sahifasida */
+.bx-rank-card{background:var(--card);border:1.5px solid var(--line);border-radius:16px;padding:14px 16px;margin-bottom:16px}
+.bx-rank-badge{display:flex;align-items:center;gap:12px}
+.bx-rank-ic{width:38px;height:38px;border-radius:11px;display:flex;align-items:center;justify-content:center;font-size:19px;flex-shrink:0}
+.bx-rank-txt{display:flex;flex-direction:column;gap:1px}
+.bx-rank-txt b{font-size:14.5px;color:var(--ink)}
+.bx-rank-txt span{font-size:12.5px;color:var(--ink-2)}
+.bx-rank-hint{margin-top:10px;padding-top:10px;border-top:1px solid var(--line);font-size:12.5px;color:var(--ink-2)}
+.bx-rank-hint b{color:var(--ink)}
+.tier-yangi .bx-rank-ic{background:#F1F5F9;color:#64748B}
+.tier-bronza .bx-rank-ic{background:#FBEBD9;color:#B45309}
+.tier-kumush .bx-rank-ic{background:#EEF1F4;color:#64748B}
+.tier-oltin .bx-rank-ic{background:var(--gold-l);color:var(--gold)}
+.tier-olmos .bx-rank-ic{background:#E0F4FE;color:#0EA5E9}
 
 .bonus-use-card{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-top:14px;padding:14px 16px;background:var(--green-50);border:1.5px solid var(--green-300);border-radius:14px}
 .buc-txt b{display:block;font-size:14.5px;color:var(--ink)}

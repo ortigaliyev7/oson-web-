@@ -346,6 +346,18 @@
 .brk-c{font-size:13px;color:var(--ink-2);text-align:right}
 @media(max-width:520px){.bonus-rate-row{grid-template-columns:1fr 90px 100px}}
 
+/* Bonus qidiruv qutisi (mijozlar ro'yxatida) */
+.bonus-search{margin-bottom:12px}
+.bonus-search .inp{padding:11px 14px;font-size:14px}
+
+/* Reyting/daraja (tier) badge — bonus ro'yxati va reytingda */
+.tier-badge{display:inline-flex;align-items:center;gap:4px;font-size:11px;font-weight:700;padding:2px 8px;border-radius:99px;margin-left:6px;vertical-align:middle}
+.tier-yangi{background:#F1F5F9;color:#64748B}
+.tier-bronza{background:#FBEBD9;color:#B45309}
+.tier-kumush{background:#EEF1F4;color:#64748B}
+.tier-oltin{background:var(--gold-l);color:var(--gold)}
+.tier-olmos{background:#E0F4FE;color:#0EA5E9}
+
 /* Bonus overview: umumiy to'lanmagan summasi */
 .adm-card-title-row{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:16px}
 .adm-card-title-row .adm-card-title{margin-bottom:0}
@@ -374,4 +386,4 @@
 .brg-row.brg-head{font-size:12px;color:var(--muted);font-weight:600;text-transform:uppercase}
 .brg-lab{font-size:14px;color:var(--ink);font-weight:600}
 .brg-row input.inp{padding:8px 10px;font-size:13.5px;text-align:center}
-@media(max-width:560px){.brg-row{grid-template-columns:1fr .8fr .8fr .8fr;gap:6px}}
+@media(max-width:560px){.brg-row{grid-template-columns:1fr .8fr .8fr .8fr}}
