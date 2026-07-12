@@ -468,6 +468,7 @@ const App = {
       <div class="hero-text">
         <div class="hero-eyebrow">${I.shieldCheck} ${tt("O'zbekistonda raqamli sug'urta")}</div>
         <h1>${tt('Avto sug\'urta')} <span class="accent">${tt('bir necha daqiqada')}</span></h1>
+        <p class="hero-slogan">${tt("Bir surat. Bir to'lov. Polis tayyor.")}</p>
         <p class="hero-sub">${tt("Ofisga borib navbatda turmang. Hujjatni suratga oling, biz polisingizni rasmiylashtiramiz va to'g'ridan-to'g'ri sug'urta kompaniyasiga davlat narxida to'laysiz.")}</p>
         <div class="hero-cta">
           <button class="btn btn-primary btn-lg" onclick="App.go('/login')">${I.arrowRight} ${tt('Boshlash')}</button>
