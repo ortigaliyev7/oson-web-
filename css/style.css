@@ -180,8 +180,10 @@ img, svg { display:block; max-width:100%; }
   radial-gradient(700px 400px at 0% 100%, #EAF6F1, transparent 55%); }
 .hero-grid { display:grid; grid-template-columns:1.05fr .95fr; gap:64px; align-items:center; }
 .hero-eyebrow { display:inline-flex; align-items:center; gap:8px; padding:7px 14px; background:#fff; border:1px solid var(--line-2); border-radius:999px; font-size:13px; font-weight:600; color:var(--green-700); margin-bottom:24px; box-shadow:var(--shadow-sm); }
-.hero h1 { font-size:clamp(38px, 5vw, 60px); font-weight:800; line-height:1.05; margin-bottom:22px; }
+.hero h1 { font-size:clamp(38px, 5vw, 60px); font-weight:800; line-height:1.05; margin-bottom:14px; }
 .hero h1 .accent { color:var(--green-700); position:relative; }
+/* Slogan — hero'da h1 ostidagi qisqa, urg'uli tagline */
+.hero-slogan { font-family:'Sora',sans-serif; font-size:17.5px; font-weight:700; color:var(--green-700); letter-spacing:-.01em; margin-bottom:16px; animation:tgFadeUp .6s ease both; }
 .hero-sub { font-size:19px; color:var(--ink-2); max-width:520px; margin-bottom:36px; line-height:1.5; }
 .hero-cta { display:flex; gap:14px; flex-wrap:wrap; }
 .hero-trust { display:flex; gap:28px; margin-top:40px; }

@@ -99,6 +99,7 @@ const UZ_RU = {
   "O'zbekistonda raqamli sug'urta": 'Цифровое страхование в Узбекистане',
   "Avto sug'urta": 'Автостраховка',
   'bir necha daqiqada': 'за несколько минут',
+  "Bir surat. Bir to'lov. Polis tayyor.": 'Один снимок. Одна оплата. Полис готов.',
   "Ofisga borib navbatda turmang. Hujjatni suratga oling, biz polisingizni rasmiylashtiramiz va to'g'ridan-to'g'ri sug'urta kompaniyasiga davlat narxida to'laysiz.":
     'Не стойте в очереди в офисе. Сфотографируйте документ — мы оформим ваш полис, а вы оплатите напрямую страховой компании по государственной цене.',
   'Boshlash': 'Начать',
