@@ -363,7 +363,10 @@ const App = {
           <div class="bx-bal-lab">Sizning bonusingiz</div>
           <div class="bx-bal-val">${fmtSom(ub.balance)}</div>
           <div class="bx-bal-sub">Jami ishlangan: ${fmtSom(ub.total_earned)} · Do'stlar: ${ub.referral_count||0}</div>
-          ${ub.balance > 0 && contact ? `<a href="${esc(contact)}" target="_blank" class="btn btn-light btn-sm" style="margin-top:12px">${I.send} Bonusni olish uchun murojaat</a>` : ''}
+          ${ub.balance > 0 ? (ub.payout_locked
+            ? `<div class="bx-payout-wait">${I.clock} Yana ${ub.payout_available_in_days} kundan keyin so'rashingiz mumkin</div>`
+            : (contact ? `<a href="${esc(contact)}" target="_blank" class="btn btn-light btn-sm" style="margin-top:12px">${I.send} Bonusni olish uchun murojaat</a>` : '')
+          ) : ''}
         </div>
 
         <div class="bx-rank-card">
@@ -383,11 +386,14 @@ const App = {
             <div class="bx-step"><span class="bx-num">2</span><span>Do'stingiz shu havola orqali ariza to'ldiradi</span></div>
             <div class="bx-step bx-step-key"><span class="bx-num">3</span><span><b>To'lov qilib, ariza yakunlangach</b> — bonus tushadi</span></div>
           </div>
-          ${contact ? `<a href="${esc(contact)}" target="_blank" class="bx-contact-note">
+          ${ub.payout_locked ? `<div class="bx-contact-note bx-locked">
+            <div class="bcn-ic">${I.clock}</div>
+            <div class="bcn-txt"><b>Bonusni yechib olish</b><span>Yana ${ub.payout_available_in_days} kundan keyin murojaat qilishingiz mumkin</span></div>
+          </div>` : (contact ? `<a href="${esc(contact)}" target="_blank" class="bx-contact-note">
             <div class="bcn-ic">${I.send}</div>
             <div class="bcn-txt"><b>Bonusni yechib olish uchun</b><span>Murojaat qiling</span></div>
             <div class="bcn-arrow">${I.arrowRight}</div>
-          </a>` : ''}
+          </a>` : '')}
           ${completed ? `
             <div class="bx-link"><input class="inp" id="refLink" readonly value="${esc(link)}"><button class="btn btn-primary btn-sm" onclick="App.shareRef()">${I.send} Ulashish</button></div>
             <div class="bx-calc">
