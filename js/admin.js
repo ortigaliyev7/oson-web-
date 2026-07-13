@@ -1608,15 +1608,6 @@ const Admin = {
             <div class="setting-txt"><h3>Birinchi sug'urta uchun ham bonus</h3><p>Do'stning birinchi sug'urtasi uchun ham bonus berilsinmi</p></div>
             <button class="toggle ${cfg.first_insurance?'on':''}" id="tgFirst" onclick="Admin.bonusToggle('first_insurance',${!cfg.first_insurance})"><span class="toggle-knob"></span></button>
           </div>
-          ${cfg.first_insurance ? `
-          <div class="bonus-rate-row" style="margin-top:12px">
-            <span class="brr-lab">Birinchi sug'urta stavkasi</span>
-            <select class="inp brr-mode" id="rmode_first_insurance">
-              <option value="percent" ${cfg.first_insurance_rate.mode==='percent'?'selected':''}>Foiz %</option>
-              <option value="fixed" ${cfg.first_insurance_rate.mode==='fixed'?'selected':''}>So'm</option>
-            </select>
-            <input class="inp brr-val" id="rval_first_insurance" inputmode="numeric" value="${cfg.first_insurance_rate.value||0}">
-          </div>` : ''}
           <div class="setting-row" style="margin-top:10px">
             <div class="setting-txt"><h3>Bonusni chegirma sifatida ishlatish</h3><p>Mijoz bonusини keyingi sug'urtaga chegirma qiladi (faqat karta to'lovda)</p></div>
             <button class="toggle ${cfg.allow_discount?'on':''}" id="tgDisc" onclick="Admin.bonusToggle('allow_discount',${!cfg.allow_discount})"><span class="toggle-knob"></span></button>
@@ -1627,6 +1618,11 @@ const Admin = {
           <h3 class="adm-card-title">Taklif havolasi — bonus stavkalari (hudud × avto)</h3>
           <p style="color:var(--ink-2);font-size:13px;margin-bottom:12px">Mijoz o'z havolasini ulashib do'stini taklif qilsa. Har biri foiz (%) yoki qat'iy so'm summa</p>
           ${RATES.map(rateRow(cfg.rates, 'r')).join('')}
+
+          ${cfg.first_insurance ? `
+          <h4 class="bonus-limit-title">Do'stning birinchi sug'urtasi uchun stavka (hudud × avto)</h4>
+          ${RATES.map(rateRow(cfg.first_insurance_rates, 'fi')).join('')}
+          ` : ''}
 
           <h4 class="bonus-limit-title">Bitta do'st raqami uchun necha marta bonus berilsin (hudud × avto)</h4>
           <p style="color:var(--ink-2);font-size:12.5px;margin-bottom:10px">0 = cheklovsiz. Shu limitdan keyin o'sha do'st raqamidan kelgan yangi arizalar uchun havola orqali bonus berilmaydi</p>
@@ -1649,16 +1645,11 @@ const Admin = {
             <div class="setting-txt"><h3>Boshqa odam uchun — alohida bonus</h3><p>Mijoz ilova ichida "Boshqa odam uchun" bo'limidan to'g'ridan-to'g'ri do'stiga sug'urta qilib bersa</p></div>
             <button class="toggle ${cfg.direct_enabled?'on':''}" id="tgDirect" onclick="Admin.bonusToggle('direct_enabled',${!cfg.direct_enabled})"><span class="toggle-knob"></span></button>
           </div>
-          ${cfg.first_insurance ? `
-          <div class="bonus-rate-row" style="margin-top:12px">
-            <span class="brr-lab">Birinchi sug'urta stavkasi</span>
-            <select class="inp brr-mode" id="drmode_first_insurance">
-              <option value="percent" ${cfg.direct_first_insurance_rate.mode==='percent'?'selected':''}>Foiz %</option>
-              <option value="fixed" ${cfg.direct_first_insurance_rate.mode==='fixed'?'selected':''}>So'm</option>
-            </select>
-            <input class="inp brr-val" id="drval_first_insurance" inputmode="numeric" value="${cfg.direct_first_insurance_rate.value||0}">
-          </div>` : ''}
           <div style="margin-top:12px">${RATES.map(rateRow(cfg.direct_rates, 'dr')).join('')}</div>
+          ${cfg.first_insurance ? `
+          <h4 class="bonus-limit-title">Do'stning birinchi sug'urtasi uchun stavka (hudud × avto)</h4>
+          ${RATES.map(rateRow(cfg.direct_first_insurance_rates, 'dfi')).join('')}
+          ` : ''}
           <button class="btn btn-primary" style="margin-top:14px" onclick="Admin.bonusSaveConfig()">Saqlash</button>
         </div>
 
@@ -1752,6 +1743,8 @@ const Admin = {
     };
     const rates = readRates('r');
     const direct_rates = readRates('dr');
+    const first_insurance_rates = readRates('fi');
+    const direct_first_insurance_rates = readRates('dfi');
     const link_limits = {};
     keys.forEach(k => {
       const el = document.getElementById('rlimit_' + k);
@@ -1761,16 +1754,8 @@ const Admin = {
     if (payout_contact && !/^https?:\/\//i.test(payout_contact)) return toast('Havola https:// bilan boshlanishi kerak', 'err');
     const payout_wait_days = Math.max(0, Number(document.getElementById('refWaitDays').value) || 0);
     const body = { rates, direct_rates, link_limits, payout_contact, payout_wait_days };
-    const fiMode = document.getElementById('rmode_first_insurance');
-    const fiVal = document.getElementById('rval_first_insurance');
-    if (fiMode && fiVal) {
-      body.first_insurance_rate = { mode: fiMode.value, value: Number(fiVal.value) || 0 };
-    }
-    const dfiMode = document.getElementById('drmode_first_insurance');
-    const dfiVal = document.getElementById('drval_first_insurance');
-    if (dfiMode && dfiVal) {
-      body.direct_first_insurance_rate = { mode: dfiMode.value, value: Number(dfiVal.value) || 0 };
-    }
+    if (Object.keys(first_insurance_rates).length) body.first_insurance_rates = first_insurance_rates;
+    if (Object.keys(direct_first_insurance_rates).length) body.direct_first_insurance_rates = direct_first_insurance_rates;
     try {
       await AdminAPI.refSaveConfig(body);
       toast('Bonus sozlamalari saqlandi', 'ok');
