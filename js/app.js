@@ -337,11 +337,10 @@ const App = {
     this.root.innerHTML = this.topbar('Bonus', '/dashboard') + `<div class="app-shell"><div class="wrap app-main app-view">${this.loadingBlock ? this.loadingBlock() : ''}</div></div>`;
     try {
       const phone = this.user.phone;
-      const [cfg, ub, apps] = await Promise.all([
-        ClientAPI.refConfig(), ClientAPI.refUser(phone), ClientAPI.myApps(phone).catch(()=>({items:[]})),
+      const [cfg, ub] = await Promise.all([
+        ClientAPI.refConfig(), ClientAPI.refUser(phone),
       ]);
       this._refCfg = cfg;
-      const completed = (apps.items||[]).some(a => a.status_simple === 'completed' || a.status === 'completed' || a.status === 'policy_ready');
       const link = this.refShareLink();
       const contact = cfg.payout_contact || this.appSettings.contact_admin_tg_url || '';
       const txHtml = (ub.transactions||[]).length ? ub.transactions.map(t => `
@@ -394,21 +393,19 @@ const App = {
             <div class="bcn-txt"><b>Bonusni yechib olish uchun</b><span>Murojaat qiling</span></div>
             <div class="bcn-arrow">${I.arrowRight}</div>
           </a>` : '')}
-          ${completed ? `
-            <div class="bx-link"><input class="inp" id="refLink" readonly value="${esc(link)}"><button class="btn btn-primary btn-sm" onclick="App.shareRef()">${I.send} Ulashish</button></div>
-            <div class="bx-calc">
-              ${cfg.direct_enabled ? `
-              <div class="cc-toggle bx-via-toggle">
-                <button class="cc-opt on" id="bcViaLink" onclick="App.setBcVia('link')">Taklif havolasi</button>
-                <button class="cc-opt" id="bcViaDirect" onclick="App.setBcVia('direct')">To'g'ridan-to'g'ri</button>
-              </div>` : ''}
-              <div class="bx-calc-row">
-                <select class="inp" id="bcZone" onchange="App.refCalc()"><option value="bsh">Viloyat</option><option value="tsh">Toshkent</option></select>
-                <select class="inp" id="bcVeh" onchange="App.refCalc()"><option value="yengil">Yengil avto</option><option value="yuk">Yuk avto</option></select>
-              </div>
-              <div class="bx-calc-result" id="bcResult"></div>
+          <div class="bx-link"><input class="inp" id="refLink" readonly value="${esc(link)}"><button class="btn btn-primary btn-sm" onclick="App.shareRef()">${I.send} Ulashish</button></div>
+          <div class="bx-calc">
+            ${cfg.direct_enabled ? `
+            <div class="cc-toggle bx-via-toggle">
+              <button class="cc-opt on" id="bcViaLink" onclick="App.setBcVia('link')">Taklif havolasi</button>
+              <button class="cc-opt" id="bcViaDirect" onclick="App.setBcVia('direct')">To'g'ridan-to'g'ri</button>
+            </div>` : ''}
+            <div class="bx-calc-row">
+              <select class="inp" id="bcZone" onchange="App.refCalc()"><option value="bsh">Viloyat</option><option value="tsh">Toshkent</option></select>
+              <select class="inp" id="bcVeh" onchange="App.refCalc()"><option value="yengil">Yengil avto</option><option value="yuk">Yuk avto</option></select>
             </div>
-          ` : `<div class="bx-lock">${I.help} Bu imkoniyat o'zingizga sug'urta qilib bo'lgach ochiladi.</div>`}
+            <div class="bx-calc-result" id="bcResult"></div>
+          </div>
         </div>` : ''}
 
         <div class="bx-card">
@@ -416,7 +413,7 @@ const App = {
           ${txHtml}
         </div>`;
       this.root.querySelector('.app-view').innerHTML = body;
-      if (completed) this.refCalc();
+      this.refCalc();
     } catch (e) {
       const v = this.root.querySelector('.app-view');
       if (v) v.innerHTML = this.errorBlock ? this.errorBlock(e.message) : `<p>${esc(e.message)}</p>`;
