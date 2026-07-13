@@ -387,3 +387,8 @@
 .brg-lab{font-size:14px;color:var(--ink);font-weight:600}
 .brg-row input.inp{padding:8px 10px;font-size:13.5px;text-align:center}
 @media(max-width:560px){.brg-row{grid-template-columns:1fr .8fr .8fr .8fr}}
+
+/* Havola bonusi — bitta do'st raqami uchun limit (hudud x avto) */
+.bonus-limit-title{font-size:13.5px;font-weight:700;color:var(--ink);margin:16px 0 4px}
+.bonus-limit-row{display:grid;grid-template-columns:1fr 120px;gap:8px;align-items:center;margin-bottom:8px}
+@media(max-width:520px){.bonus-limit-row{grid-template-columns:1fr 90px}}
