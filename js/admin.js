@@ -1588,6 +1588,13 @@ const Admin = {
           <input class="inp brr-val" id="${prefix}val_${key}" inputmode="numeric" value="${r.value||0}">
         </div>`;
       };
+      const limitRow = ([key, lab]) => {
+        const v = (cfg.link_limits && cfg.link_limits[key]) || 0;
+        return `<div class="bonus-limit-row">
+          <span class="brr-lab">${lab}</span>
+          <input class="inp" id="rlimit_${key}" inputmode="numeric" value="${v}" placeholder="0 = cheklovsiz">
+        </div>`;
+      };
 
       const content = `
         <h1 class="adm-h1">Bonuslar (referral)</h1>
@@ -1620,9 +1627,19 @@ const Admin = {
           <h3 class="adm-card-title">Taklif havolasi — bonus stavkalari (hudud × avto)</h3>
           <p style="color:var(--ink-2);font-size:13px;margin-bottom:12px">Mijoz o'z havolasini ulashib do'stini taklif qilsa. Har biri foiz (%) yoki qat'iy so'm summa</p>
           ${RATES.map(rateRow(cfg.rates, 'r')).join('')}
+
+          <h4 class="bonus-limit-title">Bitta do'st raqami uchun necha marta bonus berilsin (hudud × avto)</h4>
+          <p style="color:var(--ink-2);font-size:12.5px;margin-bottom:10px">0 = cheklovsiz. Shu limitdan keyin o'sha do'st raqamidan kelgan yangi arizalar uchun havola orqali bonus berilmaydi</p>
+          ${RATES.map(limitRow).join('')}
+
           <div class="field" style="margin-top:14px">
             <label>Bonus olish uchun murojaat (Telegram havolasi)</label>
             <input class="inp" id="refContact" value="${esc(cfg.payout_contact||'')}" placeholder="https://t.me/...">
+          </div>
+          <div class="field" style="margin-top:14px">
+            <label>Bonusni yechib olish uchun kutish muddati (kun)</label>
+            <input class="inp" id="refWaitDays" inputmode="numeric" value="${cfg.payout_wait_days||0}" placeholder="0 = darhol">
+            <p class="hint">Mijoz so'nggi bonus tushgan kundan shuncha kun o'tgach murojaat qila oladi</p>
           </div>
           <button class="btn btn-primary" style="margin-top:14px" onclick="Admin.bonusSaveConfig()">Saqlash</button>
         </div>
@@ -1735,9 +1752,15 @@ const Admin = {
     };
     const rates = readRates('r');
     const direct_rates = readRates('dr');
+    const link_limits = {};
+    keys.forEach(k => {
+      const el = document.getElementById('rlimit_' + k);
+      if (el) link_limits[k] = Math.max(0, Number(el.value) || 0);
+    });
     const payout_contact = document.getElementById('refContact').value.trim();
     if (payout_contact && !/^https?:\/\//i.test(payout_contact)) return toast('Havola https:// bilan boshlanishi kerak', 'err');
-    const body = { rates, direct_rates, payout_contact };
+    const payout_wait_days = Math.max(0, Number(document.getElementById('refWaitDays').value) || 0);
+    const body = { rates, direct_rates, link_limits, payout_contact, payout_wait_days };
     const fiMode = document.getElementById('rmode_first_insurance');
     const fiVal = document.getElementById('rval_first_insurance');
     if (fiMode && fiVal) {
