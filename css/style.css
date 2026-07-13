@@ -560,9 +560,9 @@ img, svg { display:block; max-width:100%; }
 .uz-act-btn.cam:hover{background:var(--green-700)}
 .uz-act-btn.gal{background:#fff;border:1px solid var(--line-2);color:var(--ink-2)}
 .uz-act-btn.gal:hover{border-color:var(--green-500);color:var(--green-700)}
-.tex-up .uz-actions, .doc-up .uz-actions{gap:6px;margin-top:10px;flex-wrap:wrap}
-.tex-up .uz-act-btn, .doc-up .uz-act-btn{padding:6px 10px;font-size:12px;border-radius:8px}
-.tex-up .uz-act-btn svg, .doc-up .uz-act-btn svg{width:13px;height:13px}
+.tex-up .uz-actions, .doc-up .uz-actions{gap:8px;margin-top:12px;flex-wrap:wrap}
+.tex-up .uz-act-btn, .doc-up .uz-act-btn{flex:1 1 0;justify-content:center;padding:10px 8px;font-size:13px;border-radius:9px;min-height:40px}
+.tex-up .uz-act-btn svg, .doc-up .uz-act-btn svg{width:15px;height:15px}
 
 /* FORM maydonlar */
 .form-grid{display:flex;flex-direction:column;gap:14px;margin-top:20px}
