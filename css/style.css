@@ -868,7 +868,7 @@ body.no-scroll{overflow:hidden}
 
 .tg-login-btn{text-decoration:none}
 .tg-login-btn svg{width:22px;height:22px}
-.tg-login-btn.disabled{opacity:.6;pointer-events:none}
+.tg-login-btn.disabled{opacity:.6}
 .btn-tg{background:#229ED9;color:#fff}
 .btn-tg:hover{background:#1d8bc0}
 
