@@ -695,13 +695,22 @@ const App = {
   },
 
   async startTelegramLoginFallback() {
+    // Ko'p mobil brauzerlar window.open()ni faqat bosish hodisasi ICHIDA,
+    // SINXRON chaqirilsa ruxsat beradi — await'dan keyin chaqirilsa ovozsiz
+    // bloklab qo'yadi (hech qanday xato ko'rinmaydi). Shuning uchun oynani
+    // hozir (hali sinxron) bo'sh holda ochamiz, manzilni esa javob kelgach
+    // beramiz.
+    const win = window.open('', '_blank');
     try {
       const r = await ClientAPI.startSession();
       this.sessionToken = r.token;
-      window.open(`${BOT_LINK}?start=${r.token}`, '_blank');
+      const url = `${BOT_LINK}?start=${r.token}`;
+      if (win) win.location.href = url;
+      else window.open(url, '_blank'); // popap bloklangan bo'lsa — oddiy urinish
       this.renderTelegramWaiting();
       this.pollSession();
     } catch (e) {
+      if (win) win.close();
       toast('Xatolik yuz berdi, qaytadan urinib ko\'ring', 'error');
     }
   },
