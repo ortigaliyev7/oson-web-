@@ -801,8 +801,8 @@ body.no-scroll{overflow:hidden}
   background:linear-gradient(135deg,#EAF6FD,#F0FAFF);border:1px solid #CFE9F9;border-radius:var(--r-lg);
   animation:tgFadeUp .5s ease}
 .tg-info-ic{width:48px;height:48px;border-radius:14px;flex-shrink:0;
-  background:linear-gradient(135deg,#2AABEE,#229ED9);display:flex;align-items:center;justify-content:center;
-  box-shadow:0 6px 16px rgba(34,158,217,.35)}
+  background:linear-gradient(135deg,var(--green-500),var(--green-700));display:flex;align-items:center;justify-content:center;
+  color:#fff;box-shadow:0 6px 16px rgba(15,110,86,.35)}
 .tg-info-ic svg{width:30px;height:30px}
 .tg-info-txt b{display:block;font-size:14.5px;color:var(--ink);margin-bottom:2px}
 .tg-info-txt span{font-size:12.5px;color:var(--ink-2);line-height:1.45}
@@ -870,7 +870,7 @@ body.no-scroll{overflow:hidden}
 
 .tg-login-btn{text-decoration:none}
 .tg-login-btn svg{width:22px;height:22px}
-.tg-login-btn.disabled{opacity:.6;pointer-events:none}
+.tg-login-btn.disabled{opacity:.6}
 .btn-tg{background:#229ED9;color:#fff}
 .btn-tg:hover{background:#1d8bc0}
 
