@@ -760,7 +760,14 @@ const App = {
       if (elapsed > 600) { this.stopSessionPoll(); return; }
       try {
         const s = await ClientAPI.checkSession(this.sessionToken);
-        if (s && s.ready && s.phone) {
+        // Raqamni ulash — Telegram tomonidan tasdiqlangan, shuning uchun KOD SHART EMAS.
+        // Backend token qaytarsa — mijozni to'g'ridan-to'g'ri ilovaga kirg'izamiz.
+        if (s && s.ready && s.token) {
+          this.stopSessionPoll();
+          if (s.phone) this.loginFullPhone = s.phone;
+          this.finishLogin(s, { toast: 'Avtomatik kirdingiz. Xush kelibsiz!' });
+        } else if (s && s.ready && s.phone) {
+          // Zaxira yo'l: token kelmasa (eski backend) — kod kiritish ekrani
           this.stopSessionPoll();
           this.loginFullPhone = s.phone;
           this.renderOtpStep('telegram');
@@ -871,24 +878,30 @@ const App = {
     setLoading(btn, true, 'Tekshirilmoqda...');
     try {
       const r = await ClientAPI.verify(this.loginFullPhone, code);
-      localStorage.setItem(LS.CLIENT_TOKEN, r.token);
-      this.user = r.user || { phone: this.loginFullPhone };
-      localStorage.setItem(LS.CLIENT_USER, JSON.stringify(this.user));
-      // Qoralama boshqa raqamga tegishli bo'lsa — tozalaymiz (maxfiylik uchun);
-      // shu raqamga tegishli bo'lsa (yoki eski, egasiz qoralama) — davom ettiramiz.
-      if (this.draft && this.draft._ownerPhone && this.draft._ownerPhone !== this.user.phone) {
-        this.clearDraft();
-      }
-      toast('Xush kelibsiz!', 'success');
-      this.setupWebPush(true); // bildirishnomaga obuna (ruxsat so'raladi)
-      this.initSocket();
-      this.go('/dashboard');
+      this.finishLogin(r);
     } catch (e) {
       toast(e.message || 'Kod noto\'g\'ri', 'error');
       setLoading(btn, false);
       cells.forEach(c => c.value = '');
       if (cells[0]) cells[0].focus();
     }
+  },
+
+  // Kirish yakunlash — kod tasdiqlangach YOKI Telegram raqam ulash orqali
+  // avtomatik kirilganda ham bir xil ishlaydi. r: { token, user, phone? }
+  finishLogin(r, opts = {}) {
+    localStorage.setItem(LS.CLIENT_TOKEN, r.token);
+    this.user = r.user || { phone: this.loginFullPhone };
+    localStorage.setItem(LS.CLIENT_USER, JSON.stringify(this.user));
+    // Qoralama boshqa raqamga tegishli bo'lsa — tozalaymiz (maxfiylik uchun);
+    // shu raqamga tegishli bo'lsa (yoki eski, egasiz qoralama) — davom ettiramiz.
+    if (this.draft && this.draft._ownerPhone && this.draft._ownerPhone !== this.user.phone) {
+      this.clearDraft();
+    }
+    toast(opts.toast || 'Xush kelibsiz!', 'success');
+    this.setupWebPush(true); // bildirishnomaga obuna (ruxsat so'raladi)
+    this.initSocket();
+    this.go('/dashboard');
   },
 
   // ============================================================
