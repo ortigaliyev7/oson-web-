@@ -2307,15 +2307,91 @@ const App = {
   // ============================================================
   // YORDAMCHI BLOKLAR
   // ============================================================
-  // Rasm yuklash zonasi uchun ikkita aniq tugma: "Kamera" to'g'ridan-to'g'ri
-  // kamerani ochadi (capture="environment"), "Galereya" esa capture'siz inputni
-  // ochib xotiradan rasm tanlash imkonini beradi.
+  // Rasm yuklash zonasi uchun ikkita aniq tugma:
+  //  • "Kamera"  — ilova ichidagi HAQIQIY kamerani ochadi (getUserMedia orqali).
+  //    Bu capture="environment" hint'iga tayanmaydi — ba'zi brauzerlar (masalan
+  //    Telegram ichki brauzeri) uni e'tiborsiz qoldirib, galereyani ochadi.
+  //  • "Galereya" — xotiradan rasm tanlaydi (oddiy fayl input).
+  // camId endi ishlatilmaydi (moslik uchun parametr qoldirildi).
   uzCamButton(camId, onchangeExpr, galId) {
-    return `<input type="file" id="${camId}" accept="image/*" capture="environment" hidden onchange="${onchangeExpr}">
-      <div class="uz-actions">
-        <button type="button" class="uz-act-btn cam" onclick="event.stopPropagation();document.getElementById('${camId}').click()">${I.camera}<span>Kamera</span></button>
+    return `<div class="uz-actions">
+        <button type="button" class="uz-act-btn cam" onclick="event.stopPropagation();App.openCamera(function(event){ ${onchangeExpr} })">${I.camera}<span>Kamera</span></button>
         <button type="button" class="uz-act-btn gal" onclick="event.stopPropagation();document.getElementById('${galId}').click()">${I.upload}<span>Galereya</span></button>
       </div>`;
+  },
+
+  // Ilova ichidagi kamera (getUserMedia). Rasm olingach, mavjud onchange
+  // handleriga sintetik hodisa ({target:{files:[file]}}) bilan uzatiladi —
+  // shuning uchun siqish/OCR/preview mantiqi o'zgarishsiz ishlaydi.
+  openCamera(onCapture) {
+    const md = navigator.mediaDevices;
+    if (!md || !md.getUserMedia) return this._legacyCapture(onCapture);
+
+    let root = document.getElementById('cam-root');
+    if (!root) { root = document.createElement('div'); root.id = 'cam-root'; document.body.appendChild(root); }
+    root.innerHTML = `
+      <style>
+        .cam-overlay{position:fixed;inset:0;z-index:99999;background:#000;display:flex;flex-direction:column}
+        .cam-video{flex:1;width:100%;min-height:0;object-fit:cover;background:#000}
+        .cam-hint{position:absolute;top:calc(16px + env(safe-area-inset-top));left:50%;transform:translateX(-50%);color:#fff;font-size:13.5px;font-weight:600;background:rgba(0,0,0,.45);padding:8px 16px;border-radius:99px}
+        .cam-bar{display:flex;align-items:center;justify-content:space-between;padding:22px 30px calc(26px + env(safe-area-inset-bottom));background:#000;gap:20px}
+        .cam-shot{width:74px;height:74px;border-radius:50%;background:#fff;border:5px solid rgba(255,255,255,.35);cursor:pointer;flex-shrink:0;transition:transform .1s}
+        .cam-shot:active{transform:scale(.92)}
+        .cam-btn{width:50px;height:50px;border-radius:50%;background:rgba(255,255,255,.16);border:none;color:#fff;display:flex;align-items:center;justify-content:center;cursor:pointer}
+        .cam-btn svg{width:24px;height:24px}
+      </style>
+      <div class="cam-overlay">
+        <div class="cam-hint">Hujjatni ramkaga to'liq joylang</div>
+        <video class="cam-video" autoplay playsinline muted></video>
+        <div class="cam-bar">
+          <button class="cam-btn cam-cancel" type="button" aria-label="Bekor">${I.x}</button>
+          <button class="cam-shot" type="button" aria-label="Suratga olish"></button>
+          <button class="cam-btn cam-flip" type="button" aria-label="Kamerani almashtirish">${I.refresh}</button>
+        </div>
+      </div>`;
+
+    const video = root.querySelector('.cam-video');
+    let stream = null, facing = 'environment';
+    const stop = () => { if (stream) { stream.getTracks().forEach(t => t.stop()); stream = null; } };
+    const close = () => { stop(); root.innerHTML = ''; };
+    const start = async () => {
+      stop();
+      try {
+        stream = await md.getUserMedia({ video: { facingMode: { ideal: facing } }, audio: false });
+        video.srcObject = stream;
+      } catch (e) {
+        close();
+        toast('Kameraga ruxsat berilmadi — galereyadan tanlang', 'error');
+        this._legacyCapture(onCapture);
+      }
+    };
+    root.querySelector('.cam-cancel').onclick = close;
+    root.querySelector('.cam-flip').onclick = () => { facing = facing === 'environment' ? 'user' : 'environment'; start(); };
+    root.querySelector('.cam-shot').onclick = () => {
+      const w = video.videoWidth, h = video.videoHeight;
+      if (!stream || !w || !h) return;
+      const canvas = document.createElement('canvas');
+      canvas.width = w; canvas.height = h;
+      canvas.getContext('2d').drawImage(video, 0, 0, w, h);
+      canvas.toBlob((blob) => {
+        if (!blob) { toast('Rasm olinmadi, qayta urining', 'error'); return; }
+        const file = new File([blob], `photo_${Date.now()}.jpg`, { type: 'image/jpeg' });
+        close();
+        try { onCapture({ target: { files: [file] } }); } catch (e) {}
+      }, 'image/jpeg', 0.92);
+    };
+    start();
+  },
+
+  // Zaxira: getUserMedia mavjud bo'lmasa — eski capture-input usuli
+  _legacyCapture(onCapture) {
+    const inp = document.createElement('input');
+    inp.type = 'file'; inp.accept = 'image/*';
+    inp.setAttribute('capture', 'environment');
+    inp.style.display = 'none';
+    inp.onchange = (e) => { try { onCapture(e); } finally { inp.remove(); } };
+    document.body.appendChild(inp);
+    inp.click();
   },
   loadingBlock() { return `<div class="load-block"><div class="spinner"></div></div>`; },
   emptyBlock(icon, title, sub, btnText, btnAction) {
