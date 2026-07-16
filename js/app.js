@@ -603,7 +603,7 @@ const App = {
         <div class="logo"><div class="logo-mark">${logoMarkSVG()}</div>Oson Sug'urtam</div>
         <div class="auth-visual-mid">
           <h2>${tt('Sug\'urta endi')}<br>${tt('oson va tez')}</h2>
-          <p>${tt("Telefon raqamingiz bilan kiring va bir necha daqiqada polisingizni rasmiylashtiring.")}</p>
+          <p>${tt("Telegram orqali bir tugma bilan kiring va bir necha daqiqada polisingizni rasmiylashtiring.")}</p>
         </div>
         <div style="position:relative;z-index:2;font-size:13px;opacity:.7">© 2026 «EVAZ» MChJ</div>
         <div class="auth-shield">${I.shield}</div>
@@ -615,72 +615,30 @@ const App = {
     this.prepTelegramLogin();
   },
 
-  // Asosiy kirish usuli — telefon raqami (SMS orqali kod). Telegram SHART EMAS —
-  // bu ommaviy sayt, Telegram ba'zi tarmoqlarda bloklangan bo'lishi mumkin.
+  // YAGONA kirish usuli — Telegram orqali bir tugma bilan. Mijoz "Raqamni ulash"
+  // tugmasini bosishi bilan avtomatik kirg'iziladi (kod kiritish shart emas).
   loginPhoneStep() {
     return `
       <div class="app-back" onclick="App.go('/')" style="margin-bottom:20px">${I.arrowLeft}<span>${tt('Bosh sahifa')}</span></div>
       <h1>${tt('Tizimga kirish')}</h1>
-      <p class="sub">${tt("Telefon raqamingizni kiriting — tasdiqlash kodi yuboramiz")}</p>
-      <div class="field">
-        <label class="label">${tt('Telefon raqam')}</label>
-        <div class="phone-input">
-          <span class="phone-prefix">+998</span>
-          <input id="phoneInput" type="tel" inputmode="numeric" maxlength="9" placeholder="90 123 45 67"
-            value="${this.loginPhone}" oninput="App.onPhoneInput(this)">
-        </div>
-      </div>
-      <div class="tg-info">
-        <div class="tg-info-ic">${I.phone}</div>
-        <div class="tg-info-txt">
-          <b>${tt('Kod SMS orqali keladi')}</b>
-          <span>${tt('Bir necha soniyada SMS xabar sifatida yetib boradi')}</span>
-        </div>
-      </div>
-      <button class="btn btn-primary btn-block btn-lg" id="sendBtn" onclick="App.sendCode()">${tt('Kod olish')} ${I.arrowRight}</button>
-
-      <div class="login-alt">
-        <a onclick="App.showTelegramLogin()">${tt('Tezroq: Telegram orqali bir tugma bilan kirish')}</a>
-      </div>`;
-  },
-
-  // Ikkinchi darajali (tezroq, lekin ixtiyoriy) usul — Telegram orqali bir tugma bilan kirish
-  showTelegramLogin() {
-    this.stopSessionPoll();
-    const box = document.getElementById('authBox');
-    box.innerHTML = `
-      <div class="app-back" onclick="App.viewLogin()" style="margin-bottom:20px">${I.arrowLeft}<span>${tt('Orqaga')}</span></div>
+      <p class="sub">${tt("Telegram orqali bir tugma bilan kiring — telefon raqamini yozish shart emas")}</p>
 
       <div class="tg-login-hero">
         <div class="tg-login-logo">${telegramLogoSVG()}</div>
         <h3>${tt('Telegram orqali kirish')}</h3>
-        <p>${tt('Telegram\'da "Boshlash" va "Raqamni ulash" tugmalarini bossangiz — raqamingiz avtomatik bog\'lanadi va kod darrov keladi.')}</p>
+        <p>${tt('Telegram\'da "Boshlash" va "Raqamni ulash" tugmalarini bossangiz — avtomatik kirasiz.')}</p>
       </div>
 
       <div class="tg-steps tg-steps-compact">
         <div class="tg-step"><span class="tg-step-n">1</span><div>${tt('Pastdagi tugmani bosing — Telegram ochiladi')}</div></div>
         <div class="tg-step"><span class="tg-step-n">2</span><div><b>"${tt('Boshlash')}"</b> ${tt('va')} <b>"📱 ${tt('Raqamni ulash')}"</b>${tt('ni bosing')}</div></div>
-        <div class="tg-step"><span class="tg-step-n">3</span><div>${tt('Kod keladi — bu yerda avtomatik davom etadi')}</div></div>
+        <div class="tg-step"><span class="tg-step-n">3</span><div>${tt('Ulashishingiz bilan avtomatik kirasiz')}</div></div>
       </div>
 
       <a class="btn btn-tg btn-block btn-lg tg-login-btn disabled" id="tgLoginBtn" target="_blank" rel="noopener"
          onclick="App.onTgLoginClick(event)">
         ${telegramLogoSVG()} <span>${tt('Telegram orqali kirish')}</span>
       </a>`;
-    this.syncTelegramLoginButton();
-  },
-
-  // Sessiya tokeni allaqachon tayyor bo'lsa — darhol tugmaga biriktiramiz;
-  // aks holda yangisini so'raymiz (showTelegramLogin har safar yangi DOM elementi
-  // yaratadi, shuning uchun avvalgi prepTelegramLogin() natijasi qayta qo'llanishi kerak).
-  syncTelegramLoginButton() {
-    const btn = document.getElementById('tgLoginBtn');
-    if (this.sessionToken && btn) {
-      btn.href = `${BOT_LINK}?start=${this.sessionToken}`;
-      btn.classList.remove('disabled');
-      return;
-    }
-    this.prepTelegramLogin();
   },
 
   // === TELEGRAM SESSION (bir tugma bilan kirish) ===
@@ -789,7 +747,12 @@ const App = {
   },
 
   async sendCode() {
-    const digits = (this.loginPhone || '').replace(/\D/g, '');
+    let digits = (this.loginPhone || '').replace(/\D/g, '');
+    // OTP zaxira ekranida (Telegram orqali) to'liq raqam allaqachon ma'lum bo'ladi —
+    // "Qayta yuborish" bosilganda o'shandan foydalanamiz (raqam kiritish maydoni yo'q).
+    if (digits.length !== 9 && this.loginFullPhone) {
+      digits = String(this.loginFullPhone).replace(/\D/g, '').slice(-9);
+    }
     if (digits.length !== 9) { toast('To\'liq telefon raqam kiriting', 'error'); return; }
     const phone = '+998' + digits;
     const btn = document.getElementById('sendBtn');
