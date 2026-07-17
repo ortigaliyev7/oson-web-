@@ -2000,7 +2000,10 @@ const App = {
   },
   renderStatus(a) {
     const st = a.status || 'new';
-    const num = a.app_number || a.number || ('#' + String(a.id||'').slice(-5));
+    // Ariza detali endpointi `_id` qaytaradi (`id` emas) — sharh/chat/raqam
+    // uchun ikkalasini ham hisobga olamiz, aks holda sharh yuborilmaydi.
+    const appId = a.id || a._id || '';
+    const num = a.app_number || a.number || ('#' + String(appId).slice(-5));
     const isRejected = st === 'rejected';
     const isReady = st === 'policy_ready' || st === 'completed';
     const curIdx = FLOW_STEPS.indexOf(st);
@@ -2066,10 +2069,10 @@ const App = {
           ${[1,2,3,4,5].map(n=>`<span class="rv-star" data-n="${n}" onclick="App.setReviewStar(${n})">★</span>`).join('')}
         </div>
         <textarea class="inp" id="reviewText" rows="3" placeholder="${tt('Fikringizni yozing')} (${tt('ixtiyoriy')})"></textarea>
-        <button class="btn btn-primary btn-block" id="reviewSubmitBtn" style="margin-top:10px" onclick="App.submitReview('${a.id}')">${tt('Yuborish')}</button>
+        <button class="btn btn-primary btn-block" id="reviewSubmitBtn" style="margin-top:10px" onclick="App.submitReview('${appId}')">${tt('Yuborish')}</button>
       </div>` : ''}
 
-      <button class="btn btn-ghost btn-block" style="margin-top:8px" onclick="App.go('/chat/${a.id}')">
+      <button class="btn btn-ghost btn-block" style="margin-top:8px" onclick="App.go('/chat/${appId}')">
         ${I.chat} ${tt("Operator bilan bog'lanish")}
       </button>`;
     this._reviewRating = 0;
