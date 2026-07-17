@@ -1001,6 +1001,15 @@ const App = {
   },
 
   startNewApp() {
+    // Ish vaqti jadvali — baza yopiq bo'lsa yangi ariza ochilmaydi, xabar chiqadi
+    const ws = this.appSettings && this.appSettings.work_status;
+    if (ws && ws.open === false) {
+      const nx = ws.next_text ? ` Biz ${ws.next_text} ishlaymiz.` : '';
+      showModal(`<h3 class="modal-title">${I.clock} Hozir ish vaqti emas</h3>
+        <p style="color:var(--ink-2);line-height:1.55;margin-bottom:6px">${esc((ws.message || 'Hozir ish vaqti emas.') + nx)}</p>
+        <div class="modal-actions"><button class="btn btn-primary btn-block" onclick="closeModal()">Tushunarli</button></div>`);
+      return;
+    }
     this.draft = { app_type: 'new', drivers: [] };
     this.saveDraft();
     this.go('/new/type');
