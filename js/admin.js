@@ -1345,6 +1345,7 @@ const Admin = {
       const maintenance = !!s.maintenance_mode;
       const renewal = s.renewal_enabled !== false;
       const reqLicense = s.require_driver_license === true;
+      const wh = (s.work_hours && typeof s.work_hours === 'object') ? s.work_hours : { enabled: false, days: {}, message: '' };
       this._backups = backups.items || [];
       const pendingReviews = (reviews.items || []).filter(r => r.status === 'pending');
       const content = `
@@ -1375,6 +1376,36 @@ const Admin = {
           <div class="field" style="margin-top:14px">
             <label>Texnik xizmat xabari</label>
             <input class="inp" id="maintMsg" value="${esc(s.maintenance_message||'')}" placeholder="Ilova vaqtincha texnik xizmatда...">
+          </div>
+        </div>
+
+        <div class="adm-card setting-card" style="max-width:600px">
+          <div class="setting-row">
+            <div class="setting-txt">
+              <h3>Ish vaqti jadvali</h3>
+              <p>Yoqilsa, faqat belgilangan kun va soatlarda yangi ariza qabul qilinadi. O'chirilsa — 24/7 doimiy ishlaydi.</p>
+            </div>
+            <button class="toggle ${wh.enabled?'on':''}" id="tgWork" onclick="Admin.toggleWorkHours(${!wh.enabled})">
+              <span class="toggle-knob"></span>
+            </button>
+          </div>
+          <div id="workBox" style="${wh.enabled?'':'display:none'};margin-top:14px">
+            <div class="work-days">
+              ${[[1,'Dushanba'],[2,'Seshanba'],[3,'Chorshanba'],[4,'Payshanba'],[5,'Juma'],[6,'Shanba'],[0,'Yakshanba']].map(([d,label])=>{
+                const c = (wh.days && wh.days[d]) || {};
+                return `<div class="work-day-row">
+                  <label class="wd-lab"><input type="checkbox" class="wd-open" data-d="${d}" ${c.closed?'':'checked'}> ${label}</label>
+                  <input class="inp wd-from" data-d="${d}" type="time" value="${esc(c.from||'09:00')}">
+                  <span class="wd-dash">—</span>
+                  <input class="inp wd-to" data-d="${d}" type="time" value="${esc(c.to||'18:00')}">
+                </div>`;
+              }).join('')}
+            </div>
+            <div class="field" style="margin-top:12px">
+              <label>Yopiq bo'lganda ko'rsatiladigan xabar</label>
+              <input class="inp" id="workMsg" value="${esc(wh.message||'')}" placeholder="Hozir ish vaqti emas. Iltimos, ish vaqtida murojaat qiling.">
+            </div>
+            <button class="btn btn-primary btn-sm" style="margin-top:12px" onclick="Admin.saveWorkHours()">Saqlash</button>
           </div>
         </div>
 
@@ -1499,6 +1530,35 @@ const Admin = {
       el.className = 'toggle ' + (enabled?'on':'');
       el.setAttribute('onclick', `Admin.toggleDriverLicense(${!enabled})`);
       toast(enabled?'Guvohnoma so\'raladi':'Guvohnoma so\'ralmaydi', 'ok');
+    } catch (e) { toast(e.message, 'err'); }
+  },
+  // Ish vaqti jadvali — yoqish/o'chirish (o'chirilsa 24/7). Har ikkala holat darhol saqlanadi.
+  toggleWorkHours(enabled) {
+    const btn = document.getElementById('tgWork');
+    const box = document.getElementById('workBox');
+    if (btn) { btn.className = 'toggle ' + (enabled?'on':''); btn.setAttribute('onclick', `Admin.toggleWorkHours(${!enabled})`); }
+    if (box) box.style.display = enabled ? '' : 'none';
+    this.saveWorkHours(enabled);
+  },
+  async saveWorkHours(enabled) {
+    const days = {};
+    document.querySelectorAll('#workBox .wd-open').forEach(chk => {
+      const d = chk.getAttribute('data-d');
+      const from = document.querySelector(`.wd-from[data-d="${d}"]`);
+      const to = document.querySelector(`.wd-to[data-d="${d}"]`);
+      days[d] = {
+        closed: !chk.checked,
+        from: (from && from.value) || '09:00',
+        to: (to && to.value) || '18:00',
+      };
+    });
+    const msgEl = document.getElementById('workMsg');
+    const btn = document.getElementById('tgWork');
+    const isOn = enabled === undefined ? !!(btn && btn.classList.contains('on')) : !!enabled;
+    const cfg = { enabled: isOn, days, message: (msgEl ? msgEl.value.trim() : '') };
+    try {
+      await AdminAPI.setSetting('work_hours', cfg);
+      toast(isOn ? 'Ish vaqti jadvali saqlandi' : '24/7 doimiy rejim yoqildi', 'ok');
     } catch (e) { toast(e.message, 'err'); }
   },
   renderPendingReviews(items) {
