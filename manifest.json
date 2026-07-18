@@ -1,7 +1,7 @@
 {
   "name": "Oson Sug'urtam",
-  "short_name": "Oson Sug'urta",
-  "description": "Avtomobil sug'urtasini onlayn rasmiylashtirish",
+  "short_name": "Oson Sug'urtam",
+  "description": "OSAGO avtosug'urtani onlayn rasmiylashtirishga yordam beruvchi xizmat — mijoz va sug'urta kompaniyasi o'rtasidagi vositachi (onlayn operator).",
   "start_url": "./index.html",
   "scope": "./",
   "display": "standalone",
