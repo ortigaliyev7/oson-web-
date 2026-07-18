@@ -1,14 +1,51 @@
-// Oson Sug'urtam — minimal service worker (PWA o'rnatish uchun)
-const CACHE = 'oson-v1';
+// Oson Sug'urtam — service worker (PWA o'rnatish + doim yangi kontent)
+const CACHE = 'oson-v2';
+
 self.addEventListener('install', (e) => { self.skipWaiting(); });
-self.addEventListener('activate', (e) => { e.waitUntil(self.clients.claim()); });
-// Tarmoq-birinchi (offline keshlash shart emas — har doim yangi)
+
+self.addEventListener('activate', (e) => {
+  e.waitUntil((async () => {
+    // Eski keshlarni tozalaymiz (eskirgan fayllar qolmasin)
+    try {
+      const keys = await caches.keys();
+      await Promise.all(keys.filter((k) => k !== CACHE).map((k) => caches.delete(k)));
+    } catch {}
+    await self.clients.claim();
+  })());
+});
+
+// === DOIM YANGI KONTENT ===
+// O'z domenimizdagi GET so'rovlarni HAR DOIM serverdan yangi olamiz — bunda
+// brauzerning HTTP keshi CHETLAB O'TILADI (cache: 'no-store'). Shu tufayli yangi
+// deploy chiqqach yangilanish DARHOL ko'rinadi, "hard refresh" (Ctrl+Shift+R)
+// qilish shart emas. Internet bo'lmasa — oxirgi keshdan ko'rsatamiz (offline).
 self.addEventListener('fetch', (e) => {
-  // Faqat GET so'rovlar
   if (e.request.method !== 'GET') return;
-  e.respondWith(
-    fetch(e.request).catch(() => caches.match(e.request))
-  );
+
+  let sameOrigin = false;
+  try { sameOrigin = new URL(e.request.url).origin === self.location.origin; } catch {}
+
+  if (!sameOrigin) {
+    // Tashqi so'rovlar (masalan API) — oddiy: tarmoq, bo'lmasa keshdan
+    e.respondWith(fetch(e.request).catch(() => caches.match(e.request)));
+    return;
+  }
+
+  e.respondWith((async () => {
+    try {
+      const fresh = await fetch(e.request, { cache: 'no-store' });
+      // Offline uchun nusxa saqlab qo'yamiz (natijaga ta'sir qilmaydi)
+      try {
+        const cache = await caches.open(CACHE);
+        cache.put(e.request, fresh.clone());
+      } catch {}
+      return fresh;
+    } catch (err) {
+      const cached = await caches.match(e.request);
+      if (cached) return cached;
+      throw err;
+    }
+  })());
 });
 
 // === WEB PUSH — telefonga bildirishnoma (ilova yopiq bo'lsa ham) ===
