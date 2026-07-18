@@ -1403,7 +1403,7 @@ const Admin = {
             </div>
             <div class="field" style="margin-top:12px">
               <label>Yopiq bo'lganda ko'rsatiladigan xabar</label>
-              <input class="inp" id="workMsg" value="${esc(wh.message||'')}" placeholder="Hozir ish vaqti emas. Iltimos, ish vaqtida murojaat qiling.">
+              <input class="inp" id="workMsg" value="${esc(wh.message||'')}" placeholder="Hurmatli mijoz! Hozir ish vaqtimiz tugagan. Ish vaqtimizda yana murojaat qilishingizni so'raymiz.">
             </div>
             <button class="btn btn-primary btn-sm" style="margin-top:12px" onclick="Admin.saveWorkHours()">Saqlash</button>
           </div>
