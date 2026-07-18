@@ -1713,6 +1713,19 @@ const Admin = {
           <button class="btn btn-primary" style="margin-top:14px" onclick="Admin.bonusSaveConfig()">Saqlash</button>
         </div>
 
+        <div class="adm-card setting-card" style="max-width:640px">
+          <div class="setting-row">
+            <div class="setting-txt"><h3>O'ziga sug'urta uchun bonus (cashback)</h3><p>Mijoz o'zi uchun polis rasmiylashtirganda ham bonus oladi — har bir polis uchun</p></div>
+            <button class="toggle ${cfg.self_enabled?'on':''}" id="tgSelf" onclick="Admin.bonusToggle('self_enabled',${!cfg.self_enabled})"><span class="toggle-knob"></span></button>
+          </div>
+          ${cfg.self_enabled ? `
+          <h4 class="bonus-limit-title">Cashback stavkasi (hudud × avto)</h4>
+          <p style="color:var(--ink-2);font-size:12.5px;margin-bottom:10px">Har bir yakunlangan polis uchun mijoz o'z balansiga shu miqdorda bonus oladi. Foiz (%) yoki qat'iy so'm.</p>
+          ${RATES.map(rateRow(cfg.self_rates, 'sf')).join('')}
+          <button class="btn btn-primary" style="margin-top:14px" onclick="Admin.bonusSaveConfig()">Saqlash</button>
+          ` : ''}
+        </div>
+
         <div class="adm-card" style="max-width:640px">
           <div class="adm-card-title-row">
             <h3 class="adm-card-title">To'lanadigan bonuslar (<span id="bonusOvCount">${ov.items.length}</span>)</h3>
@@ -1782,7 +1795,7 @@ const Admin = {
       await AdminAPI.refSaveConfig(patch);
       toast('Saqlandi', 'ok');
       // first_insurance yoqilsa/o'chirilsa stavka qatori ko'rinishi o'zgaradi — qayta chizamiz
-      if (key === 'first_insurance') { this.viewBonus(); return; }
+      if (key === 'first_insurance' || key === 'self_enabled') { this.viewBonus(); return; }
       const id = { enabled:'tgBonus', allow_discount:'tgDisc', direct_enabled:'tgDirect' }[key];
       const el = document.getElementById(id);
       el.className = 'toggle ' + (val?'on':'');
@@ -1805,6 +1818,7 @@ const Admin = {
     const direct_rates = readRates('dr');
     const first_insurance_rates = readRates('fi');
     const direct_first_insurance_rates = readRates('dfi');
+    const self_rates = readRates('sf');
     const link_limits = {};
     keys.forEach(k => {
       const el = document.getElementById('rlimit_' + k);
@@ -1816,6 +1830,7 @@ const Admin = {
     const body = { rates, direct_rates, link_limits, payout_contact, payout_wait_days };
     if (Object.keys(first_insurance_rates).length) body.first_insurance_rates = first_insurance_rates;
     if (Object.keys(direct_first_insurance_rates).length) body.direct_first_insurance_rates = direct_first_insurance_rates;
+    if (Object.keys(self_rates).length) body.self_rates = self_rates;
     try {
       await AdminAPI.refSaveConfig(body);
       toast('Bonus sozlamalari saqlandi', 'ok');
