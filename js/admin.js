@@ -463,6 +463,9 @@ const Admin = {
           <h1 class="adm-h1">Arizalar</h1>
           <button class="btn btn-ghost btn-sm" onclick="Admin.loadApps(true)">${I.refresh} Yangilash</button>
         </div>
+        <div class="adm-apps-search">
+          <input class="inp" id="appsSearch" value="${esc(this._appsSearch||'')}" placeholder="Qidirish: ism, telefon, avto raqami, ariza №..." oninput="Admin.onAppsSearch(this.value)">
+        </div>
         <div class="adm-filters" id="admFilters"></div>
         <div id="admAppsList">${this.loadingBlock()}</div>`);
     }
@@ -512,15 +515,40 @@ const Admin = {
       </button>`).join('');
   },
   setFilter(f) { this.filter = f; this._animateApps = true; this.renderFilters(); this.renderApps(); },
+  onAppsSearch(v) { this._appsSearch = v; this._appsSig = null; this.renderApps(); },
+  // SLA — ariza qancha vaqtdan beri ochiq turibdi (faqat yakunlanmagan holatlar).
+  // Yashil: yangi; sariq: 3+ soat; qizil: 1+ kun (e'tibor kerak).
+  slaAge(a) {
+    const st = a.status || 'new';
+    if (['completed', 'policy_ready', 'rejected', 'cancelled'].includes(st)) return '';
+    const t = new Date(a.created_at || a.createdAt || 0).getTime();
+    if (!t) return '';
+    const mins = Math.floor((Date.now() - t) / 60000);
+    let cls = 'sla-ok', txt;
+    if (mins < 60) txt = mins + ' daq';
+    else if (mins < 1440) { txt = Math.floor(mins / 60) + ' soat'; if (mins >= 180) cls = 'sla-warn'; }
+    else { txt = Math.floor(mins / 1440) + ' kun'; cls = 'sla-late'; }
+    return `<span class="sla-badge ${cls}" title="Ariza ochilganidan beri kutmoqda">⏱ ${txt}</span>`;
+  },
 
   renderApps() {
     const box = document.getElementById('admAppsList');
     if (!box) return;
     let list = this.apps.slice();
     if (this.filter !== 'all') list = list.filter(a => a.status === this.filter);
+    const q = (this._appsSearch || '').trim().toLowerCase();
+    if (q) {
+      const dq = q.replace(/\D/g, '');
+      list = list.filter(a => {
+        const hay = [a.client_name, a.tex_plate, a.region, a.app_number || a.number, a.id || a._id]
+          .map(x => String(x || '').toLowerCase()).join(' ');
+        const phoneMatch = dq && String(a.client_phone || '').replace(/\D/g, '').includes(dq);
+        return hay.includes(q) || phoneMatch;
+      });
+    }
     list.sort((a,b)=> new Date(b.created_at||b.createdAt||0) - new Date(a.created_at||a.createdAt||0));
     // Aqlli render: ma'lumot o'zgarmagan bo'lsa qayta chizmaymiz (poll'da miltilamasligi uchun)
-    const sig = this.filter + '|' + list.map(a => `${a.id||a._id}:${a.status}:${a.updated_at||a.updatedAt||''}`).join(',');
+    const sig = this.filter + '|' + q + '|' + list.map(a => `${a.id||a._id}:${a.status}:${a.updated_at||a.updatedAt||''}`).join(',');
     if (sig === this._appsSig && box.querySelector('.adm-app-grid')) return;
     this._appsSig = sig;
     if (!list.length) {
@@ -542,7 +570,7 @@ const Admin = {
       <div class="adm-app-card"${delay} onclick="Admin.go('/app/${a.id||a._id}')">
         <div class="aac-top">
           <span class="aac-num">${esc(String(num))}</span>
-          ${statusBadge(st)}
+          <div class="aac-top-r">${this.slaAge(a)}${statusBadge(st)}</div>
         </div>
         <div class="aac-client">
           <div class="aac-av">${initials(name, a.client_phone)}</div>
