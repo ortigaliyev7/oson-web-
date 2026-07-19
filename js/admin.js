@@ -29,6 +29,7 @@ const Admin = {
       }
     });
     this.route();
+    this.startIdleWatch();
     if (this.isAuthed()) this.initSocket();
   },
 
@@ -130,15 +131,83 @@ const Admin = {
     setLoading(btn, true, 'Kirish...');
     try {
       const r = await AdminAPI.login(username, password);
-      localStorage.setItem(LS.ADMIN_TOKEN, r.token);
-      this.admin = r.admin;
-      localStorage.setItem(LS.ADMIN_USER, JSON.stringify(r.admin));
-      this.initSocket();
-      this.go('/apps');
+      if (r && r.needs_2fa) {
+        this._2faChallenge = r.challenge;
+        this.render2fa();
+        return;
+      }
+      this.finishAdminLogin(r);
     } catch (e) {
       setLoading(btn, false);
       toast(e.message || 'Login yoki parol xato', 'err');
     }
+  },
+
+  finishAdminLogin(r) {
+    localStorage.setItem(LS.ADMIN_TOKEN, r.token);
+    this.admin = r.admin;
+    localStorage.setItem(LS.ADMIN_USER, JSON.stringify(r.admin));
+    if (this._resetIdle) this._resetIdle();
+    this.initSocket();
+    this.go('/apps');
+  },
+
+  // 2FA — Telegram'ga yuborilgan kodni so'rash
+  render2fa() {
+    document.body.className = 'admin-body admin-login-bg';
+    this.root.innerHTML = `
+      <div class="admin-login">
+        <div class="al-card">
+          <div class="al-logo">${logoMarkSVG()}</div>
+          <h1>Tasdiqlash</h1>
+          <p>Telegram'ingizga yuborilgan 6 xonali kodni kiriting</p>
+          <div class="field" style="margin-top:24px">
+            <label>Tasdiqlash kodi</label>
+            <input class="inp" id="al_2fa" inputmode="numeric" maxlength="6" placeholder="______" autocomplete="one-time-code"
+              onkeydown="if(event.key==='Enter')Admin.verify2fa()">
+          </div>
+          <button class="btn btn-primary btn-block btn-lg" id="al_2fa_btn" style="margin-top:20px" onclick="Admin.verify2fa()">
+            Tasdiqlash
+          </button>
+          <button class="btn btn-ghost btn-block" style="margin-top:10px" onclick="Admin.viewLogin()">Orqaga</button>
+        </div>
+        <p class="al-foot">© 2026 «EVAZ» MChJ</p>
+      </div>`;
+    setTimeout(() => { const el = document.getElementById('al_2fa'); if (el) el.focus(); }, 60);
+  },
+
+  async verify2fa() {
+    const code = (document.getElementById('al_2fa').value || '').trim();
+    if (code.length !== 6) return toast('6 xonali kodni kiriting', 'err');
+    const btn = document.getElementById('al_2fa_btn');
+    setLoading(btn, true, 'Tekshirilmoqda...');
+    try {
+      const r = await AdminAPI.login2fa(this._2faChallenge, code);
+      this._2faChallenge = null;
+      this.finishAdminLogin(r);
+    } catch (e) {
+      setLoading(btn, false);
+      toast(e.message || 'Kod xato', 'err');
+    }
+  },
+
+  // === AVTO-LOGOUT — xavfsizlik uchun uzoq harakatsizlikda chiqish ===
+  _idleMs: 20 * 60 * 1000,
+  startIdleWatch() {
+    if (this._idleBound) return;
+    this._idleBound = true;
+    this._resetIdle = () => {
+      clearTimeout(this._idleT);
+      if (this.isAuthed()) this._idleT = setTimeout(() => this.idleLogout(), this._idleMs);
+    };
+    ['click', 'keydown', 'mousemove', 'touchstart', 'scroll'].forEach(ev =>
+      window.addEventListener(ev, this._resetIdle, { passive: true }));
+    this._resetIdle();
+  },
+  idleLogout() {
+    if (!this.isAuthed()) return;
+    toast('Xavfsizlik uchun avtomatik chiqildi (uzoq harakatsizlik).', 'err');
+    this.logout();
   },
 
   // ============================================================
@@ -1346,10 +1415,24 @@ const Admin = {
       const renewal = s.renewal_enabled !== false;
       const reqLicense = s.require_driver_license === true;
       const wh = (s.work_hours && typeof s.work_hours === 'object') ? s.work_hours : { enabled: false, days: {}, message: '' };
+      const twofa = s.admin_2fa_enabled === true;
       this._backups = backups.items || [];
       const pendingReviews = (reviews.items || []).filter(r => r.status === 'pending');
       const content = `
         <h1 class="adm-h1">Sozlamalar</h1>
+
+        ${this.admin && this.admin.role === 'head' ? `
+        <div class="adm-card setting-card" style="max-width:600px">
+          <div class="setting-row">
+            <div class="setting-txt">
+              <h3>🔐 Ikki bosqichli kirish (2FA)</h3>
+              <p>Yoqilsa, admin login'da paroldan so'ng Telegram'ga yuborilgan 6 xonali kod ham so'raladi. Bosh admin uchun kod bosh admin Telegram'iga, hodimlar uchun ularning ulangan Telegram'iga yuboriladi.</p>
+            </div>
+            <button class="toggle ${twofa?'on':''}" id="tg2fa" onclick="Admin.toggle2fa(${!twofa})">
+              <span class="toggle-knob"></span>
+            </button>
+          </div>
+        </div>` : ''}
 
         <div class="adm-card setting-card" style="max-width:600px">
           <div class="setting-row">
@@ -1512,6 +1595,14 @@ const Admin = {
       document.getElementById('tgMaint').className = 'toggle ' + (enabled?'on':'');
       document.getElementById('tgMaint').setAttribute('onclick', `Admin.toggleMaintenance(${!enabled})`);
       toast(enabled?'Texnik rejim yoqildi':'Texnik rejim o\'chirildi', 'ok');
+    } catch (e) { toast(e.message, 'err'); }
+  },
+  async toggle2fa(enabled) {
+    try {
+      await AdminAPI.setSetting('admin_2fa_enabled', !!enabled);
+      const el = document.getElementById('tg2fa');
+      if (el) { el.className = 'toggle ' + (enabled?'on':''); el.setAttribute('onclick', `Admin.toggle2fa(${!enabled})`); }
+      toast(enabled ? '2FA yoqildi — keyingi kirishda Telegram kodi so\'raladi' : '2FA o\'chirildi', 'ok');
     } catch (e) { toast(e.message, 'err'); }
   },
   async toggleRenewal(enabled) {
