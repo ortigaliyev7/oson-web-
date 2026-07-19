@@ -104,6 +104,7 @@ const AdminAPI = {
   // finalize multipart (policy_file)
   finalize:  (id, formData) => req(`/apps/${id}/finalize`, { method:'POST', body: formData, isForm:true, token: adminToken() }),
   messages:  (id) => req(`/apps/${id}/messages`),
+  logView:   (id) => req(`/apps/${id}/log-view`, { method:'POST', token: adminToken() }),
 
   // --- Xodimlar boshqaruvi ---
   staffList:   () => req('/admins', { token: adminToken() }),
