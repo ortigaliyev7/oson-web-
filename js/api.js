@@ -90,6 +90,7 @@ const ClientAPI = {
 /* ---------- ADMIN AUTH ---------- */
 const AdminAPI = {
   login: (username, password) => req('/auth/login', { method:'POST', body:{ username, password } }),
+  login2fa: (challenge, code) => req('/auth/login/2fa', { method:'POST', body:{ challenge, code } }),
   me:    () => req('/auth/me', { token: adminToken() }),
   setWorkStatus: (status) => req('/auth/work-status', { method:'PATCH', body:{ status }, token: adminToken() }),
 
