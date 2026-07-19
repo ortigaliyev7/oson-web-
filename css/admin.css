@@ -401,3 +401,12 @@
 .work-day-row input.inp{padding:8px 10px;font-size:13.5px}
 .work-day-row .wd-dash{color:var(--muted);text-align:center}
 @media(max-width:520px){.work-day-row{grid-template-columns:1fr;gap:4px 8px}.work-day-row .wd-lab{grid-column:1/-1}.work-day-row .wd-dash{display:none}}
+
+/* ===== Arizalar: qidiruv + SLA/eskirish indikatori ===== */
+.adm-apps-search{margin-bottom:12px}
+.adm-apps-search .inp{padding:11px 14px;font-size:14px;max-width:520px}
+.aac-top-r{display:flex;align-items:center;gap:7px}
+.sla-badge{display:inline-flex;align-items:center;gap:3px;font-size:11px;font-weight:700;padding:2px 8px;border-radius:99px;white-space:nowrap}
+.sla-badge.sla-ok{background:var(--green-50);color:var(--green-700)}
+.sla-badge.sla-warn{background:#FEF3E2;color:#B45309}
+.sla-badge.sla-late{background:var(--danger-l);color:var(--danger)}
