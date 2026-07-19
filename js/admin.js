@@ -588,6 +588,8 @@ const Admin = {
       const r = await AdminAPI.appDetail(id);
       this.curApp = r.app || r;
       this.renderAppDetail(this.curApp);
+      // Maxfiylik auditi — kim mijoz hujjatlarini ochganini yozib qo'yamiz (fon)
+      AdminAPI.logView(id).catch(() => {});
     } catch (e) {
       document.getElementById('admDetail').innerHTML = this.errorBlock(e.message);
     }
@@ -1432,6 +1434,20 @@ const Admin = {
               <span class="toggle-knob"></span>
             </button>
           </div>
+        </div>
+
+        <div class="adm-card setting-card" style="max-width:600px">
+          <div class="setting-row">
+            <div class="setting-txt">
+              <h3>🗂️ Hujjatlarni avtomatik o'chirish</h3>
+              <p>Polis tayyor bo'lgach, shuncha kundan keyin arizadagi shaxsiy hujjat rasmlari (pasport, texpassport, haydovchi hujjatlari) diskdan o'chiriladi. Tayyor polis saqlanadi. 0 = o'chirilmaydi.</p>
+            </div>
+          </div>
+          <div class="field" style="margin-top:6px;max-width:240px">
+            <label>Necha kundan keyin (0 = hech qachon)</label>
+            <input class="inp" id="docRetDays" inputmode="numeric" value="${+s.doc_retention_days||0}" placeholder="0">
+          </div>
+          <button class="btn btn-primary btn-sm" style="margin-top:10px" onclick="Admin.saveDocRetention()">Saqlash</button>
         </div>` : ''}
 
         <div class="adm-card setting-card" style="max-width:600px">
@@ -1603,6 +1619,14 @@ const Admin = {
       const el = document.getElementById('tg2fa');
       if (el) { el.className = 'toggle ' + (enabled?'on':''); el.setAttribute('onclick', `Admin.toggle2fa(${!enabled})`); }
       toast(enabled ? '2FA yoqildi — keyingi kirishda Telegram kodi so\'raladi' : '2FA o\'chirildi', 'ok');
+    } catch (e) { toast(e.message, 'err'); }
+  },
+  async saveDocRetention() {
+    const el = document.getElementById('docRetDays');
+    const days = Math.max(0, Math.round(Number(el ? el.value : 0) || 0));
+    try {
+      await AdminAPI.setSetting('doc_retention_days', days);
+      toast(days ? `Hujjatlar polisdan ${days} kun keyin o\'chiriladi` : 'Avtomatik o\'chirish o\'chirildi', 'ok');
     } catch (e) { toast(e.message, 'err'); }
   },
   async toggleRenewal(enabled) {
