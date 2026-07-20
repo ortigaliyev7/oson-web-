@@ -461,7 +461,10 @@ const Admin = {
       this.root.innerHTML = this.shell('apps', `
         <div class="adm-apps-head">
           <h1 class="adm-h1">Arizalar</h1>
-          <button class="btn btn-ghost btn-sm" onclick="Admin.loadApps(true)">${I.refresh} Yangilash</button>
+          <div style="display:flex;gap:8px">
+            <button class="btn btn-ghost btn-sm" onclick="Admin.exportAppsCSV()">⬇ Excel</button>
+            <button class="btn btn-ghost btn-sm" onclick="Admin.loadApps(true)">${I.refresh} Yangilash</button>
+          </div>
         </div>
         <div class="adm-apps-search">
           <input class="inp" id="appsSearch" value="${esc(this._appsSearch||'')}" placeholder="Qidirish: ism, telefon, avto raqami, ariza №..." oninput="Admin.onAppsSearch(this.value)">
@@ -529,6 +532,52 @@ const Admin = {
     else if (mins < 1440) { txt = Math.floor(mins / 60) + ' soat'; if (mins >= 180) cls = 'sla-warn'; }
     else { txt = Math.floor(mins / 1440) + ' kun'; cls = 'sla-late'; }
     return `<span class="sla-badge ${cls}" title="Ariza ochilganidan beri kutmoqda">⏱ ${txt}</span>`;
+  },
+
+  // === CSV EKSPORT (Excel'da ochiladi) — buxgalteriya uchun ===
+  _csvDownload(filename, headers, rows) {
+    const q = (v) => { const s = String(v == null ? '' : v); return /[",\n;]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s; };
+    const lines = [headers.map(q).join(',')];
+    rows.forEach(r => lines.push(r.map(q).join(',')));
+    // BOM — Excel UTF-8 (kirill/lotin) to'g'ri ochishi uchun
+    const blob = new Blob(['﻿' + lines.join('\r\n')], { type: 'text/csv;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url; a.download = filename;
+    document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 2000);
+  },
+  exportAppsCSV() {
+    let list = this.apps.slice();
+    if (this.filter !== 'all') list = list.filter(a => a.status === this.filter);
+    const s = (this._appsSearch || '').trim().toLowerCase();
+    if (s) {
+      const dq = s.replace(/\D/g, '');
+      list = list.filter(a => {
+        const hay = [a.client_name, a.tex_plate, a.region, a.app_number || a.number].map(x => String(x || '').toLowerCase()).join(' ');
+        return hay.includes(s) || (dq && String(a.client_phone || '').replace(/\D/g, '').includes(dq));
+      });
+    }
+    if (!list.length) return toast('Eksport uchun ariza yo\'q', 'err');
+    const headers = ['Sana', 'Mijoz', 'Telefon', 'Avto raqami', 'Avto turi', 'Hudud', 'Muddat', 'Narx', 'Daromad', 'Holat', 'Polis raqami'];
+    const rows = list.map(a => [
+      fmtDate(a.created_at || a.createdAt), a.client_name || '', a.client_phone || '', a.tex_plate || '',
+      (VEHICLES.find(v => v.id === a.vehicle) || {}).name || a.vehicle || '', a.region || '', a.duration || '',
+      a.price || 0, a.income || 0, (STATUS_LABEL[a.status] || a.status || ''), a.policy_number || '',
+    ]);
+    this._csvDownload(`arizalar_${new Date().toISOString().slice(0, 10)}.csv`, headers, rows);
+    toast(`${rows.length} ta ariza eksport qilindi`, 'ok');
+  },
+  async exportBonusCSV() {
+    try {
+      const ov = await AdminAPI.refOverview(this._bonusSearch || '');
+      const items = ov.items || [];
+      if (!items.length) return toast('Eksport uchun ma\'lumot yo\'q', 'err');
+      const headers = ['Ism', 'Telefon', 'Balans', 'Jami ishlangan', 'To\'langan', 'Do\'stlar'];
+      const rows = items.map(u => [u.name || '', u.phone || '', u.balance || 0, u.total_earned || 0, u.paid_total || 0, u.referral_count || 0]);
+      this._csvDownload(`bonuslar_${new Date().toISOString().slice(0, 10)}.csv`, headers, rows);
+      toast(`${rows.length} ta yozuv eksport qilindi`, 'ok');
+    } catch (e) { toast(e.message, 'err'); }
   },
 
   renderApps() {
@@ -1872,7 +1921,10 @@ const Admin = {
         <div class="adm-card" style="max-width:640px">
           <div class="adm-card-title-row">
             <h3 class="adm-card-title">To'lanadigan bonuslar (<span id="bonusOvCount">${ov.items.length}</span>)</h3>
-            <span class="bonus-total-unpaid" id="bonusOvUnpaid">${fmtSom(ov.total_unpaid||0)}</span>
+            <div style="display:flex;align-items:center;gap:10px">
+              <span class="bonus-total-unpaid" id="bonusOvUnpaid">${fmtSom(ov.total_unpaid||0)}</span>
+              <button class="btn btn-ghost btn-sm" onclick="Admin.exportBonusCSV()">⬇ Excel</button>
+            </div>
           </div>
           <div class="bonus-search">
             <input class="inp" id="bonusSearchInp" placeholder="Ism yoki telefon bo'yicha qidirish..." oninput="Admin.onBonusSearch(this.value)">
