@@ -415,3 +415,11 @@
 .adm-chat-canned{display:flex;flex-wrap:wrap;gap:6px;margin:8px 0 10px}
 .canned-chip{font:inherit;font-size:12px;font-weight:600;color:var(--ink-2);background:var(--paper);border:1px solid var(--line);border-radius:99px;padding:5px 11px;cursor:pointer;transition:.14s;white-space:nowrap}
 .canned-chip:hover{border-color:var(--green-300);color:var(--green-700);background:var(--green-50)}
+
+/* ===== Darajalar (tier) sozlash ===== */
+.tier-cfg-head{display:grid;grid-template-columns:1fr 1.1fr 1.1fr;gap:8px;font-size:12px;color:var(--muted);font-weight:600;text-transform:uppercase;margin-bottom:6px;padding:0 2px}
+.tier-cfg-row{display:grid;grid-template-columns:1fr 1.1fr 1.1fr;gap:8px;align-items:center;margin-bottom:8px}
+.tier-cfg-row .tcr-lab{font-size:14px;color:var(--ink);font-weight:600}
+.tier-cfg-row input.inp{padding:9px 11px;font-size:13.5px}
+.tier-cfg-row input.inp:disabled{opacity:.5;background:var(--paper)}
+@media(max-width:520px){.tier-cfg-head span:first-child,.tier-cfg-row .tcr-lab{grid-column:1/-1}.tier-cfg-head,.tier-cfg-row{grid-template-columns:1fr 1fr}}
