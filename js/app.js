@@ -352,10 +352,12 @@ const App = {
         </div>`).join('') : `<p class="muted-text" style="text-align:center;padding:16px">Hozircha tranzaksiya yo'q</p>`;
 
       const tier = ub.tier || {};
-      const rankTxt = ub.rank ? `Reytingda: <b>#${ub.rank}</b> / ${ub.rank_total} ta` : 'Hali reytingda emassiz';
+      const rankTxt = ub.rank
+        ? `Reytingda: <b>#${ub.rank}</b> / ${ub.rank_total} · Oborot: <b>${fmtSom(ub.turnover||0)}</b>`
+        : `Oborotingiz: <b>${fmtSom(ub.turnover||0)}</b>`;
       const nextTxt = tier.next
-        ? `Keyingi daraja — ${tier.next.icon} ${esc(tier.next.label)}: yana <b>${tier.next.remaining}</b> ta do'st kerak`
-        : (ub.referral_count > 0 ? '🎉 Eng yuqori darajadasiz!' : "Do'st taklif qilib daraja oshiring");
+        ? `Keyingi daraja — ${tier.next.icon} ${esc(tier.next.label)}: yana <b>${fmtSom(tier.next.remaining)}</b> viloyat oboroti kerak`
+        : ((ub.turnover || 0) > 0 ? '🎉 Eng yuqori darajadasiz!' : "Do'st taklif qilib, viloyat oboroti bilan daraja oshiring");
 
       const body = `
         <div class="bx-balance">
