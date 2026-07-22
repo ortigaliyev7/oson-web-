@@ -766,6 +766,15 @@ const Admin = {
           <div class="adm-card">
             <h3 class="adm-card-title">Operator chat</h3>
             <div class="adm-chat" id="admChat">${this.loadingBlock()}</div>
+            <div class="adm-chat-canned">
+              ${[
+                'Assalomu alaykum! Arizangiz ko\'rib chiqilmoqda.',
+                'Hujjat rasmi aniq chiqmagan — iltimos, qayta suratga oling.',
+                'To\'lov ma\'lumotlari yuborildi.',
+                'Polisingiz tayyor bo\'ldi ✅',
+                'Rahmat! Yana savolingiz bo\'lsa, yozing.',
+              ].map(t => `<button class="canned-chip" data-t="${esc(t)}" onclick="Admin.insertCanned(this)">${esc(t.length > 26 ? t.slice(0, 26) + '…' : t)}</button>`).join('')}
+            </div>
             <div class="adm-chat-input">
               <input class="inp" id="admChatInp" placeholder="Mijozga xabar..." onkeydown="if(event.key==='Enter')Admin.sendMsg()">
               <button class="btn btn-primary btn-sm" onclick="Admin.sendMsg()">${I.send}</button>
@@ -1181,6 +1190,13 @@ const Admin = {
       if (box) box.innerHTML = `<p class="muted-text">${esc(e.message)}</p>`;
     }
   },
+  // Tez javob shabloni — matnni chat maydoniga qo'yadi (admin tahrirlab yuborishi mumkin)
+  insertCanned(btn) {
+    const inp = document.getElementById('admChatInp');
+    if (!inp) return;
+    inp.value = btn.getAttribute('data-t') || '';
+    inp.focus();
+  },
   async sendMsg() {
     const inp = document.getElementById('admChatInp');
     const text = inp.value.trim();
@@ -1302,16 +1318,55 @@ const Admin = {
         <h1 class="adm-h1">Xodimlar</h1>
         <button class="btn btn-primary btn-sm" onclick="Admin.openStaffForm()">${I.plus} Yangi xodim</button>
       </div>
+      <div id="staffPerf"></div>
       <div id="staffList">${this.loadingBlock()}</div>`);
     try {
-      const r = await AdminAPI.staffList();
+      const [r, appsR] = await Promise.all([
+        AdminAPI.staffList(),
+        AdminAPI.allApps().catch(() => ({ items: [] })),
+      ]);
       const list = r.items || r.admins || (Array.isArray(r)?r:[]);
+      const apps = appsR.items || appsR.apps || (Array.isArray(appsR)?appsR:[]);
+      const perf = document.getElementById('staffPerf');
+      if (perf) perf.innerHTML = this.renderStaffPerf(apps);
       const box = document.getElementById('staffList');
       if (!list.length) { box.innerHTML = this.emptyBlock(I.users, 'Xodimlar yo\'q', 'Birinchi xodimni qo\'shing'); return; }
       box.innerHTML = `<div class="staff-grid">${list.map(s=>this.staffCard(s)).join('')}</div>`;
     } catch (e) {
       document.getElementById('staffList').innerHTML = this.errorBlock(e.message);
     }
+  },
+  // Xodimlar samaradorlik reytingi — yakunlangan polislar soni va o'rtacha vaqti bo'yicha
+  renderStaffPerf(apps) {
+    const map = {};
+    (apps || []).forEach(a => {
+      if (a.status !== 'completed' && a.status !== 'policy_ready') return;
+      const name = a.completed_by_name || a.approved_by_name || a.last_handled_by_name;
+      if (!name) return;
+      const m = map[name] || (map[name] = { name, done: 0, sumT: 0, cntT: 0 });
+      m.done++;
+      const pt = +a.processing_time || 0;
+      if (pt > 0) { m.sumT += pt; m.cntT++; }
+    });
+    const rows = Object.values(map).sort((x, y) => y.done - x.done).slice(0, 8);
+    if (!rows.length) return '';
+    const fmtDur = (ms) => {
+      if (!ms) return '—';
+      const h = ms / 3600000;
+      if (h < 1) return Math.round(ms / 60000) + ' daq';
+      if (h < 24) return h.toFixed(1) + ' soat';
+      return (h / 24).toFixed(1) + ' kun';
+    };
+    return `<div class="adm-card" style="max-width:640px">
+      <h3 class="adm-card-title">🏆 Xodimlar samaradorligi (yakunlangan polislar)</h3>
+      <div class="bonus-list">
+        ${rows.map((m, i) => `<div class="bonus-rank-row">
+          <span class="brk-n">#${i + 1}</span>
+          <div><b>${esc(m.name)}</b><span>O'rtacha ishlash: ${fmtDur(m.cntT ? m.sumT / m.cntT : 0)}</span></div>
+          <div class="brk-c">${m.done} ta polis</div>
+        </div>`).join('')}
+      </div>
+    </div>`;
   },
   staffCard(s) {
     const blocked = s.account_status === 'blocked' || s.account_status === 'suspended';

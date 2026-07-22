@@ -410,3 +410,8 @@
 .sla-badge.sla-ok{background:var(--green-50);color:var(--green-700)}
 .sla-badge.sla-warn{background:#FEF3E2;color:#B45309}
 .sla-badge.sla-late{background:var(--danger-l);color:var(--danger)}
+
+/* ===== Chat: tez javob shablonlari ===== */
+.adm-chat-canned{display:flex;flex-wrap:wrap;gap:6px;margin:8px 0 10px}
+.canned-chip{font:inherit;font-size:12px;font-weight:600;color:var(--ink-2);background:var(--paper);border:1px solid var(--line);border-radius:99px;padding:5px 11px;cursor:pointer;transition:.14s;white-space:nowrap}
+.canned-chip:hover{border-color:var(--green-300);color:var(--green-700);background:var(--green-50)}
