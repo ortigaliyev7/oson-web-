@@ -1987,8 +1987,21 @@ const Admin = {
           <div class="bonus-list" id="bonusOvList">${this.renderBonusOvRows(ov.items)}</div>
         </div>
 
+        <div class="adm-card setting-card" style="max-width:640px">
+          <h3 class="adm-card-title">🏅 Darajalar tizimi (viloyat oboroti bo'yicha)</h3>
+          <p style="color:var(--ink-2);font-size:13px;margin-bottom:12px">Mijoz darajasi u keltirgan <b>viloyat</b> oboroti bo'yicha ko'tariladi (Toshkent hisobga <b>olinmaydi</b>; taklif havolasi + do'stiga to'g'ridan-to'g'ri qilingan sug'urta <b>birga</b>). Har bir daraja uchun kerakli oborot va shu darajaga birinchi marta erishilganda beriladigan bonusни belgilang (so'm).</p>
+          <div class="tier-cfg-head"><span>Daraja</span><span>Kerakli oborot</span><span>Daraja bonusi</span></div>
+          ${(cfg.tiers||[]).map(t => `
+            <div class="tier-cfg-row">
+              <span class="tcr-lab">${t.icon||''} ${esc(t.label||t.id)}</span>
+              <input class="inp tcr-min" data-id="${esc(t.id)}" inputmode="numeric" value="${+t.min||0}" ${t.id==='yangi'?'disabled':''}>
+              <input class="inp tcr-bonus" data-id="${esc(t.id)}" inputmode="numeric" value="${+t.bonus||0}" ${t.id==='yangi'?'disabled':''}>
+            </div>`).join('')}
+          <button class="btn btn-primary" style="margin-top:12px" onclick="Admin.saveTiers()">Saqlash</button>
+        </div>
+
         <div class="adm-card" style="max-width:640px">
-          <h3 class="adm-card-title">🏆 Eng ko'p taklif qilganlar</h3>
+          <h3 class="adm-card-title">🏆 Reyting (viloyat oboroti bo'yicha)</h3>
           <div class="bonus-list" id="bonusRtList">${this.renderBonusRtRows(rt.items)}</div>
         </div>`;
       this.root.innerHTML = this.shell('bonus', content);
@@ -2018,8 +2031,23 @@ const Admin = {
       <div class="bonus-rank-row" onclick="Admin.bonusHistory('${u.phone}','${esc(u.name)}')" style="cursor:pointer">
         <span class="brk-n">#${u.rank}</span>
         <div><b>${esc(u.name)} ${this.tierBadge(u.tier)}</b><span>${fmtPhone(u.phone)}</span></div>
-        <div class="brk-c">${u.referral_count} ta · ${fmtSom(u.total_earned)}</div>
+        <div class="brk-c">${fmtSom(u.turnover||0)} oborot</div>
       </div>`).join('');
+  },
+  async saveTiers() {
+    const tiers = [];
+    document.querySelectorAll('.tier-cfg-row').forEach(row => {
+      const minEl = row.querySelector('.tcr-min');
+      const bonusEl = row.querySelector('.tcr-bonus');
+      if (!minEl || !bonusEl) return;
+      tiers.push({
+        id: minEl.getAttribute('data-id'),
+        min: Math.max(0, Math.round(Number(minEl.value) || 0)),
+        bonus: Math.max(0, Math.round(Number(bonusEl.value) || 0)),
+      });
+    });
+    try { await AdminAPI.refSaveConfig({ tiers }); toast('Darajalar saqlandi', 'ok'); }
+    catch (e) { toast(e.message, 'err'); }
   },
   onBonusSearch(v) {
     this._bonusSearch = v;
