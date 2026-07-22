@@ -378,6 +378,24 @@ const App = {
           <div class="bx-rank-hint">${nextTxt}</div>
         </div>
 
+        ${Array.isArray(cfg.tiers) && cfg.tiers.length ? `
+        <div class="bx-card">
+          <h3 class="bx-h">🏅 Darajalar va mukofotlar</h3>
+          <p style="color:var(--ink-2);font-size:13px;line-height:1.5;margin:2px 0 12px">Darajangiz siz keltirgan <b>viloyat</b> oboroti bo'yicha ko'tariladi (Toshkent hisobga olinmaydi). Har bir darajaga birinchi marta yetganingizda mukofot bonusi qo'shiladi.</p>
+          ${cfg.tiers.map(t => {
+            const active = (tier.id === t.id);
+            const reached = (ub.turnover || 0) >= (+t.min || 0);
+            return `<div style="display:flex;align-items:center;gap:12px;padding:11px 12px;border-radius:12px;margin-bottom:8px;border:1px solid ${active?'var(--green-500)':'var(--line)'};background:${active?'var(--green-50)':'var(--card)'}">
+              <div style="font-size:22px;line-height:1">${t.icon||'🔰'}</div>
+              <div style="flex:1;min-width:0">
+                <b style="display:block;font-size:14.5px;color:var(--ink)">${esc(t.label||'')}${active?' · <span style="color:var(--green-700)">Sizning darajangiz</span>':(reached?' <span style="color:var(--green-600)">✓</span>':'')}</b>
+                <span style="font-size:12.5px;color:var(--ink-2)">${(+t.min||0)>0?`${fmtSom(t.min)} oborotdan`:'Boshlang‘ich daraja'}</span>
+              </div>
+              <div style="font-weight:800;color:var(--green-700);white-space:nowrap;font-size:14px">${(+t.bonus||0)>0?`+${fmtSom(t.bonus)}`:'—'}</div>
+            </div>`;
+          }).join('')}
+        </div>` : ''}
+
         ${cfg.enabled ? `
         <div class="bx-card bx-earn">
           <h3>${I.trophy} Do'stingizga sug'urta qiling — pul ishlang!</h3>
