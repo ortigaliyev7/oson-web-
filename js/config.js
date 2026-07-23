@@ -1,12 +1,28 @@
 /* ============================================================
    Oson Sug'urtam — Web konfiguratsiya va ma'lumotlar
-   Backend: https://api.osugurta.uz (Railway'da jonli)
+   Backend:
+     • Production : https://api.osugurta.uz      (Railway'da jonli)
+     • Test/staging: https://api-test.osugurta.uz (alohida baza)
    ============================================================ */
 
-// Production'da o'z domeningiz; lokal test uchun localhost
-const API_BASE = (location.hostname === 'localhost' || location.hostname === '127.0.0.1')
-  ? 'http://localhost:3001'
-  : 'https://api.osugurta.uz';
+// Qaysi backendga ulanishni sayt manzili (hostname) bo'yicha aniqlaymiz:
+//   • localhost / 127.0.0.1  -> lokal ishlab chiqish serveri
+//   • test.* subdomen        -> test (staging) backend, alohida baza
+//   • qolgan barcha manzil   -> asosiy (production) backend
+// Shu tufayli bitta kod ikkala saytda ham to'g'ri ishlaydi va asosiy
+// sayt hech qachon test bazasiga tegmaydi.
+const HOST = location.hostname;
+let API_BASE;
+if (HOST === 'localhost' || HOST === '127.0.0.1') {
+  API_BASE = 'http://localhost:3001';
+} else if (HOST.startsWith('test.') || HOST.startsWith('staging.')) {
+  API_BASE = 'https://api-test.osugurta.uz';
+} else {
+  API_BASE = 'https://api.osugurta.uz';
+}
+
+// Test muhitida ekanmizmi (UI'da ogohlantirish ko'rsatish uchun)
+const IS_TEST_ENV = (API_BASE === 'https://api-test.osugurta.uz');
 
 const API = `${API_BASE}/api`;
 const SOCKET = API_BASE;
