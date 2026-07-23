@@ -1,16 +1,49 @@
 /* ============================================================
    Oson Sug'urtam — Web konfiguratsiya va ma'lumotlar
-   Backend: https://api.osugurta.uz (Railway'da jonli)
+   Backend:
+     • Production : https://api.osugurta.uz      (Railway'da jonli)
+     • Test/staging: https://api-test.osugurta.uz (alohida baza)
    ============================================================ */
 
-// Production'da o'z domeningiz; lokal test uchun localhost
-const API_BASE = (location.hostname === 'localhost' || location.hostname === '127.0.0.1')
-  ? 'http://localhost:3001'
-  : 'https://api.osugurta.uz';
+// Qaysi backendga ulanishni sayt manzili (hostname) bo'yicha aniqlaymiz:
+//   • localhost / 127.0.0.1  -> lokal ishlab chiqish serveri
+//   • test.* subdomen        -> test (staging) backend, alohida baza
+//   • qolgan barcha manzil   -> asosiy (production) backend
+// Shu tufayli bitta kod ikkala saytda ham to'g'ri ishlaydi va asosiy
+// sayt hech qachon test bazasiga tegmaydi.
+const HOST = location.hostname;
+let API_BASE;
+if (HOST === 'localhost' || HOST === '127.0.0.1') {
+  API_BASE = 'http://localhost:3001';
+} else if (HOST.startsWith('test.') || HOST.startsWith('staging.')) {
+  API_BASE = 'https://api-test.osugurta.uz';
+} else {
+  API_BASE = 'https://api.osugurta.uz';
+}
+
+// Test muhitida ekanmizmi (UI'da ogohlantirish ko'rsatish uchun)
+const IS_TEST_ENV = (API_BASE === 'https://api-test.osugurta.uz');
 
 const API = `${API_BASE}/api`;
 const SOCKET = API_BASE;
 const UPLOADS = `${API_BASE}/uploads`;
+
+// Test saytida yuqorida qizil "TEST REJIMI" chizig'ini ko'rsatamiz —
+// asosiy sayt bilan adashtirmaslik uchun. Production'da umuman chizilmaydi.
+if (IS_TEST_ENV) {
+  window.addEventListener('DOMContentLoaded', function () {
+    var bar = document.createElement('div');
+    bar.textContent = '⚠️ TEST REJIMI — bu sinov sayti, bu yerdagi ma’lumotlar haqiqiy emas';
+    bar.style.cssText = 'position:fixed;top:0;left:0;right:0;z-index:99999;'
+      + 'background:#B91C1C;color:#fff;font-size:13px;font-weight:600;'
+      + 'text-align:center;padding:6px 12px;letter-spacing:.2px;'
+      + 'font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif;';
+    document.body.appendChild(bar);
+    // Sahifa mazmuni chiziq ostida qolib ketmasligi uchun tepadan bo'sh joy
+    document.body.style.paddingTop =
+      (parseInt(getComputedStyle(document.body).paddingTop, 10) || 0) + 30 + 'px';
+  });
+}
 
 // Telegram bot (kod yuborish uchun)
 const BOT_USERNAME = 'online_sugurtambot';
