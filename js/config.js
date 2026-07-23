@@ -28,6 +28,23 @@ const API = `${API_BASE}/api`;
 const SOCKET = API_BASE;
 const UPLOADS = `${API_BASE}/uploads`;
 
+// Test saytida yuqorida qizil "TEST REJIMI" chizig'ini ko'rsatamiz —
+// asosiy sayt bilan adashtirmaslik uchun. Production'da umuman chizilmaydi.
+if (IS_TEST_ENV) {
+  window.addEventListener('DOMContentLoaded', function () {
+    var bar = document.createElement('div');
+    bar.textContent = '⚠️ TEST REJIMI — bu sinov sayti, bu yerdagi ma’lumotlar haqiqiy emas';
+    bar.style.cssText = 'position:fixed;top:0;left:0;right:0;z-index:99999;'
+      + 'background:#B91C1C;color:#fff;font-size:13px;font-weight:600;'
+      + 'text-align:center;padding:6px 12px;letter-spacing:.2px;'
+      + 'font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif;';
+    document.body.appendChild(bar);
+    // Sahifa mazmuni chiziq ostida qolib ketmasligi uchun tepadan bo'sh joy
+    document.body.style.paddingTop =
+      (parseInt(getComputedStyle(document.body).paddingTop, 10) || 0) + 30 + 'px';
+  });
+}
+
 // Telegram bot (kod yuborish uchun)
 const BOT_USERNAME = 'online_sugurtambot';
 const BOT_LINK = `https://t.me/${BOT_USERNAME}`;
