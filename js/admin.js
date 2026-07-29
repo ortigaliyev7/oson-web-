@@ -1878,7 +1878,20 @@ const Admin = {
         AdminAPI.refConfig(), AdminAPI.refOverview(), AdminAPI.refRating(),
       ]);
       this._refCfg = cfg;
+      // Bonus stavkalari: hudud × avto × muddat turi (cheklovli/cheklovsiz).
+      // Cheklovsiz polis narxi ikki barobar qimmat — shuning uchun alohida stavka.
       const RATES = [
+        ['tsh_yengil_cheklovli',  'Toshkent · Yengil · Cheklovli'],
+        ['tsh_yengil_cheklovsiz', 'Toshkent · Yengil · Cheklovsiz'],
+        ['tsh_yuk_cheklovli',     'Toshkent · Yuk · Cheklovli'],
+        ['tsh_yuk_cheklovsiz',    'Toshkent · Yuk · Cheklovsiz'],
+        ['bsh_yengil_cheklovli',  'Viloyat · Yengil · Cheklovli'],
+        ['bsh_yengil_cheklovsiz', 'Viloyat · Yengil · Cheklovsiz'],
+        ['bsh_yuk_cheklovli',     'Viloyat · Yuk · Cheklovli'],
+        ['bsh_yuk_cheklovsiz',    'Viloyat · Yuk · Cheklovsiz'],
+      ];
+      // Havola limiti polislar SONINI sanaydi — muddat turiga bo'linmaydi
+      const LIMITS = [
         ['tsh_yengil', 'Toshkent · Yengil'],
         ['tsh_yuk', 'Toshkent · Yuk'],
         ['bsh_yengil', 'Viloyat · Yengil'],
@@ -1922,18 +1935,18 @@ const Admin = {
         </div>
 
         <div class="adm-card setting-card" style="max-width:640px">
-          <h3 class="adm-card-title">Taklif havolasi — bonus stavkalari (hudud × avto)</h3>
+          <h3 class="adm-card-title">Taklif havolasi — bonus stavkalari (hudud × avto × muddat)</h3>
           <p style="color:var(--ink-2);font-size:13px;margin-bottom:12px">Mijoz o'z havolasini ulashib do'stini taklif qilsa. Har biri foiz (%) yoki qat'iy so'm summa</p>
           ${RATES.map(rateRow(cfg.rates, 'r')).join('')}
 
           ${cfg.first_insurance ? `
-          <h4 class="bonus-limit-title">Do'stning birinchi sug'urtasi uchun stavka (hudud × avto)</h4>
+          <h4 class="bonus-limit-title">Do'stning birinchi sug'urtasi uchun stavka (hudud × avto × muddat)</h4>
           ${RATES.map(rateRow(cfg.first_insurance_rates, 'fi')).join('')}
           ` : ''}
 
           <h4 class="bonus-limit-title">Bitta do'st raqami uchun necha marta bonus berilsin (hudud × avto)</h4>
           <p style="color:var(--ink-2);font-size:12.5px;margin-bottom:10px">0 = cheklovsiz. Shu limitdan keyin o'sha do'st raqamidan kelgan yangi arizalar uchun havola orqali bonus berilmaydi</p>
-          ${RATES.map(limitRow).join('')}
+          ${LIMITS.map(limitRow).join('')}
 
           <div class="field" style="margin-top:14px">
             <label>Bonus olish uchun murojaat (Telegram havolasi)</label>
@@ -1954,7 +1967,7 @@ const Admin = {
           </div>
           <div style="margin-top:12px">${RATES.map(rateRow(cfg.direct_rates, 'dr')).join('')}</div>
           ${cfg.first_insurance ? `
-          <h4 class="bonus-limit-title">Do'stning birinchi sug'urtasi uchun stavka (hudud × avto)</h4>
+          <h4 class="bonus-limit-title">Do'stning birinchi sug'urtasi uchun stavka (hudud × avto × muddat)</h4>
           ${RATES.map(rateRow(cfg.direct_first_insurance_rates, 'dfi')).join('')}
           ` : ''}
           <button class="btn btn-primary" style="margin-top:14px" onclick="Admin.bonusSaveConfig()">Saqlash</button>
@@ -1966,7 +1979,7 @@ const Admin = {
             <button class="toggle ${cfg.self_enabled?'on':''}" id="tgSelf" onclick="Admin.bonusToggle('self_enabled',${!cfg.self_enabled})"><span class="toggle-knob"></span></button>
           </div>
           ${cfg.self_enabled ? `
-          <h4 class="bonus-limit-title">Cashback stavkasi (hudud × avto)</h4>
+          <h4 class="bonus-limit-title">Cashback stavkasi (hudud × avto × muddat)</h4>
           <p style="color:var(--ink-2);font-size:12.5px;margin-bottom:10px">Har bir yakunlangan polis uchun mijoz o'z balansiga shu miqdorda bonus oladi. Foiz (%) yoki qat'iy so'm.</p>
           ${RATES.map(rateRow(cfg.self_rates, 'sf')).join('')}
           <button class="btn btn-primary" style="margin-top:14px" onclick="Admin.bonusSaveConfig()">Saqlash</button>
@@ -2081,7 +2094,12 @@ const Admin = {
     } catch (e) { toast(e.message, 'err'); }
   },
   async bonusSaveConfig() {
-    const keys = ['tsh_yengil','tsh_yuk','bsh_yengil','bsh_yuk'];
+    // Stavkalar 8 kalit (hudud × avto × muddat turi), limitlar esa 4 kalit
+    const keys = [
+      'tsh_yengil_cheklovli','tsh_yengil_cheklovsiz','tsh_yuk_cheklovli','tsh_yuk_cheklovsiz',
+      'bsh_yengil_cheklovli','bsh_yengil_cheklovsiz','bsh_yuk_cheklovli','bsh_yuk_cheklovsiz',
+    ];
+    const limitKeys = ['tsh_yengil','tsh_yuk','bsh_yengil','bsh_yuk'];
     const readRates = (prefix) => {
       const rates = {};
       keys.forEach(k => {
@@ -2098,7 +2116,7 @@ const Admin = {
     const direct_first_insurance_rates = readRates('dfi');
     const self_rates = readRates('sf');
     const link_limits = {};
-    keys.forEach(k => {
+    limitKeys.forEach(k => {
       const el = document.getElementById('rlimit_' + k);
       if (el) link_limits[k] = Math.max(0, Number(el.value) || 0);
     });
