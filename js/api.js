@@ -68,9 +68,9 @@ const ClientAPI = {
   messages: (id) => req(`/apps/${id}/messages`),
   sendMessage: (id, message) => req(`/apps/${id}/client-message`, { method:'POST', body:{ message } }),
 
-  // Referral bonus (mijoz)
+  // Referral bonus (mijoz) — bonus stavkasi muddat turiga (cheklovli/cheklovsiz) ham bog'liq
   refConfig:   () => req('/referral/config'),
-  refEstimate: (region, vehicle, price, via) => req(`/referral/estimate?region=${encodeURIComponent(region||'')}&vehicle=${encodeURIComponent(vehicle||'')}&price=${encodeURIComponent(price||0)}&via=${encodeURIComponent(via||'link')}`),
+  refEstimate: (region, vehicle, price, via, duration) => req(`/referral/estimate?region=${encodeURIComponent(region||'')}&vehicle=${encodeURIComponent(vehicle||'')}&price=${encodeURIComponent(price||0)}&via=${encodeURIComponent(via||'link')}&duration=${encodeURIComponent(duration||'')}`),
   refUser:     (phone) => req(`/referral/user/${encodeURIComponent(phone)}`),
 
   // Web Push (brauzer bildirishnomasi)
