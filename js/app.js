@@ -1821,7 +1821,7 @@ const App = {
     if (!box) return;
     if (d.forSelf !== false) return;
     try {
-      const est = await ClientAPI.refEstimate(d.region, d.vehicle, d.price, 'direct');
+      const est = await ClientAPI.refEstimate(d.region, d.vehicle, d.price, 'direct', d.duration);
       if (!box.isConnected) return; // foydalanuvchi "O'zim uchun"ga qaytgan bo'lishi mumkin
       if (!est.enabled || !est.amount) { box.innerHTML = ''; return; }
       box.innerHTML = `
