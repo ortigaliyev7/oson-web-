@@ -1160,3 +1160,47 @@ body.no-scroll{overflow:hidden}
 .tc-stars{color:var(--gold);font-size:13px;letter-spacing:1px;margin-bottom:4px}
 .testimonial-card p{font-size:13.5px;color:var(--ink);line-height:1.5;margin-bottom:8px}
 .tc-author{font-size:12px;font-weight:700;color:var(--ink-2)}
+
+/* ============================================================
+   BONUS — daraja kartasi (material). Daraja ko'tarilganda
+   kartaning MATERIALI o'zgaradi: mat qog'oz -> bronza -> kumush
+   -> oltin -> tovlanuvchi. Progress bar emas, obyektning o'zi.
+   ============================================================ */
+.bxn-card{position:relative;overflow:hidden;border-radius:20px;padding:20px;margin-bottom:14px;min-height:168px;display:flex;flex-direction:column;justify-content:space-between;box-shadow:var(--shadow-lg);transition:background .5s ease}
+.bxn-card::after{content:"";position:absolute;inset:-40%;background:linear-gradient(105deg,transparent 42%,rgba(255,255,255,.5) 50%,transparent 58%);pointer-events:none}
+.bxn-card[data-tier="yangi"]{background:linear-gradient(160deg,#FBFDFC,#EDF3F0);color:#16241E;border:1px solid var(--line);box-shadow:var(--shadow)}
+.bxn-card[data-tier="yangi"]::after{opacity:.25}
+.bxn-card[data-tier="bronza"]{background:linear-gradient(150deg,#7A4A1F 0%,#C98B4B 38%,#8A5726 62%,#5E3617 100%);color:#2A1A08}
+.bxn-card[data-tier="kumush"]{background:linear-gradient(150deg,#7E888E 0%,#E8EEF1 38%,#A5AEB4 62%,#6F787E 100%);color:#1B2429}
+.bxn-card[data-tier="oltin"]{background:linear-gradient(150deg,#7A5C0E 0%,#EBCA62 36%,#C9A227 62%,#6E520C 100%);color:#2A2107}
+.bxn-card[data-tier="olmos"]{background:conic-gradient(from 210deg at 30% 30%,#9FE7D8,#C8B6F2,#F2C0D8,#F5E3A8,#9FE7D8),#1A2A26;color:#10201C}
+.bxn-lab{position:relative;z-index:2;font-size:11px;letter-spacing:.12em;text-transform:uppercase;opacity:.72}
+.bxn-bal{position:relative;z-index:2;font-family:'Sora',sans-serif;font-weight:800;font-size:32px;letter-spacing:-.03em;margin-top:2px;line-height:1.15}
+.bxn-foot{position:relative;z-index:2;display:flex;justify-content:space-between;align-items:flex-end;gap:12px}
+.bxn-tier{font-family:'Sora',sans-serif;font-weight:700;font-size:15.5px}
+.bxn-turn{font-size:11.5px;opacity:.78;margin-top:2px}
+.bxn-turn b{font-weight:700}
+.bxn-earned{text-align:right;font-size:11px;opacity:.78;flex-shrink:0}
+.bxn-earned b{display:block;font-family:'Sora',sans-serif;font-weight:700;font-size:14px;opacity:1;margin-top:1px}
+.bxn-wait{background:var(--gold-l);color:#6B5410;border-radius:12px;padding:11px 14px;font-size:12.5px;font-weight:600;margin-bottom:14px;display:flex;align-items:center;gap:8px}
+
+/* Daraja tasmasi + keyingi darajagacha oltin ip */
+.bxn-progress{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:14px 16px;margin-bottom:16px}
+.bxn-strip{display:flex;gap:6px;margin-bottom:12px}
+.bxn-sw{flex:1;height:42px;border-radius:11px;position:relative;display:flex;align-items:center;justify-content:center;box-shadow:var(--shadow-sm);transition:transform .25s ease}
+.bxn-sw i{font-style:normal;font-size:15px;filter:drop-shadow(0 1px 1px rgba(0,0,0,.18))}
+.bxn-sw[data-on="1"]{transform:translateY(-4px);box-shadow:var(--shadow)}
+.bxn-sw[data-on="1"]::after{content:"";position:absolute;left:50%;bottom:4px;transform:translateX(-50%);width:14px;height:2.5px;border-radius:2px;background:rgba(255,255,255,.9)}
+.bxn-sw[data-tier="yangi"]{background:linear-gradient(160deg,#FBFDFC,#E9F0ED);border:1px solid var(--line)}
+.bxn-sw[data-tier="yangi"][data-on="1"]::after{background:rgba(14,26,22,.65)}
+.bxn-sw[data-tier="bronza"]{background:linear-gradient(150deg,#7A4A1F,#C98B4B 45%,#6B421C)}
+.bxn-sw[data-tier="kumush"]{background:linear-gradient(150deg,#7E888E,#E8EEF1 45%,#767F85)}
+.bxn-sw[data-tier="oltin"]{background:linear-gradient(150deg,#7A5C0E,#EBCA62 45%,#75570D)}
+.bxn-sw[data-tier="olmos"]{background:conic-gradient(from 210deg at 40% 35%,#9FE7D8,#C8B6F2,#F2C0D8,#F5E3A8,#9FE7D8)}
+.bxn-next-row{display:flex;justify-content:space-between;gap:12px;font-size:12.5px;color:var(--ink-2)}
+.bxn-next-row b{color:var(--ink);font-weight:700}
+.bxn-thread{height:5px;border-radius:3px;background:var(--green-100);margin-top:8px;overflow:hidden}
+.bxn-thread i{display:block;height:100%;border-radius:3px;background:linear-gradient(90deg,var(--gold),#E4C55F)}
+.bxn-note{font-size:12px;color:var(--muted);margin-top:9px;line-height:1.5}
+.bxn-note b{color:var(--ink-2);font-weight:700}
+@media (prefers-reduced-motion:reduce){.bxn-card,.bxn-sw{transition:none}}

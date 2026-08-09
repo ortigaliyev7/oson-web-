@@ -358,25 +358,43 @@ const App = {
       const nextTxt = tier.next
         ? `Keyingi daraja — ${tier.next.icon} ${esc(tier.next.label)}: yana <b>${fmtSom(tier.next.remaining)}</b> viloyat oboroti kerak`
         : ((ub.turnover || 0) > 0 ? '🎉 Eng yuqori darajadasiz!' : "Do'st taklif qilib, viloyat oboroti bilan daraja oshiring");
+      // Keyingi darajagacha bosib o'tilgan yo'l (oltin ip uchun, 0-100%)
+      const tierPct = (tier.next && (+tier.next.min || 0) > (+tier.min || 0))
+        ? Math.max(0, Math.min(100, ((ub.turnover || 0) - (+tier.min || 0)) / ((+tier.next.min || 0) - (+tier.min || 0)) * 100))
+        : ((ub.turnover || 0) > 0 ? 100 : 0);
 
       const body = `
-        <div class="bx-balance">
-          <div class="bx-bal-lab">Sizning bonusingiz</div>
-          <div class="bx-bal-val">${fmtSom(ub.balance)}</div>
-          <div class="bx-bal-sub">Jami ishlangan: ${fmtSom(ub.total_earned)} · Do'stlar: ${ub.referral_count||0}</div>
-          ${ub.balance > 0 ? (ub.payout_locked
-            ? `<div class="bx-payout-wait">${I.clock} Yana ${ub.payout_available_in_days} kundan keyin so'rashingiz mumkin</div>`
-            : (contact ? `<a href="${esc(contact)}" target="_blank" class="btn btn-light btn-sm" style="margin-top:12px">${I.send} Bonusni olish uchun murojaat</a>` : '')
-          ) : ''}
+        <div class="bxn-card" data-tier="${esc(tier.id||'yangi')}">
+          <div>
+            <div class="bxn-lab">Sizning bonusingiz</div>
+            <div class="bxn-bal">${fmtSom(ub.balance)}</div>
+          </div>
+          <div class="bxn-foot">
+            <div>
+              <div class="bxn-tier">${tier.icon||'🔰'} ${esc(tier.label||'Yangi')}</div>
+              <div class="bxn-turn">${rankTxt}</div>
+            </div>
+            <div class="bxn-earned"><span>Jami ishlangan</span><b>${fmtSom(ub.total_earned)}</b></div>
+          </div>
         </div>
 
-        <div class="bx-rank-card">
-          <div class="bx-rank-badge tier-${esc(tier.id||'yangi')}">
-            <span class="bx-rank-ic">${tier.icon||'🔰'}</span>
-            <div class="bx-rank-txt"><b>${esc(tier.label||'Yangi')} daraja</b><span>${rankTxt}</span></div>
+        ${ub.balance > 0 ? (ub.payout_locked
+          ? `<div class="bxn-wait">${I.clock} Yana ${ub.payout_available_in_days} kundan keyin so'rashingiz mumkin</div>`
+          : (contact ? `<a href="${esc(contact)}" target="_blank" class="btn btn-primary" style="width:100%;margin-bottom:14px">${I.send} Bonusni olish uchun murojaat</a>` : '')
+        ) : ''}
+
+        ${Array.isArray(cfg.tiers) && cfg.tiers.length ? `
+        <div class="bxn-progress">
+          <div class="bxn-strip">
+            ${cfg.tiers.map(t => `<span class="bxn-sw" data-tier="${esc(t.id||'')}"${tier.id===t.id?' data-on="1"':''} title="${esc(t.label||'')}"><i>${t.icon||''}</i></span>`).join('')}
           </div>
-          <div class="bx-rank-hint">${nextTxt}</div>
-        </div>
+          <div class="bxn-next-row">
+            <span>${esc(tier.label||'Yangi')}</span>
+            <b>${tier.next ? esc(tier.next.label) : 'Eng yuqori daraja'}</b>
+          </div>
+          <div class="bxn-thread"><i style="width:${tierPct.toFixed(1)}%"></i></div>
+          <p class="bxn-note">${nextTxt}</p>
+        </div>` : ''}
 
         ${Array.isArray(cfg.tiers) && cfg.tiers.length ? `
         <div class="bx-card">
