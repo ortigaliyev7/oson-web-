@@ -9,9 +9,12 @@
   <link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png">
   <link rel="icon" type="image/png" sizes="64x64" href="icons/favicon-64.png">
   <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Sora:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <!-- Shriftlar shu domendan: Google'ning ikkita domeni, ikkita DNS so'rovi
+       va ikkita TLS qo'l berishi yo'qoldi. Birinchi ekranda kerak bo'ladigan
+       ikkitasini oldindan yuklaymiz — CSS o'qilishini kutmaydi. -->
+  <link rel="preload" as="font" type="font/woff2" href="fonts/inter-latin.woff2" crossorigin>
+  <link rel="preload" as="font" type="font/woff2" href="fonts/sora-latin.woff2" crossorigin>
+  <link rel="stylesheet" href="css/fonts.css?v=4">
   <link rel="stylesheet" href="css/style.css">
   <link rel="stylesheet" href="css/admin.css">
 </head>
