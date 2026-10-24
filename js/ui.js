@@ -90,7 +90,13 @@ const I = {
 
 // Logo — yangi brend qalqoni (yashil qalqon + oq avto + belgi), shaffof fon
 function logoMarkSVG() {
-  return `<img src="icons/logo-mark.png" alt="Oson Sug'urtam" class="logo-img" loading="eager">`;
+  // WebP 54.8 KB -> 8.3 KB. <picture> zaxira beradi: WebP'ni tushunmagan
+  // brauzer <source>'ni o'tkazib yuborib PNG oladi. width/height esa rasm
+  // kelgunicha joy band qilib turadi — sahifa sakramaydi.
+  return `<picture class="logo-pic">
+    <source srcset="icons/logo-mark.webp" type="image/webp">
+    <img src="icons/logo-mark.png" alt="Oson Sug'urtam" class="logo-img" loading="eager" width="213" height="257" decoding="async">
+  </picture>`;
 }
 
 // Toast

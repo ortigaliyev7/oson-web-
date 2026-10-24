@@ -9,7 +9,9 @@
     } catch (e) {}
   })();
   </script>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <!-- Zoom ataylab bloklanmaydi: mijozlarning bir qismi yoshi katta va matnni
+       kattalashtirib o'qiydi. "Nativ ilova" hissi uchun ularni yo'qotish arzimaydi. -->
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
   <meta name="theme-color" content="#0F6E56">
   <title>Oson Sug'urtam — OSAGO avto sug'urtasini onlayn rasmiylashtiring</title>
   <meta name="description" content="OSAGO avto sug'urta polisini 5 daqiqada onlayn rasmiylashtiring. Tez, qulay, ishonchli — kartadan to'lov, yangilash va do'stlarga referal bonus tizimi bilan.">
@@ -32,8 +34,12 @@
   <meta name="twitter:description" content="OSAGO avto sug'urta polisini 5 daqiqada onlayn rasmiylashtiring. Tez, qulay, ishonchli.">
   <meta name="twitter:image" content="https://osugurta.uz/icons/logo.png">
 
+  <!-- WebP birinchi: qo'llab-quvvatlamagan brauzer uni o'tkazib yuboradi va PNG oladi -->
+  <link rel="icon" type="image/webp" sizes="64x64" href="icons/favicon-64.webp">
   <link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png">
   <link rel="icon" type="image/png" sizes="64x64" href="icons/favicon-64.png">
+  <!-- Logotip birinchi ekranda ko'rinadi — oldindan yuklaymiz (LCP) -->
+  <link rel="preload" as="image" href="icons/logo-mark.webp" type="image/webp">
 
   <!-- Backend bilan ulanishni oldindan ochamiz: birinchi API so'rovi ~100-200 ms tez boshlanadi -->
   <link rel="preconnect" href="https://api.osugurta.uz" crossorigin>
