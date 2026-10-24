@@ -12,6 +12,74 @@
   <!-- Zoom ataylab bloklanmaydi: mijozlarning bir qismi yoshi katta va matnni
        kattalashtirib o'qiydi. "Nativ ilova" hissi uchun ularni yo'qotish arzimaydi. -->
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+
+  <script>
+  // Brauzerdagi xatolarni o'z serverimizga yuboramiz. Bu skript boshqa
+  // hamma narsadan oldin turadi — shuning uchun ilova yuklanayotganda yuz
+  // bergan xatolarni ham tutadi. Uchinchi tomon xizmati ishlatilmaydi.
+  (function () {
+    var MAX = 8;            // bitta sessiyada eng ko'pi bilan shuncha xabar
+    var sent = 0;
+    var seen = {};          // bir xil xato takror yuborilmaydi
+
+    function base() {
+      var h = location.hostname;
+      if (h === 'localhost' || h === '127.0.0.1') return 'http://localhost:3001';
+      if (h.indexOf('test.') === 0 || h.indexOf('staging.') === 0) return 'https://api-test.osugurta.uz';
+      return 'https://api.osugurta.uz';
+    }
+
+    function report(d) {
+      try {
+        if (sent >= MAX) return;
+        var key = (d.message || '') + '|' + (d.line || '');
+        if (!key.replace('|', '') || seen[key]) return;
+        seen[key] = 1; sent++;
+
+        try {
+          var u = JSON.parse(localStorage.getItem('oson_client_user') || 'null');
+          if (u && u.phone) d.phone = u.phone;
+        } catch (e) {}
+        d.page = location.hash || '/';
+
+        var url = base() + '/api/client-errors';
+        var body = JSON.stringify(d);
+        // sendBeacon sahifa yopilayotganda ham yetib boradi
+        if (navigator.sendBeacon) {
+          navigator.sendBeacon(url, new Blob([body], { type: 'application/json' }));
+        } else {
+          fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: body, keepalive: true }).catch(function () {});
+        }
+      } catch (e) {}
+    }
+
+    window.addEventListener('error', function (e) {
+      if (!e) return;
+      // Rasm/skript yuklanmaganda ham shu hodisa keladi — uni ajratamiz
+      if (e.target && e.target !== window && e.target.tagName) {
+        return report({ kind: 'error', message: 'Yuklanmadi: ' + e.target.tagName, source: e.target.src || e.target.href || '' });
+      }
+      report({
+        kind: 'error',
+        message: e.message || 'Noma\'lum xato',
+        source: e.filename || '',
+        line: e.lineno || 0,
+        col: e.colno || 0,
+        stack: (e.error && e.error.stack) || '',
+      });
+    }, true);
+
+    window.addEventListener('unhandledrejection', function (e) {
+      var r = e && e.reason;
+      report({
+        kind: 'promise',
+        message: (r && (r.message || String(r))) || 'Javobsiz promise',
+        stack: (r && r.stack) || '',
+      });
+    });
+  })();
+  </script>
+
   <meta name="theme-color" content="#0F6E56">
   <title>Oson Sug'urtam — OSAGO avto sug'urtasini onlayn rasmiylashtiring</title>
   <meta name="description" content="OSAGO avto sug'urta polisini 5 daqiqada onlayn rasmiylashtiring. Tez, qulay, ishonchli — kartadan to'lov, yangilash va do'stlarga referal bonus tizimi bilan.">

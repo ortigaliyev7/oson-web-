@@ -152,6 +152,10 @@ const AdminAPI = {
     return res.blob();
   },
 
+  // --- Brauzer xatolari (monitoring) ---
+  clientErrors:      (days) => req('/client-errors/admin?days=' + (days || 7), { token: adminToken() }),
+  clientErrorsClear: () => req('/client-errors/admin', { method:'DELETE', token: adminToken() }),
+
   // --- Mijoz sharhlari (moderatsiya) ---
   reviewsList:   () => req('/reviews/admin', { token: adminToken() }),
   reviewApprove: (id) => req(`/reviews/admin/${id}/approve`, { method:'POST', token: adminToken() }),
