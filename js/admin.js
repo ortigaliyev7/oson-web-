@@ -88,6 +88,7 @@ const Admin = {
       case 'paymethods': return this.viewPayMethods();
       case 'bonus':   return this.viewBonus();
       case 'broadcast': return this.viewBroadcast();
+      case 'errors':  return this.viewErrors();
       case 'settings': return this.viewSettings();
       case 'profile': return this.viewProfile();
       default:        return this.go('/apps');
@@ -231,6 +232,7 @@ const Admin = {
       nav.push({ k:'paymethods', ic:I.card, lab:"To'lov usullari", path:'/paymethods' });
       nav.push({ k:'bonus', ic:I.trophy, lab:'Bonuslar', path:'/bonus' });
       nav.push({ k:'broadcast', ic:I.bell, lab:'Xabarnoma', path:'/broadcast' });
+      nav.push({ k:'errors', ic:I.warn, lab:'Xatolar', path:'/errors' });
       nav.push({ k:'settings', ic:I.settings, lab:'Sozlamalar', path:'/settings' });
     }
     nav.push({ k:'profile', ic:I.user, lab:'Profil', path:'/profile' });
@@ -1536,6 +1538,86 @@ const Admin = {
   // ============================================================
   // SOZLAMALAR
   // ============================================================
+  // ============================================================
+  // XATOLAR — mijoz brauzerida yuz bergan JavaScript xatolari
+  // ============================================================
+  async viewErrors(days) {
+    const d = days || this._errDays || 7;
+    this._errDays = d;
+    this.root.innerHTML = this.shell('errors', this.loadingBlock());
+    try {
+      const r = await AdminAPI.clientErrors(d);
+      const items = r.items || [];
+
+      const rows = items.length ? items.map((g, i) => {
+        const kind = g.kind === 'promise' ? 'Promise' : 'Xato';
+        const pages = (g.pages || []).map(p => `<code>${esc(p)}</code>`).join(' ');
+        return `<div class="err-row">
+          <div class="err-head" onclick="Admin.toggleErr(${i})">
+            <span class="err-count">${g.count}</span>
+            <div class="err-main">
+              <b>${esc(g.message)}</b>
+              <span class="err-meta">
+                ${kind} · oxirgi ${fmtDate(g.last_seen)}
+                ${g.affected ? ` · ${g.affected} mijoz` : ''}
+                ${g.devices ? ` · ${g.devices} qurilma` : ''}
+              </span>
+            </div>
+            <span class="err-arrow" id="errArrow${i}">▾</span>
+          </div>
+          <div class="err-body" id="errBody${i}">
+            ${pages ? `<div class="err-line"><span>Sahifa</span>${pages}</div>` : ''}
+            ${g.source ? `<div class="err-line"><span>Fayl</span><code>${esc(g.source)}${g.line ? ':' + g.line : ''}</code></div>` : ''}
+            ${(g.phones || []).length ? `<div class="err-line"><span>Mijozlar</span>${g.phones.map(p => esc(fmtPhone(p))).join(', ')}</div>` : ''}
+            ${g.stack ? `<pre class="err-stack">${esc(g.stack)}</pre>` : ''}
+          </div>
+        </div>`;
+      }).join('') : `<p class="muted-text" style="text-align:center;padding:26px">Bu davrda xato yo'q — yaxshi belgi.</p>`;
+
+      const content = `
+        <h1 class="adm-h1">Xatolar</h1>
+        <p style="color:var(--ink-2);font-size:13.5px;margin:-6px 0 18px;max-width:62ch">
+          Mijoz brauzerida yuz bergan JavaScript xatolari. Bir xil xato bitta qatorga
+          yig'iladi. Ma'lumot o'z serverimizda saqlanadi, tashqariga chiqmaydi.
+        </p>
+
+        <div class="adm-card" style="max-width:860px">
+          <div class="adm-card-title-row">
+            <h3 class="adm-card-title">So'nggi ${d} kun — ${items.length} xil xato, jami ${r.total} marta</h3>
+            <div style="display:flex;gap:8px;align-items:center">
+              <select class="inp" style="width:auto;padding:7px 10px" onchange="Admin.viewErrors(+this.value)">
+                <option value="1" ${d===1?'selected':''}>1 kun</option>
+                <option value="7" ${d===7?'selected':''}>7 kun</option>
+                <option value="30" ${d===30?'selected':''}>30 kun</option>
+              </select>
+              ${items.length ? `<button class="btn btn-ghost btn-sm" onclick="Admin.clearErrors()">Tozalash</button>` : ''}
+            </div>
+          </div>
+          <div class="err-list">${rows}</div>
+        </div>`;
+      this.root.innerHTML = this.shell('errors', content);
+    } catch (e) {
+      this.root.innerHTML = this.shell('errors', this.errorBlock(e.message));
+    }
+  },
+
+  toggleErr(i) {
+    const b = document.getElementById('errBody' + i);
+    const a = document.getElementById('errArrow' + i);
+    if (!b) return;
+    const open = b.classList.toggle('open');
+    if (a) a.textContent = open ? '▴' : '▾';
+  },
+
+  async clearErrors() {
+    if (!confirm("Barcha xato yozuvlari o'chirilsinmi? Bu amalni qaytarib bo'lmaydi.")) return;
+    try {
+      await AdminAPI.clientErrorsClear();
+      toast('Tozalandi', 'ok');
+      this.viewErrors(this._errDays);
+    } catch (e) { toast(e.message, 'err'); }
+  },
+
   async viewSettings() {
     document.body.className = 'admin-body';
     this.root.innerHTML = this.shell('settings', this.loadingBlock());
