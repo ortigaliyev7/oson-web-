@@ -310,7 +310,7 @@ const App = {
     const out = document.getElementById('bcResult');
     if (!out) return;
     const themeClass = via === 'direct' ? 'ac-gold' : 'ac-green';
-    const badge = via === 'direct' ? '🎁 TAXMINIY BONUS' : '💰 TAXMINIY BONUS';
+    const badge = via === 'direct' ? `<span class="ic-i">${I.gift}</span> TAXMINIY BONUS` : `<span class="ic-i">${I.earn}</span> TAXMINIY BONUS`;
     const lab = via === 'direct' ? "Bu turdagi sug'urta uchun taxminan" : "Har bir do'st uchun taxminan";
     const sub = via === 'direct'
       ? "To'g'ridan-to'g'ri sug'urta qilib bersangiz"
@@ -351,7 +351,7 @@ const App = {
         <div class="bx-tx">
           <div><b>${t.type==='earned'?'Bonus qo\'shildi':t.type==='paid'?'To\'lab berildi':t.type==='discount'?'Chegirma':'—'}</b>
             <span>${fmtDate(t.createdAt)}</span>
-            ${t.note ? `<span class="bx-tx-note">${esc(t.note)}</span>` : ''}</div>
+            ${t.note ? `<span class="bx-tx-note">${esc(plainText(t.note))}</span>` : ''}</div>
           <div class="bx-amt ${t.amount<0?'neg':''}">${t.amount>0?'+':''}${fmtSom(Math.abs(t.amount))}</div>
         </div>`).join('') : `<p class="muted-text" style="text-align:center;padding:16px">Hozircha tranzaksiya yo'q</p>`;
 
@@ -360,8 +360,8 @@ const App = {
         ? `Reytingda: <b>#${ub.rank}</b> / ${ub.rank_total} · Oborot: <b>${fmtSom(ub.turnover||0)}</b>`
         : `Oborotingiz: <b>${fmtSom(ub.turnover||0)}</b>`;
       const nextTxt = tier.next
-        ? `Keyingi daraja — ${tier.next.icon} ${esc(tier.next.label)}: yana <b>${fmtSom(tier.next.remaining)}</b> viloyat oboroti kerak`
-        : ((ub.turnover || 0) > 0 ? '🎉 Eng yuqori darajadasiz!' : "Do'st taklif qilib, viloyat oboroti bilan daraja oshiring");
+        ? `Keyingi daraja — ${tierGem(tier.next.id, 15)} ${esc(tier.next.label)}: yana <b>${fmtSom(tier.next.remaining)}</b> viloyat oboroti kerak`
+        : ((ub.turnover || 0) > 0 ? `<span class="ic-i">${I.sparkle}</span> Eng yuqori darajadasiz!` : "Do'st taklif qilib, viloyat oboroti bilan daraja oshiring");
       // Keyingi darajagacha bosib o'tilgan yo'l (oltin ip uchun, 0-100%)
       const tierPct = (tier.next && (+tier.next.min || 0) > (+tier.min || 0))
         ? Math.max(0, Math.min(100, ((ub.turnover || 0) - (+tier.min || 0)) / ((+tier.next.min || 0) - (+tier.min || 0)) * 100))
@@ -375,7 +375,7 @@ const App = {
           </div>
           <div class="bxn-foot">
             <div>
-              <div class="bxn-tier">${tier.icon||'🔰'} ${esc(tier.label||'Yangi')}</div>
+              <div class="bxn-tier">${tierGem(tier.id, 19, true)} ${esc(tier.label||'Yangi')}</div>
               <div class="bxn-turn">${rankTxt}</div>
             </div>
             <div class="bxn-earned"><span>Jami ishlangan</span><b>${fmtSom(ub.total_earned)}</b></div>
@@ -390,7 +390,7 @@ const App = {
         ${Array.isArray(cfg.tiers) && cfg.tiers.length ? `
         <div class="bxn-progress">
           <div class="bxn-strip">
-            ${cfg.tiers.map(t => `<span class="bxn-sw" data-tier="${esc(t.id||'')}"${tier.id===t.id?' data-on="1"':''} title="${esc(t.label||'')}"><i>${t.icon||''}</i></span>`).join('')}
+            ${cfg.tiers.map(t => `<span class="bxn-sw" data-tier="${esc(t.id||'')}"${tier.id===t.id?' data-on="1"':''} title="${esc(t.label||'')}"><i>${tierGem(t.id, 18, true)}</i></span>`).join('')}
           </div>
           <div class="bxn-next-row">
             <span>${esc(tier.label||'Yangi')}</span>
@@ -402,15 +402,15 @@ const App = {
 
         ${Array.isArray(cfg.tiers) && cfg.tiers.length ? `
         <div class="bx-card">
-          <h3 class="bx-h">🏅 Darajalar va mukofotlar</h3>
+          <h3 class="bx-h"><span class="ic-i">${I.levels}</span> Darajalar va mukofotlar</h3>
           <p style="color:var(--ink-2);font-size:13px;line-height:1.5;margin:2px 0 12px">Darajangiz siz keltirgan <b>viloyat</b> oboroti bo'yicha ko'tariladi (Toshkent hisobga olinmaydi). Har bir darajaga birinchi marta yetganingizda mukofot bonusi qo'shiladi.</p>
           ${cfg.tiers.map(t => {
             const active = (tier.id === t.id);
             const reached = (ub.turnover || 0) >= (+t.min || 0);
             return `<div style="display:flex;align-items:center;gap:12px;padding:11px 12px;border-radius:12px;margin-bottom:8px;border:1px solid ${active?'var(--green-500)':'var(--line)'};background:${active?'var(--green-50)':'var(--card)'}">
-              <div style="font-size:22px;line-height:1">${t.icon||'🔰'}</div>
+              <div style="line-height:0">${tierGem(t.id, 28)}</div>
               <div style="flex:1;min-width:0">
-                <b style="display:block;font-size:14.5px;color:var(--ink)">${esc(t.label||'')}${active?' · <span style="color:var(--green-700)">Sizning darajangiz</span>':(reached?' <span style="color:var(--green-600)">✓</span>':'')}</b>
+                <b style="display:block;font-size:14.5px;color:var(--ink)">${esc(t.label||'')}${active?' · <span style="color:var(--green-700)">Sizning darajangiz</span>':(reached?` <span class="ic-i" style="color:var(--green-600)">${I.check}</span>`:'')}</b>
                 <span style="font-size:12.5px;color:var(--ink-2)">${(+t.min||0)>0?`${fmtSom(t.min)} oborotdan`:'Boshlang‘ich daraja'}</span>
               </div>
               <div style="font-weight:800;color:var(--green-700);white-space:nowrap;font-size:14px">${(+t.bonus||0)>0?`+${fmtSom(t.bonus)}`:'—'}</div>
@@ -940,13 +940,13 @@ const App = {
           </div>
           ${isFirstVisit ? `
           <div class="onb-hint">
-            <span>👆 ${tt("Sug'urta olish uchun shu yerdan boshlang!")}</span>
+            <span><span class="ic-i">${I.tap}</span> ${tt("Sug'urta olish uchun shu yerdan boshlang!")}</span>
             <button onclick="App.dismissOnboarding()">${I.x}</button>
           </div>` : ''}
         </div>
 
         <div class="bonus-promo" onclick="App.go('/bonus')">
-          <div class="bp-badge">💰 ${tt('DAROMAD')}</div>
+          <div class="bp-badge"><span class="ic-i">${I.earn}</span> ${tt('DAROMAD')}</div>
           <div class="bp-top">
             <div class="bp-ic">${I.trophy}</div>
             <div class="bp-txt"><h3>${tt("Do'stingizni taklif qiling — pul ishlang!")}</h3><p>${tt("Bu — sizning shaxsiy daromad manbaingiz")}</p></div>
@@ -1017,7 +1017,7 @@ const App = {
         <div class="testimonials">
           ${testimonials.slice(0, 5).map(t => `
           <div class="testimonial-card">
-            ${t.rating ? `<div class="tc-stars">${'★'.repeat(Math.round(t.rating))}${'☆'.repeat(5-Math.round(t.rating))}</div>` : ''}
+            ${t.rating ? `<div class="tc-stars">${starRow(t.rating, 15)}</div>` : ''}
             <p>"${esc(t.text || '')}"</p>
             <div class="tc-author">${esc(t.name || 'Mijoz')}${t.city ? ', ' + esc(t.city) : ''}</div>
           </div>`).join('')}
@@ -1851,7 +1851,7 @@ const App = {
       if (!est.enabled || !est.amount) { box.innerHTML = ''; return; }
       box.innerHTML = `
         <div class="bonus-amount-card ac-gold">
-          <div class="dbc-badge">🎁 SIZGA BONUS</div>
+          <div class="dbc-badge"><span class="ic-i">${I.gift}</span> SIZGA BONUS</div>
           <div class="dbc-top">
             <div class="dbc-ic">${I.trophy}</div>
             <div class="dbc-txt">
@@ -2120,7 +2120,7 @@ const App = {
       <div class="review-card">
         <h3 class="section-h">${tt('Xizmatimizni baholang')}</h3>
         <div class="review-stars" id="reviewStars">
-          ${[1,2,3,4,5].map(n=>`<span class="rv-star" data-n="${n}" onclick="App.setReviewStar(${n})">★</span>`).join('')}
+          ${[1,2,3,4,5].map(n=>`<span class="rv-star" data-n="${n}" onclick="App.setReviewStar(${n})">${I.starFill}</span>`).join('')}
         </div>
         <textarea class="inp" id="reviewText" rows="3" placeholder="${tt('Fikringizni yozing')} (${tt('ixtiyoriy')})"></textarea>
         <button class="btn btn-primary btn-block" id="reviewSubmitBtn" style="margin-top:10px" onclick="App.submitReview('${appId}')">${tt('Yuborish')}</button>

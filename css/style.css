@@ -1246,3 +1246,27 @@ body.no-scroll{overflow:hidden}
   font-weight:700;font-size:13px;padding:9px 15px;border-radius:99px;cursor:pointer;white-space:nowrap}
 .upd-bar button:focus-visible{outline:2px solid #fff;outline-offset:2px}
 @media (max-width:420px){.upd-bar{font-size:12.5px;gap:9px}}
+
+/* ════════════════════════════════════════════════
+   IKONKALAR — emoji o'rniga o'z belgilarimiz
+   Emoji har qurilmada boshqacha chiziladi (iPhone, Android, Windows uchta
+   xil ko'rinish). SVG hamma joyda bir xil va matn rangini oladi.
+   ════════════════════════════════════════════════ */
+
+/* Matn ichidagi ikonka — shrift o'lchamiga moslashadi */
+.ic-i{display:inline-flex;width:1.1em;height:1.1em;vertical-align:-.17em;flex:none}
+.ic-i svg{width:100%;height:100%}
+
+/* Daraja toshi */
+.tier-gem{display:inline-block;vertical-align:middle;flex:none}
+.bxn-tier{display:flex;align-items:center;gap:6px}
+.bxn-sw i{line-height:0}
+.tier-badge .tier-gem{margin-right:1px}
+
+/* Baho yulduzlari */
+.star-row{display:inline-flex;gap:2px;vertical-align:middle}
+.star-ic{display:inline-flex;color:var(--line-2)}
+.star-ic.on{color:var(--gold)}
+.star-ic svg{width:100%;height:100%}
+.rv-star{display:inline-flex;width:34px;height:34px}
+.rv-star svg{width:100%;height:100%}
