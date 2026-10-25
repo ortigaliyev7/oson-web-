@@ -43,7 +43,10 @@ async function req(path, { method = 'GET', body = null, token = null, isForm = f
   return data;
 }
 
-/* ---------- MIJOZ AUTH ---------- */
+/* ---------- MIJOZ AUTH ----------
+   Mijoz ma'lumotiga oid har bir so'rov token bilan ketadi. Telefon raqami
+   URL'da turadi, lekin u sir emas — server token egasi shu telefonning
+   egasi ekanini tekshiradi. */
 const ClientAPI = {
   sendCode: (phone) => req('/user-auth/send-code', { method:'POST', body:{ phone } }),
   verify:   (phone, code) => req('/user-auth/verify', { method:'POST', body:{ phone, code } }),
@@ -58,27 +61,27 @@ const ClientAPI = {
   },
   settings: () => req('/settings'),
   statsPublic: () => req('/stats/public'),
-  saveDraftServer: (phone, step) => req(`/client/${encodeURIComponent(phone)}/draft`, { method:'POST', body:{ step } }),
-  clearDraftServer: (phone) => req(`/client/${encodeURIComponent(phone)}/draft`, { method:'DELETE' }),
+  saveDraftServer: (phone, step) => req(`/client/${encodeURIComponent(phone)}/draft`, { method:'POST', body:{ step }, token: clientToken() }),
+  clearDraftServer: (phone) => req(`/client/${encodeURIComponent(phone)}/draft`, { method:'DELETE', token: clientToken() }),
   me:       () => req('/user-auth/me', { token: clientToken() }),
   updateMe: (data) => req('/user-auth/me', { method:'PATCH', body:data, token: clientToken() }),
 
-  myApps:   (phone) => req(`/apps/client/${encodeURIComponent(phone)}`),
+  myApps:   (phone) => req(`/apps/client/${encodeURIComponent(phone)}`, { token: clientToken() }),
   appDetail:(id) => req(`/apps/${id}`, { token: clientToken() }),
-  messages: (id) => req(`/apps/${id}/messages`),
-  sendMessage: (id, message) => req(`/apps/${id}/client-message`, { method:'POST', body:{ message } }),
+  messages: (id) => req(`/apps/${id}/messages`, { token: clientToken() }),
+  sendMessage: (id, message) => req(`/apps/${id}/client-message`, { method:'POST', body:{ message }, token: clientToken() }),
 
   // Referral bonus (mijoz) — bonus stavkasi muddat turiga (cheklovli/cheklovsiz) ham bog'liq
   refConfig:   () => req('/referral/config'),
   refEstimate: (region, vehicle, price, via, duration) => req(`/referral/estimate?region=${encodeURIComponent(region||'')}&vehicle=${encodeURIComponent(vehicle||'')}&price=${encodeURIComponent(price||0)}&via=${encodeURIComponent(via||'link')}&duration=${encodeURIComponent(duration||'')}`),
-  refUser:     (phone) => req(`/referral/user/${encodeURIComponent(phone)}`),
+  refUser:     (phone) => req(`/referral/user/${encodeURIComponent(phone)}`, { token: clientToken() }),
 
   // Web Push (brauzer bildirishnomasi)
   vapidPublic: () => req('/client/vapid-public'),
-  webPushSubscribe: (phone, sub) => req(`/client/${encodeURIComponent(phone)}/web-push-subscribe`, { method:'POST', body:{ subscription: sub } }),
+  webPushSubscribe: (phone, sub) => req(`/client/${encodeURIComponent(phone)}/web-push-subscribe`, { method:'POST', body:{ subscription: sub }, token: clientToken() }),
 
-  notifications: (phone) => req(`/client/${encodeURIComponent(phone)}/notifications`),
-  markRead: (phone) => req(`/client/${encodeURIComponent(phone)}/notifications/mark-read`, { method:'POST' }),
+  notifications: (phone) => req(`/client/${encodeURIComponent(phone)}/notifications`, { token: clientToken() }),
+  markRead: (phone) => req(`/client/${encodeURIComponent(phone)}/notifications/mark-read`, { method:'POST', token: clientToken() }),
 
   // Ariza yuborish (multipart FormData)
   submitApp: (formData) => req('/apps', { method:'POST', body: formData, isForm: true }),
@@ -103,7 +106,7 @@ const AdminAPI = {
   message:   (id, message) => req(`/apps/${id}/message`, { method:'POST', body:{ message }, token: adminToken() }),
   // finalize multipart (policy_file)
   finalize:  (id, formData) => req(`/apps/${id}/finalize`, { method:'POST', body: formData, isForm:true, token: adminToken() }),
-  messages:  (id) => req(`/apps/${id}/messages`),
+  messages:  (id) => req(`/apps/${id}/messages`, { token: adminToken() }),
   logView:   (id) => req(`/apps/${id}/log-view`, { method:'POST', token: adminToken() }),
 
   // --- Xodimlar boshqaruvi ---
