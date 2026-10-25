@@ -1175,7 +1175,9 @@ const Admin = {
   async loadAdminChat() {
     try {
       const r = await AdminAPI.messages(this.curAppId);
-      const list = Array.isArray(r) ? r : (r.messages || []);
+      // Backend ro'yxatni `items` da qaytaradi; faqat `messages` o'qilgani uchun
+      // chat qutisi doim "Xabarlar yo'q" ko'rsatardi.
+      const list = Array.isArray(r) ? r : (r.items || r.messages || []);
       const box = document.getElementById('admChat');
       if (!box) return;
       if (!list.length) { box.innerHTML = `<p class="muted-text" style="text-align:center;padding:20px">Xabarlar yo'q</p>`; return; }
