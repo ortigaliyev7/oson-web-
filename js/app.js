@@ -926,16 +926,18 @@ const App = {
         <div class="greeting">${tt('Assalomu alaykum,')}</div>
         <div class="greeting-name">${esc(firstName)}!</div>
 
-        <div class="hero-card">
-          <h2>${tt("Sug'urta polisini rasmiylashtiring")}</h2>
-          <p>${tt("Bir necha daqiqada, ofisga bormasdan")}</p>
-          <div class="hc-shield">${I.shieldCheck}</div>
-        </div>
+        <div id="dashPolicy"></div>
 
         <div class="onb-wrap">
-          <div class="action-card ${isFirstVisit?'onb-highlight':''}" onclick="App.dismissOnboarding();App.startNewApp()">
-            <div class="ac-plus">${I.plus}</div>
-            <div><h3>${tt('Yangi ariza')}</h3><p>${tt("3-5 daqiqada to'ldiring")}</p></div>
+          <div class="ch-shoot ${isFirstVisit?'onb-highlight':''}" onclick="App.dismissOnboarding();App.shootNewApp()">
+            <button class="ch-aperture" id="dashAp" type="button" aria-label="${tt('Yangi ariza')}">
+              ${[0,60,120,180,240,300].map(r=>`<span class="blade" style="--rot:${r}deg"></span>`).join('')}
+              <span class="ap-core">${I.camera}</span>
+            </button>
+            <div class="ch-shoot-t">
+              <h3>${tt('Yangi ariza')}</h3>
+              <p>${tt("Hujjatlarni rasmga oling — ma'lumotlar o'zi to'ladi")}</p>
+            </div>
             <div class="ac-arrow">${I.arrowRight}</div>
           </div>
           ${isFirstVisit ? `
@@ -992,6 +994,59 @@ const App = {
       ${this.bottomNav('dashboard')}`;
     this.refreshNotifCount();
     this.renderTrustBanner();
+    this.renderDashPolicy();
+  },
+
+  // Diafragma ochiladi, so'ng yangi ariza boshlanadi (harakat kamaytirilgan bo'lsa — darhol)
+  shootNewApp() {
+    const ap = document.getElementById('dashAp');
+    const calm = window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches;
+    if (!ap || calm) return this.startNewApp();
+    ap.classList.add('open');
+    setTimeout(() => this.startNewApp(), 420);
+  },
+
+  // Bosh sahifa: amaldagi polis kartasi (raqam taxtachasi + qolgan kun),
+  // polis bo'lmasa — jarayondagi arizalar.
+  async renderDashPolicy() {
+    const box = document.getElementById('dashPolicy');
+    if (!box || !this.user) return;
+    let list = [];
+    try {
+      const r = await ClientAPI.myApps(this.user.phone);
+      list = Array.isArray(r) ? r : (r.items || []);
+    } catch (e) { return; }
+    if (!document.body.contains(box)) return;
+    const now = Date.now();
+    const live = list
+      .filter(a => (a.status === 'policy_ready' || a.status === 'completed') && policyExpiry(a) > now)
+      .sort((a, b) => policyExpiry(b) - policyExpiry(a));
+    const pending = list.filter(a => !DONE_STATUSES.includes(a.status))
+      .sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
+    let html = '';
+    if (live.length) {
+      const a = live[0], exp = policyExpiry(a), left = daysLeft(exp);
+      const total = policyDays(a.duration), soon = left <= 21;
+      const vehicleName = (VEHICLES.find(v => v.id === a.vehicle) || {}).name || '';
+      const [len, kind] = fmtTerm(a.duration).split(' · ');
+      html += `
+        <div class="ch-pcard${soon ? ' soon' : ''}" onclick="App.go('/status/${a.id}')" role="button" tabindex="0">
+          <div class="pc-top">
+            <span class="pc-lab">${tt('Amaldagi polis')}</span>
+            <span class="pc-status">${soon ? tt('Tez tugaydi') : tt('Faol')}</span>
+          </div>
+          ${a.tex_plate ? plateTag(a.tex_plate) : `<b class="pc-veh">${esc(a.tex_model || vehicleName)}</b>`}
+          <div class="pc-bottom">
+            <div class="pc-term">${esc(len || '')}${kind ? `<br>${esc(kind)}` : ''}<br><span>${fmtDay(exp)} ${tt('gacha')}</span></div>
+            <div class="pc-days"><div><b>${left}</b><span>${tt('kun qoldi')}</span></div>${ringSVG(left / total)}</div>
+          </div>
+        </div>
+        ${soon ? `<button class="btn btn-primary btn-block ch-renew" onclick="App.startRenew()">${I.refresh} ${tt('Polisni yangilash')}</button>` : ''}`;
+    }
+    if (pending.length) {
+      html += `<p class="ch-sect">${tt('Jarayonda')}</p>${pending.slice(0, 2).map(a => this.appListItem(a)).join('')}`;
+    }
+    box.innerHTML = html;
   },
 
   // Ishonch bloki — real statistika (backend) + admin qo'shgan sharhlar
@@ -1030,7 +1085,7 @@ const App = {
     localStorage.setItem('oson_onboarded', '1');
     const el = document.querySelector('.onb-hint');
     if (el) el.remove();
-    const card = document.querySelector('.action-card.onb-highlight');
+    const card = document.querySelector('.onb-highlight');
     if (card) card.classList.remove('onb-highlight');
   },
 
@@ -2007,7 +2062,12 @@ const App = {
         return;
       }
       list.sort((a,b)=> new Date(b.created_at||b.createdAt||0) - new Date(a.created_at||a.createdAt||0));
-      box.innerHTML = list.map(a => this.appListItem(a)).join('');
+      // Ikki guruh: hali jarayondagilar va yakunlanganlar (polis tayyor / rad etilgan)
+      const done = a => DONE_STATUSES.includes(a.status);
+      const active = list.filter(a => !done(a)), finished = list.filter(done);
+      box.innerHTML =
+        (active.length ? `<p class="ch-sect">${tt('Jarayonda')}</p>${active.map(a => this.appListItem(a)).join('')}` : '') +
+        (finished.length ? `<p class="ch-sect">${tt('Yakunlangan')}</p>${finished.map(a => this.appListItem(a)).join('')}` : '');
     } catch (e) {
       document.getElementById('appsList').innerHTML = this.errorBlock(e.message);
     }
@@ -2015,23 +2075,24 @@ const App = {
   appListItem(a) {
     const st = a.status || 'new';
     const vehicleName = (VEHICLES.find(v=>v.id===a.vehicle)||{}).name || a.vehicle || '';
-    const num = a.app_number || a.number || ('#' + String(a.id||'').slice(-5));
+    const title = a.tex_plate ? fmtPlate(a.tex_plate) : (a.app_number || ('#' + String(a.id||'').slice(-5)));
+    const exp = policyExpiry(a);
+    let sub;
+    if ((st === 'policy_ready' || st === 'completed') && exp) {
+      sub = exp > Date.now() ? `${fmtDay(exp)} ${tt('gacha')}` : tt('muddati tugagan');
+    } else {
+      sub = fmtTerm(a.duration) || a.region || '';
+    }
     return `
-      <div class="applist-item" onclick="App.go('/status/${a.id}')">
-        <div class="ali-ic">${a.vehicle==='yuk'?I.truck:I.car}</div>
-        <div class="ali-body">
-          <div class="ali-top">
-            <span class="ali-num">${esc(String(num))}</span>
-            ${statusBadge(st)}
-          </div>
-          <div class="ali-veh">${esc(vehicleName)} · ${esc(a.region||'')}</div>
-          <div class="ali-meta">
-            <span>${fmtSom(a.price||0)}</span>
-            <span>${fmtDate(a.created_at||a.createdAt)}</span>
-          </div>
-        </div>
-        <div class="ali-arrow">${I.arrowRight}</div>
-      </div>`;
+      <button class="ch-row" onclick="App.go('/status/${a.id}')">
+        <span class="ch-row-chip">${a.vehicle==='yuk'?I.truck:I.car}</span>
+        <span class="ch-row-b">
+          <span class="ch-row-t">${esc(String(title))}</span>
+          <span class="ch-row-s">${esc(a.tex_model || vehicleName)} · ${esc(sub)}</span>
+          <span class="ch-row-st">${statusBadge(st)}</span>
+        </span>
+        <span class="ch-row-go">${I.arrowRight}</span>
+      </button>`;
   },
 
   // ============================================================
@@ -2060,37 +2121,41 @@ const App = {
     const num = a.app_number || a.number || ('#' + String(appId).slice(-5));
     const isRejected = st === 'rejected';
     const isReady = st === 'policy_ready' || st === 'completed';
-    const curIdx = FLOW_STEPS.indexOf(st);
     const policyUrl = a.policy_file ? `${UPLOADS}/${a.policy_file}` : (a.policy_url || '');
 
-    const banner = isRejected
-      ? `<div class="status-banner err"><div class="sb-ic">${I.x}</div><div><h3>${tt('Rad etildi')}</h3><p>${esc(a.reject_reason||a.reason||tt('Iltimos, qaytadan ariza yuboring'))}</p></div></div>`
-      : isReady
-        ? `<div class="status-banner ok"><div class="sb-ic">${I.check}</div><div><h3>${tt('Tayyor!')}</h3><p>${tt("Polisingiz tayyor — yuklab oling")}</p></div></div>`
-        : `<div class="status-banner wait"><div class="sb-ic">${I.clock}</div><div><h3>${tt(STATUS_LABEL[st]||'Jarayonda')}</h3><p>${tt("Arizangiz ko'rib chiqilmoqda")}</p></div></div>`;
+    // "Pishib boruvchi" polis kartasi: punktir (qabul) → yashil tus (tasdiq/to'lov)
+    // → zumrad tasma (to'landi, tayyorlanmoqda) → oltin muhr (tayyor). Fon doim yorug'.
+    const stage = isRejected ? 'x'
+      : isReady ? 4
+      : (st === 'paid' || st === 'policy_preparing') ? 3
+      : (st === 'approved' || st === 'payment_pending') ? 2 : 1;
+    const vehicleName = (VEHICLES.find(v=>v.id===a.vehicle)||{}).name || a.vehicle || '';
+    const expTs = policyExpiry(a);
+    const term = [fmtTerm(a.duration), isReady && expTs ? `${fmtDay(expTs)} ${tt('gacha')}` : ''].filter(Boolean).join(' · ');
+    const card = `
+      <div class="ch-mature" data-s="${stage}">
+        <div>
+          <div class="m-lab">${tt('Ariza')} ${esc(String(num))}</div>
+          <div class="m-title">${a.tex_plate ? plateTag(a.tex_plate) : `<b>${esc(a.tex_model || vehicleName)}</b>`}</div>
+          <div class="m-term">${esc(term)}</div>
+        </div>
+        <div class="m-state">${esc(tt(STATUS_LABEL[st]||'Jarayonda'))}</div>
+        <div class="ch-stamp" aria-hidden="true">${isRejected ? I.x : I.check}</div>
+      </div>
+      ${isRejected ? `<div class="ch-ask err"><b>${tt('Rad etildi')}</b>${esc(a.reject_reason||a.reason||tt('Iltimos, qaytadan ariza yuboring'))}</div>` : ''}
+      ${st === 'need_more_info' ? `<div class="ch-ask"><b>${tt('Hujjat kerak')}</b>${tt("Operator qo'shimcha hujjat so'radi — quyidagi tugma orqali bog'laning")}</div>` : ''}`;
 
-    const timeline = FLOW_STEPS.map((s, i) => {
-      const done = i <= curIdx && !isRejected;
-      const active = i === curIdx && !isRejected;
-      const last = i === FLOW_STEPS.length-1;
-      return `
-        <div class="tl-step">
-          <div class="tl-marker">
-            <div class="tl-dot ${done?'done':''} ${active?'active':''}">${done?I.check:''}</div>
-            ${!last?`<div class="tl-line ${i<curIdx?'done':''}"></div>`:''}
-          </div>
-          <div class="tl-content ${active?'active':''}">
-            <div class="tl-title">${tt(STATUS_LABEL[s])}</div>
-          </div>
-        </div>`;
+    const STEP_ALIAS = { assigned:'in_review', need_more_info:'in_review', policy_preparing:'paid' };
+    // Mijozga bitta "Polis tayyor" bosqichi yetarli — policy_ready va completed bitta nuqta.
+    const steps = FLOW_STEPS.filter(s => s !== 'completed');
+    const curStep = isReady ? steps.length - 1 : steps.indexOf(STEP_ALIAS[st] || st);
+    const timeline = steps.map((s, i) => {
+      const cls = isRejected ? '' : (i < curStep || (isReady && i === curStep)) ? 'done' : i === curStep ? 'now' : '';
+      return `<div class="ch-tl-row ${cls}"><span class="ch-tl-dot"></span><div class="ch-tl-t">${tt(STATUS_LABEL[s])}</div></div>`;
     }).join('');
 
     document.getElementById('statusBox').innerHTML = `
-      ${banner}
-      <div class="status-meta-card">
-        <div class="smc-row"><span>${tt('Ariza raqami')}</span><b>${esc(String(num))}</b></div>
-        <div class="smc-row"><span>${tt('Holat')}</span>${statusBadge(st)}</div>
-      </div>
+      ${card}
 
       ${policyUrl && isReady ? `
         <a class="policy-dl" href="${policyUrl}" target="_blank" download>
@@ -2114,7 +2179,7 @@ const App = {
       })()}
 
       <h3 class="section-h">${tt('Jarayon bosqichlari')}</h3>
-      <div class="timeline">${timeline}</div>
+      <div class="ch-tl">${timeline}</div>
 
       ${isReady && !a.review_submitted ? `
       <div class="review-card">
@@ -2264,13 +2329,21 @@ const App = {
     ];
     this.root.innerHTML = this.topbar('Profil') + `
       <div class="app-shell"><div class="wrap app-main app-view">
-        <div class="profile-head">
-          <div class="profile-avatar">${initials(name, u.phone)}</div>
-          <h3>${esc(name||'Mijoz')}</h3>
-          <p>${fmtPhone(u.phone||'')}</p>
+        <div class="ch-prof">
+          <div class="ch-avatar">${initials(name, u.phone)}</div>
+          <div>
+            <div class="ch-prof-n">${esc(name||'Mijoz')}</div>
+            <div class="ch-prof-p">${fmtPhone(u.phone||'')}</div>
+            <div class="ch-tier" id="profTier" hidden></div>
+          </div>
         </div>
 
         <div class="profile-section">
+          <div class="ps-item" onclick="App.go('/bonus')">
+            <div class="psi-ic" style="background:var(--gold-l);color:#8A6A12">${I.earn}</div>
+            <div class="psi-body"><h4>${tt('Bonus balansi')}</h4><p id="profBal">${tt("Do'stlarni taklif qiling")}</p></div>
+            ${I.arrowRight}
+          </div>
           <div class="ps-item" onclick="App.editProfile()">
             <div class="psi-ic" style="background:var(--green-100);color:var(--green-700)">${I.edit}</div>
             <div class="psi-body"><h4>${tt("Ma'lumotlarni tahrirlash")}</h4><p>${tt('Ism va aloqa')}</p></div>
@@ -2309,6 +2382,22 @@ const App = {
 
         <button class="btn btn-ghost btn-block btn-danger" onclick="App.confirmLogout()">${I.logout} ${tt('Chiqish')}</button>
       </div></div>${this.bottomNav('profile')}`;
+    this.fillProfileBonus();
+  },
+  // Daraja belgisi va bonus balansi — sahifa darhol chiziladi, bular keyin to'ladi
+  async fillProfileBonus() {
+    if (!this.user || !this.user.phone) return;
+    try {
+      const ub = await ClientAPI.refUser(this.user.phone);
+      const tier = ub.tier || {};
+      const tEl = document.getElementById('profTier'), bEl = document.getElementById('profBal');
+      if (tEl && tier.id) {
+        tEl.dataset.tier = tier.id;
+        tEl.innerHTML = `${tierGem(tier.id, 15)} ${esc(tier.label || '')}`;
+        tEl.hidden = false;
+      }
+      if (bEl) bEl.textContent = fmtSom(ub.balance || 0);
+    } catch (e) { /* ixtiyoriy */ }
   },
   setLang(l) {
     setLangPref(l);

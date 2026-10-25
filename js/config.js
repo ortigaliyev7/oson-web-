@@ -174,6 +174,8 @@ const STATUS_COLOR = {
 
 // Mijozga ko'rsatiladigan soddalashtirilgan bosqichlar
 const FLOW_STEPS = ['new','in_review','approved','payment_pending','paid','policy_ready','completed'];
+// Mijoz uchun yakunlangan holatlar (ro'yxatda alohida guruh)
+const DONE_STATUSES = ['policy_ready','completed','rejected'];
 
 function fmtSom(n) {
   return (n || 0).toLocaleString('ru-RU').replace(/,/g, ' ') + " so'm";
