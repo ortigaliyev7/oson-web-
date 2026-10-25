@@ -85,6 +85,15 @@ const I = {
   settings: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15 a1.6 1.6 0 0 0 .3 1.8 l.1 .1 a2 2 0 1 1 -2.8 2.8 l-.1 -.1 a1.6 1.6 0 0 0 -2.7 1.1 v.2 a2 2 0 0 1 -4 0 v-.1 a1.6 1.6 0 0 0 -1 -1.5 1.6 1.6 0 0 0 -1.8 .3 l-.1 .1 a2 2 0 1 1 -2.8 -2.8 l.1 -.1 a1.6 1.6 0 0 0 -1.1 -2.7 H3 a2 2 0 0 1 0 -4 h.1 a1.6 1.6 0 0 0 1.5 -1 1.6 1.6 0 0 0 -.3 -1.8 l-.1 -.1 a2 2 0 1 1 2.8 -2.8 l.1 .1 a1.6 1.6 0 0 0 1.8 .3 H9 a1.6 1.6 0 0 0 1 -1.5 V3 a2 2 0 0 1 4 0 v.1 a1.6 1.6 0 0 0 1 1.5 1.6 1.6 0 0 0 1.8 -.3 l.1 -.1 a2 2 0 1 1 2.8 2.8 l-.1 .1 a1.6 1.6 0 0 0 -.3 1.8 V9 a1.6 1.6 0 0 0 1.5 1 H21 a2 2 0 0 1 0 4 h-.1 a1.6 1.6 0 0 0 -1.5 1z"/></svg>',
   filter: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 3 H2 l8 9.5 V19 l4 2 v-8.5z"/></svg>',
   eye: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12 s4 -7 10 -7 10 7 10 7 -4 7 -10 7 -10 -7 -10 -7z"/><circle cx="12" cy="12" r="3"/></svg>',
+  gift: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M3.5 11h17v8.5a1.5 1.5 0 0 1 -1.5 1.5H5a1.5 1.5 0 0 1 -1.5 -1.5z"/><rect x="2.5" y="7.5" width="19" height="3.5" rx="1"/><path d="M12 7.5V21"/><path d="M12 7.5S10 4 8.2 4.5 7.4 7.5 9.6 7.5z"/><path d="M12 7.5S14 4 15.8 4.5s.8 3 -1.4 3z"/></svg>',
+  earn: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2.6 14.8 6 12 9.4 9.2 6z"/><rect x="3" y="11" width="18" height="10" rx="2.6"/><circle cx="17" cy="16" r="1.15"/></svg>',
+  levels: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"><path d="M4.5 13.8 7.5 16.9 4.5 20 1.5 16.9z"/><path d="M12 10.7 15 15.35 12 20 9 15.35z"/><path d="M19.5 7.6 22.5 13.8 19.5 20 16.5 13.8z" fill="currentColor" stroke="none"/></svg>',
+  sparkle: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"><path d="M13 2.5 15 8.2 20.7 10.2 15 12.2 13 17.9 11 12.2 5.3 10.2 11 8.2z"/><path d="M5.6 15.4 6.4 17.8 8.8 18.6 6.4 19.4 5.6 21.8 4.8 19.4 2.4 18.6 4.8 17.8z"/></svg>',
+  tap: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="2.8"/><path d="M6.9 6.9a7.2 7.2 0 0 0 0 10.2"/><path d="M17.1 17.1a7.2 7.2 0 0 0 0 -10.2"/></svg>',
+  star: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"><path d="M12 2.8 14.7 8.3 20.8 9.2 16.4 13.4 17.4 19.4 12 16.6 6.6 19.4 7.6 13.4 3.2 9.2 9.3 8.3z"/></svg>',
+  starFill: '<svg viewBox="0 0 24 24"><path fill="currentColor" d="M12 2.8 14.7 8.3 20.8 9.2 16.4 13.4 17.4 19.4 12 16.6 6.6 19.4 7.6 13.4 3.2 9.2 9.3 8.3z"/></svg>',
+  lock: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><rect x="4.5" y="10.5" width="15" height="10.5" rx="2.2"/><path d="M8 10.5V7.5a4 4 0 0 1 8 0v3"/><circle cx="12" cy="15.7" r="1.1"/></svg>',
+  archive: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><rect x="2.5" y="4" width="19" height="4.5" rx="1.2"/><path d="M4 8.5V19a1.5 1.5 0 0 0 1.5 1.5h13A1.5 1.5 0 0 0 20 19V8.5"/><path d="M10 12.5h4"/></svg>',
   warn: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.3 3.8 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7 -3L13.7 3.8a2 2 0 0 0 -3.4 0z"/><path d="M12 9v4"/><circle cx="12" cy="17" r=".6" fill="currentColor"/></svg>',
   trophy: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 4 h10 v5 a5 5 0 0 1 -10 0z"/><path d="M7 5 H4 v2 a3 3 0 0 0 3 3 M17 5 h3 v2 a3 3 0 0 1 -3 3 M9 19 h6 M12 14 v5"/></svg>',
 };
@@ -98,6 +107,64 @@ function logoMarkSVG() {
     <source srcset="icons/logo-mark.webp" type="image/webp">
     <img src="icons/logo-mark.png" alt="Oson Sug'urtam" class="logo-img" loading="eager" width="213" height="257" decoding="async">
   </picture>`;
+}
+
+// === DARAJA TOSHI ===
+// Bitta siluet, har darajada yangi qirra qo'shiladi — o'sish ko'zga ko'rinadi.
+// Backend daraja emojisini (🥈 va h.k.) Telegram/push matnlari uchun saqlaydi;
+// sayt esa shu SVG'ni chizadi. Gradient ataylab ishlatilmagan: bir sahifada
+// bir nechta bir xil id paydo bo'lishi va yashirin konteynerdagi <defs> ba'zi
+// brauzerlarda gradientni yo'qotishi mumkin — tekis rang bunday xatoga uchramaydi.
+const TIER_GEM = {
+  yangi:  { fill:'#E7EFEB', line:'#7F988E', facets:0 },
+  bronza: { fill:'#C08447', line:'#5C3616', facets:1 },
+  kumush: { fill:'#CDD5DA', line:'#56616A', facets:3 },
+  oltin:  { fill:'#E6C255', line:'#6B4F0A', facets:5 },
+  olmos:  { fill:'#CFEFE7', line:'#456B62', facets:8 },
+};
+const GEM_FACETS = [
+  'M8 20 40 20',        // kamar (girdle)
+  'M16 10 20 20',       // toj chap
+  'M32 10 28 20',       // toj o'ng
+  'M20 20 24 40',       // pastki chap
+  'M28 20 24 40',       // pastki o'ng
+  'M24 10 24 20',       // markaz
+  'M12 20 16 10',       // tashqi chap
+  'M36 20 32 10',       // tashqi o'ng
+];
+// onCard=true — material kartaning ustida: oq yarim shaffof to'ldirish va
+// kartaning matn rangidagi chiziq, shunda bronza kartada bronza tosh yo'qolmaydi.
+function tierGem(id, size, onCard) {
+  const g = TIER_GEM[id] || TIER_GEM.yangi;
+  const sz = size || 20;
+  const fill = onCard ? 'rgba(255,255,255,.62)' : g.fill;
+  const line = onCard ? 'currentColor' : g.line;
+  const facets = GEM_FACETS.slice(0, g.facets).map(d => `<path d="${d}"/>`).join('');
+  return `<svg class="tier-gem" width="${sz}" height="${sz}" viewBox="0 0 48 48" aria-hidden="true">`
+    + `<path d="M16 10 32 10 40 20 24 40 8 20Z" fill="${fill}" stroke="${line}" stroke-width="2.4" stroke-linejoin="round"/>`
+    + (facets ? `<g stroke="${line}" stroke-width="2" opacity=".62" fill="none">${facets}</g>` : '')
+    + `</svg>`;
+}
+
+// Baho yulduzlari (0-5) — emoji ★☆ har qurilmada boshqacha chiziladi
+function starRow(n, size) {
+  const k = Math.max(0, Math.min(5, Math.round(+n || 0)));
+  const sz = size || 15;
+  let out = '';
+  for (let i = 0; i < 5; i++) {
+    out += `<span class="star-ic${i < k ? ' on' : ''}" style="width:${sz}px;height:${sz}px">${i < k ? I.starFill : I.star}</span>`;
+  }
+  return `<span class="star-row" aria-label="${k} / 5">${out}</span>`;
+}
+
+// Backend yozgan matnlardan emojini olib tashlaydi. Ular Telegram va push
+// xabarlari uchun yoziladi (u yerda SVG chizib bo'lmaydi), saytda esa o'z
+// ikonkalarimiz bor — eski va yangi yozuvlar bir xil toza ko'rinadi.
+function plainText(s) {
+  return String(s == null ? '' : s)
+    .replace(/[\p{Extended_Pictographic}\uFE0F\u200D]/gu, '')
+    .replace(/\s{2,}/g, ' ')
+    .trim();
 }
 
 // Toast

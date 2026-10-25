@@ -44,7 +44,7 @@ const Admin = {
 
       socket.on('new_application', (app) => {
         playNotifSound();
-        toast(`🆕 Yangi ariza: ${app.client_name || app.client_phone || ''}`, 'success');
+        toast(`Yangi ariza: ${app.client_name || app.client_phone || ''}`, 'success');
         if (location.hash.includes('/apps')) this.loadApps(false);
       });
       socket.on('app_updated', (d) => {
@@ -53,7 +53,7 @@ const Admin = {
       });
       socket.on('client_message', (m) => {
         playNotifSound();
-        toast(`💬 Mijozdan yangi xabar`, '');
+        toast(`Mijozdan yangi xabar`, '');
         if (this.curAppId && location.hash === `#/app/${this.curAppId}`) this.loadAdminChat();
       });
     } catch (e) { /* real vaqt ixtiyoriy */ }
@@ -464,7 +464,7 @@ const Admin = {
         <div class="adm-apps-head">
           <h1 class="adm-h1">Arizalar</h1>
           <div style="display:flex;gap:8px">
-            <button class="btn btn-ghost btn-sm" onclick="Admin.exportAppsCSV()">⬇ Excel</button>
+            <button class="btn btn-ghost btn-sm" onclick="Admin.exportAppsCSV()"><span class="ic-i">${I.download}</span> Excel</button>
             <button class="btn btn-ghost btn-sm" onclick="Admin.loadApps(true)">${I.refresh} Yangilash</button>
           </div>
         </div>
@@ -533,7 +533,7 @@ const Admin = {
     if (mins < 60) txt = mins + ' daq';
     else if (mins < 1440) { txt = Math.floor(mins / 60) + ' soat'; if (mins >= 180) cls = 'sla-warn'; }
     else { txt = Math.floor(mins / 1440) + ' kun'; cls = 'sla-late'; }
-    return `<span class="sla-badge ${cls}" title="Ariza ochilganidan beri kutmoqda">⏱ ${txt}</span>`;
+    return `<span class="sla-badge ${cls}" title="Ariza ochilganidan beri kutmoqda"><span class="ic-i">${I.clock}</span> ${txt}</span>`;
   },
 
   // === CSV EKSPORT (Excel'da ochiladi) — buxgalteriya uchun ===
@@ -1360,7 +1360,7 @@ const Admin = {
       return (h / 24).toFixed(1) + ' kun';
     };
     return `<div class="adm-card" style="max-width:640px">
-      <h3 class="adm-card-title">🏆 Xodimlar samaradorligi (yakunlangan polislar)</h3>
+      <h3 class="adm-card-title"><span class="ic-i">${I.trophy}</span> Xodimlar samaradorligi (yakunlangan polislar)</h3>
       <div class="bonus-list">
         ${rows.map((m, i) => `<div class="bonus-rank-row">
           <span class="brk-n">#${i + 1}</span>
@@ -1641,7 +1641,7 @@ const Admin = {
         <div class="adm-card setting-card" style="max-width:600px">
           <div class="setting-row">
             <div class="setting-txt">
-              <h3>🔐 Ikki bosqichli kirish (2FA)</h3>
+              <h3><span class="ic-i">${I.lock}</span> Ikki bosqichli kirish (2FA)</h3>
               <p>Yoqilsa, admin login'da paroldan so'ng Telegram'ga yuborilgan 6 xonali kod ham so'raladi. Bosh admin uchun kod bosh admin Telegram'iga, hodimlar uchun ularning ulangan Telegram'iga yuboriladi.</p>
             </div>
             <button class="toggle ${twofa?'on':''}" id="tg2fa" onclick="Admin.toggle2fa(${!twofa})">
@@ -1653,7 +1653,7 @@ const Admin = {
         <div class="adm-card setting-card" style="max-width:600px">
           <div class="setting-row">
             <div class="setting-txt">
-              <h3>🗂️ Hujjatlarni avtomatik o'chirish</h3>
+              <h3><span class="ic-i">${I.archive}</span> Hujjatlarni avtomatik o'chirish</h3>
               <p>Polis tayyor bo'lgach, shuncha kundan keyin arizadagi shaxsiy hujjat rasmlari (pasport, texpassport, haydovchi hujjatlari) diskdan o'chiriladi. Tayyor polis saqlanadi. 0 = o'chirilmaydi.</p>
             </div>
           </div>
@@ -1894,7 +1894,7 @@ const Admin = {
     if (!items.length) return `<p class="muted-text">Hozircha yangi sharh yo'q</p>`;
     return items.map(r => `
       <div class="pending-review-row">
-        <div class="prr-stars">${'★'.repeat(r.rating)}${'☆'.repeat(5-r.rating)}</div>
+        <div class="prr-stars">${starRow(r.rating, 14)}</div>
         ${r.text ? `<p class="prr-text">"${esc(r.text)}"</p>` : `<p class="prr-text muted-text">Matnsiz, faqat baho</p>`}
         <div class="prr-meta">${esc(r.name||'Mijoz')} · ${fmtPhone(r.phone)} · ${fmtDate(r.createdAt)}</div>
         <div class="prr-actions">
@@ -2073,7 +2073,7 @@ const Admin = {
             <h3 class="adm-card-title">To'lanadigan bonuslar (<span id="bonusOvCount">${ov.items.length}</span>)</h3>
             <div style="display:flex;align-items:center;gap:10px">
               <span class="bonus-total-unpaid" id="bonusOvUnpaid">${fmtSom(ov.total_unpaid||0)}</span>
-              <button class="btn btn-ghost btn-sm" onclick="Admin.exportBonusCSV()">⬇ Excel</button>
+              <button class="btn btn-ghost btn-sm" onclick="Admin.exportBonusCSV()"><span class="ic-i">${I.download}</span> Excel</button>
             </div>
           </div>
           <div class="bonus-search">
@@ -2083,12 +2083,12 @@ const Admin = {
         </div>
 
         <div class="adm-card setting-card" style="max-width:640px">
-          <h3 class="adm-card-title">🏅 Darajalar tizimi (viloyat oboroti bo'yicha)</h3>
+          <h3 class="adm-card-title"><span class="ic-i">${I.levels}</span> Darajalar tizimi (viloyat oboroti bo'yicha)</h3>
           <p style="color:var(--ink-2);font-size:13px;margin-bottom:12px">Mijoz darajasi u keltirgan <b>viloyat</b> oboroti bo'yicha ko'tariladi (Toshkent hisobga <b>olinmaydi</b>; taklif havolasi + do'stiga to'g'ridan-to'g'ri qilingan sug'urta <b>birga</b>). Har bir daraja uchun kerakli oborot va shu darajaga birinchi marta erishilganda beriladigan bonusни belgilang (so'm).</p>
           <div class="tier-cfg-head"><span>Daraja</span><span>Kerakli oborot</span><span>Daraja bonusi</span></div>
           ${(cfg.tiers||[]).map(t => `
             <div class="tier-cfg-row">
-              <span class="tcr-lab">${t.icon||''} ${esc(t.label||t.id)}</span>
+              <span class="tcr-lab">${tierGem(t.id, 20)} ${esc(t.label||t.id)}</span>
               <input class="inp tcr-min" data-id="${esc(t.id)}" inputmode="numeric" value="${+t.min||0}" ${t.id==='yangi'?'disabled':''}>
               <input class="inp tcr-bonus" data-id="${esc(t.id)}" inputmode="numeric" value="${+t.bonus||0}" ${t.id==='yangi'?'disabled':''}>
             </div>`).join('')}
@@ -2096,7 +2096,7 @@ const Admin = {
         </div>
 
         <div class="adm-card" style="max-width:640px">
-          <h3 class="adm-card-title">🏆 Reyting (viloyat oboroti bo'yicha)</h3>
+          <h3 class="adm-card-title"><span class="ic-i">${I.trophy}</span> Reyting (viloyat oboroti bo'yicha)</h3>
           <div class="bonus-list" id="bonusRtList">${this.renderBonusRtRows(rt.items)}</div>
         </div>`;
       this.root.innerHTML = this.shell('bonus', content);
@@ -2106,14 +2106,14 @@ const Admin = {
   },
   tierBadge(tier) {
     if (!tier || !tier.id) return '';
-    return `<span class="tier-badge tier-${esc(tier.id)}">${tier.icon||''} ${esc(tier.label||'')}</span>`;
+    return `<span class="tier-badge tier-${esc(tier.id)}">${tierGem(tier.id, 14)} ${esc(tier.label||'')}</span>`;
   },
   renderBonusOvRows(items) {
     if (!items.length) return `<p class="muted-text" style="padding:14px">Hozircha to'lanadigan bonus yo'q</p>`;
     return items.map(u => `
       <div class="bonus-user-row">
         <div onclick="Admin.bonusHistory('${u.phone}','${esc(u.name)}')" style="cursor:pointer">
-          <b>${esc(u.name)} ${this.tierBadge(u.tier)} ${u.flagged?`<span class="flag-badge" title="Shubhali faoliyat — to'lashdan oldin tarixni tekshiring">⚠️ Tekshiring</span>`:''}</b>
+          <b>${esc(u.name)} ${this.tierBadge(u.tier)} ${u.flagged?`<span class="flag-badge" title="Shubhali faoliyat — to'lashdan oldin tarixni tekshiring"><span class="ic-i">${I.warn}</span> Tekshiring</span>`:''}</b>
           <span>${fmtPhone(u.phone)}</span>
         </div>
         <div class="bur-bal">${fmtSom(u.balance)}</div>
@@ -2236,8 +2236,8 @@ const Admin = {
         <div class="bx-tx">
           <div><b>${t.type==='earned'?'Bonus qo\'shildi':t.type==='paid'?'To\'lab berildi':t.type==='discount'?'Chegirma':'—'}</b>
             <span>${fmtDate(t.createdAt)}</span>
-            ${t.note ? `<span class="bx-tx-note">${esc(t.note)}</span>` : ''}
-            ${t.flagged ? `<span class="flag-badge">⚠️ ${(t.flag_reasons||[]).map(r=>FLAG_LABELS[r]||r).join(', ')}</span>` : ''}</div>
+            ${t.note ? `<span class="bx-tx-note">${esc(plainText(t.note))}</span>` : ''}
+            ${t.flagged ? `<span class="flag-badge"><span class="ic-i">${I.warn}</span> ${(t.flag_reasons||[]).map(r=>FLAG_LABELS[r]||r).join(', ')}</span>` : ''}</div>
           <div class="bx-amt ${t.amount<0?'neg':''}">${t.amount>0?'+':''}${fmtSom(Math.abs(t.amount))}</div>
         </div>`).join('') : `<p class="muted-text" style="text-align:center;padding:16px">Hozircha tranzaksiya yo'q</p>`;
       const body = document.getElementById('bonusHistBody');
