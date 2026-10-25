@@ -160,6 +160,60 @@ function starRow(n, size) {
 // Backend yozgan matnlardan emojini olib tashlaydi. Ular Telegram va push
 // xabarlari uchun yoziladi (u yerda SVG chizib bo'lmaydi), saytda esa o'z
 // ikonkalarimiz bor — eski va yangi yozuvlar bir xil toza ko'rinadi.
+// Davlat raqami: "01A777AB" → "01 A 777 AB" (jismoniy), "01777ABC" → "01 777 ABC" (yuridik).
+// Tanilmagan shakl o'zgarishsiz (katta harfda) qaytadi.
+function fmtPlate(raw) {
+  const s = String(raw || '').toUpperCase().replace(/[^0-9A-Z]/g, '');
+  let m = s.match(/^(\d{2})([A-Z])(\d{3})([A-Z]{2})$/);
+  if (m) return `${m[1]} ${m[2]} ${m[3]} ${m[4]}`;
+  m = s.match(/^(\d{2})(\d{3})([A-Z]{3})$/);
+  if (m) return `${m[1]} ${m[2]} ${m[3]}`;
+  return String(raw || '').toUpperCase().trim();
+}
+
+// Raqam taxtachasi ko'rinishi (Cho'ntak dizayni)
+function plateTag(raw, small) {
+  return `<span class="ch-plate${small ? ' sm' : ''}"><span class="ch-plate-uz">UZ</span><span class="ch-plate-num">${esc(fmtPlate(raw))}</span></span>`;
+}
+
+// "1 yil cheklovsiz" → "1 yil · Cheklovsiz"
+function fmtTerm(duration) {
+  const d = String(duration || '').trim();
+  const m = d.match(/^(.*?)\s+(cheklovli|cheklovsiz)$/i);
+  return m ? `${m[1]} · ${m[2][0].toUpperCase()}${m[2].slice(1).toLowerCase()}` : d;
+}
+
+function fmtDay(ts) {
+  return ts ? new Date(+ts).toLocaleDateString('ru-RU') : '';
+}
+
+// Muddat tugashiga necha kun qoldi (tugagan bo'lsa 0)
+function daysLeft(ts) {
+  if (!ts) return 0;
+  return Math.max(0, Math.ceil((+ts - Date.now()) / 86400000));
+}
+
+// Polis amal qilish muddati — backenddagi qoida bilan bir xil: admin kiritgan
+// sana, bo'lmasa yakunlangan vaqt + muddat (1 yil / 6 oy / 20 kun).
+function policyDays(duration) {
+  const d = String(duration || '');
+  return d.startsWith('6 oy') ? 182 : d.startsWith('20 kun') ? 20 : 365;
+}
+function policyExpiry(a) {
+  if (!a) return 0;
+  if (a.policy_expires_at) return +a.policy_expires_at;
+  if (a.policy_end_date) return +a.policy_end_date;
+  if (a.status !== 'policy_ready' && a.status !== 'completed') return 0;
+  const start = a.completed_at || a.completedAt || a.policy_uploaded_at;
+  return start ? +start + policyDays(a.duration) * 86400000 : 0;
+}
+
+// Qolgan muddat halqasi (0..1)
+function ringSVG(frac) {
+  const C = 125.66, f = Math.max(0, Math.min(1, +frac || 0));
+  return `<svg class="ch-ring" viewBox="0 0 46 46" aria-hidden="true"><circle class="track" cx="23" cy="23" r="20"/><circle class="val" cx="23" cy="23" r="20" style="stroke-dashoffset:${(C * (1 - f)).toFixed(1)}"/></svg>`;
+}
+
 function plainText(s) {
   return String(s == null ? '' : s)
     .replace(/[\p{Extended_Pictographic}\uFE0F\u200D]/gu, '')

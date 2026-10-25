@@ -1270,3 +1270,149 @@ body.no-scroll{overflow:hidden}
 .star-ic svg{width:100%;height:100%}
 .rv-star{display:inline-flex;width:34px;height:34px}
 .rv-star svg{width:100%;height:100%}
+
+/* ============================================================
+   CHO'NTAK — polis kartasi, raqam taxtachasi, diafragma, ro'yxat
+   Hamma fonlar yorug': rang faqat chiziq, tasma va belgilarda.
+   ============================================================ */
+:root { --ease-out: cubic-bezier(.16,1,.3,1); }
+
+/* Raqam taxtachasi */
+.ch-plate { display:inline-flex; align-items:stretch; border:1.5px solid var(--ink); border-radius:7px; overflow:hidden; background:#fff; vertical-align:middle; }
+.ch-plate-uz { background:var(--green-800); color:#fff; width:22px; display:grid; place-items:center; font-size:9px; font-weight:700; letter-spacing:.04em; }
+.ch-plate-num { font-family:'Sora',sans-serif; font-weight:700; font-size:22px; letter-spacing:.02em; padding:4px 11px 5px; color:var(--ink); font-variant-numeric:tabular-nums; white-space:nowrap; }
+.ch-plate.sm .ch-plate-num { font-size:16px; padding:3px 8px 4px; }
+.ch-plate.sm .ch-plate-uz { width:18px; font-size:8px; }
+
+/* Bo'lim sarlavhasi */
+.ch-sect { font-size:11px; letter-spacing:.12em; text-transform:uppercase; color:var(--muted); font-weight:600; margin:22px 0 9px; }
+.ch-sect:first-child { margin-top:4px; }
+
+/* Ariza qatori */
+.ch-row { width:100%; text-align:left; font:inherit; color:var(--ink); cursor:pointer; background:var(--card); border:1px solid var(--line); border-radius:var(--r); padding:13px 14px; margin-bottom:9px; box-shadow:var(--shadow-sm); display:flex; align-items:center; gap:12px; transition:transform .2s var(--ease-out), box-shadow .2s var(--ease-out); }
+.ch-row:hover { transform:translateY(-1px); box-shadow:var(--shadow); }
+.ch-row:focus-visible { outline:3px solid var(--green-600); outline-offset:2px; }
+.ch-row-chip { align-self:flex-start; width:42px; height:42px; border-radius:11px; flex:none; display:grid; place-items:center; background:var(--green-50); color:var(--green-700); }
+.ch-row-chip svg { width:22px; height:22px; }
+.ch-row-b { flex:1; min-width:0; display:flex; flex-direction:column; }
+.ch-row-t { font-family:'Sora',sans-serif; font-weight:700; font-size:15px; letter-spacing:.01em; font-variant-numeric:tabular-nums; }
+.ch-row-s { font-size:12px; color:var(--muted); margin-top:2px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.ch-row-st { margin-top:7px; line-height:0; }
+.ch-row-st .badge { font-size:11px; padding:3px 9px; line-height:1.4; }
+.ch-row-go { flex:none; width:18px; height:18px; color:var(--muted); }
+.ch-row-go svg { width:18px; height:18px; }
+
+/* Amaldagi polis kartasi (bosh sahifa) */
+.ch-pcard { position:relative; margin:18px 0 6px; min-height:164px; padding:16px 18px 16px 26px; border-radius:var(--r-lg); background:var(--card); border:1px solid var(--line); box-shadow:var(--shadow); cursor:pointer; display:flex; flex-direction:column; justify-content:space-between; gap:12px; transition:transform .25s var(--ease-out), box-shadow .25s var(--ease-out); }
+.ch-pcard::before { content:''; position:absolute; left:0; top:0; bottom:0; width:7px; border-radius:var(--r-lg) 0 0 var(--r-lg); background:linear-gradient(180deg,var(--green-600),var(--green-800)); }
+.ch-pcard:hover { transform:translateY(-2px); box-shadow:var(--shadow-lg); }
+.ch-pcard:focus-visible { outline:3px solid var(--green-600); outline-offset:3px; }
+.ch-pcard .ch-plate { align-self:flex-start; }
+.ch-pcard .pc-veh { font-family:'Sora',sans-serif; font-size:20px; }
+.pc-top { display:flex; justify-content:space-between; align-items:center; }
+.pc-lab { font-size:10.5px; letter-spacing:.12em; text-transform:uppercase; color:var(--muted); font-weight:600; }
+.pc-status { font-size:10.5px; font-weight:700; padding:4px 9px; border-radius:99px; background:var(--green-100); color:var(--green-800); }
+.ch-pcard.soon .pc-status { background:#FFEDD5; color:#9A3412; }
+.ch-pcard.soon::before { background:linear-gradient(180deg,#F59E0B,#C2410C); }
+.pc-bottom { display:flex; justify-content:space-between; align-items:flex-end; gap:10px; }
+.pc-term { font-size:12.5px; color:var(--ink-2); line-height:1.4; }
+.pc-term span { color:var(--muted); font-size:11.5px; }
+.pc-days { display:flex; align-items:center; gap:9px; text-align:right; }
+.pc-days b { display:block; font-family:'Sora',sans-serif; font-size:24px; font-weight:700; color:var(--green-700); font-variant-numeric:tabular-nums; line-height:1.05; }
+.ch-pcard.soon .pc-days b { color:#C2410C; }
+.pc-days span { font-size:11px; color:var(--muted); display:block; }
+.ch-ring { width:42px; height:42px; flex:none; }
+.ch-ring circle { fill:none; stroke-width:4; stroke-linecap:round; }
+.ch-ring .track { stroke:var(--line); }
+.ch-ring .val { stroke:var(--green-600); stroke-dasharray:125.66; transform:rotate(-90deg); transform-origin:50% 50%; transition:stroke-dashoffset .9s var(--ease-out); }
+.ch-pcard.soon .ch-ring .val { stroke:#EA580C; }
+.ch-renew { margin:10px 0 4px; }
+
+/* Diafragma — yangi ariza tugmasi */
+.ch-shoot { display:flex; align-items:center; gap:16px; margin:18px 0 20px; padding:16px 18px; border-radius:var(--r-lg); background:var(--card); border:1px solid var(--line); box-shadow:var(--shadow-sm); cursor:pointer; transition:box-shadow .2s var(--ease-out), transform .2s var(--ease-out); }
+.ch-shoot:hover { box-shadow:var(--shadow); transform:translateY(-1px); }
+.ch-shoot h3 { font-size:17px; margin-bottom:2px; }
+.ch-shoot p { font-size:13px; color:var(--ink-2); line-height:1.4; }
+.ch-shoot-t { flex:1; min-width:0; }
+.ch-shoot .ac-arrow { color:var(--green-700); flex:none; }
+.ch-aperture { width:68px; height:68px; flex:none; border-radius:50%; border:0; padding:0; cursor:pointer; position:relative; overflow:hidden; background:radial-gradient(circle at 50% 38%,var(--green-600),var(--green-900)); box-shadow:0 10px 24px rgba(10,71,52,.32), inset 0 0 0 3px rgba(201,162,39,.6); }
+.ch-aperture:focus-visible { outline:3px solid var(--gold); outline-offset:4px; }
+.ch-aperture .blade { position:absolute; left:50%; top:50%; width:72px; height:72px; margin:-36px 0 0 -36px; background:rgba(4,30,21,.55); clip-path:polygon(50% 50%,100% 6%,100% 94%); transform:rotate(var(--rot)) translateX(16px); transition:transform .45s var(--ease-out); }
+.ch-shoot:hover .ch-aperture .blade { transform:rotate(var(--rot)) translateX(22px); }
+.ch-aperture.open .blade { transform:rotate(var(--rot)) translateX(52px); }
+.ch-aperture .ap-core { position:absolute; inset:0; display:grid; place-items:center; color:#F3D77A; pointer-events:none; transition:opacity .3s var(--ease-out), transform .45s var(--ease-out); }
+.ch-aperture .ap-core svg { width:24px; height:24px; }
+.ch-aperture.open .ap-core { opacity:0; transform:scale(1.4); }
+
+/* "Pishib boruvchi" polis kartasi (ariza holati) */
+.ch-mature { position:relative; min-height:150px; border-radius:var(--r-lg); padding:18px; margin-bottom:12px; overflow:hidden; display:flex; flex-direction:column; justify-content:space-between; gap:12px; border:1.5px dashed var(--line-2); background:var(--card); color:var(--ink); box-shadow:var(--shadow-sm); }
+.ch-mature .m-lab { font-size:11px; letter-spacing:.1em; text-transform:uppercase; color:var(--muted); font-weight:600; }
+.ch-mature .m-title { margin-top:8px; }
+.ch-mature .m-title b { font-family:'Sora',sans-serif; font-size:21px; }
+.ch-mature .m-term { font-size:12.5px; color:var(--ink-2); margin-top:6px; }
+.ch-mature .m-state { font-size:13px; font-weight:700; color:var(--ink-2); }
+.ch-mature::before { content:''; position:absolute; left:0; top:0; bottom:0; width:7px; background:linear-gradient(180deg,var(--green-600),var(--green-800)); opacity:0; transition:opacity .5s var(--ease-out); }
+.ch-mature[data-s="2"] { border-style:solid; border-color:var(--green-100); background:linear-gradient(155deg,var(--green-50),var(--green-100)); }
+.ch-mature[data-s="3"], .ch-mature[data-s="4"] { border:1px solid var(--line); padding-left:24px; box-shadow:var(--shadow); }
+.ch-mature[data-s="3"]::before, .ch-mature[data-s="4"]::before { opacity:1; }
+.ch-mature[data-s="4"] { box-shadow:var(--shadow-lg); }
+.ch-mature[data-s="4"] .m-state { color:var(--green-700); }
+.ch-mature[data-s="x"] { border:1px solid #F8C9C9; background:#FFF7F7; }
+.ch-mature[data-s="x"] .m-state { color:var(--danger); }
+.ch-stamp { position:absolute; right:18px; top:50%; width:60px; height:60px; border-radius:50%; border:2.5px solid var(--gold); color:var(--gold); display:grid; place-items:center; opacity:0; transform:translateY(-50%) scale(.6) rotate(-12deg); }
+.ch-stamp svg { width:28px; height:28px; }
+.ch-mature[data-s="4"] .ch-stamp { opacity:1; transform:translateY(-50%) scale(1) rotate(-12deg); animation:chStamp .7s var(--ease-out) both .15s; }
+.ch-mature[data-s="x"] .ch-stamp { opacity:1; border-color:var(--danger); color:var(--danger); transform:translateY(-50%) rotate(-12deg); }
+@keyframes chStamp { from { opacity:0; transform:translateY(-50%) scale(1.6) rotate(-24deg); } to { opacity:1; transform:translateY(-50%) scale(1) rotate(-12deg); } }
+
+.ch-ask { margin:0 0 14px; background:var(--gold-l); border-radius:var(--r); padding:13px 15px; font-size:13px; color:#6B5410; line-height:1.45; }
+.ch-ask b { display:block; font-weight:700; margin-bottom:3px; font-size:13.5px; }
+.ch-ask.err { background:var(--danger-l); color:#7F1D1D; }
+
+/* Bosqichlar chizig'i */
+.ch-tl { margin:6px 0 18px; padding-left:2px; }
+.ch-tl-row { display:flex; gap:13px; padding-bottom:16px; position:relative; }
+.ch-tl-row:last-child { padding-bottom:0; }
+.ch-tl-row::before { content:''; position:absolute; left:6px; top:16px; bottom:0; width:1.5px; background:var(--line); }
+.ch-tl-row:last-child::before { display:none; }
+.ch-tl-dot { width:13px; height:13px; border-radius:50%; flex:none; margin-top:3px; position:relative; z-index:1; border:2px solid var(--line-2); background:var(--paper); }
+.ch-tl-row.done .ch-tl-dot { background:var(--gold); border-color:var(--gold); }
+.ch-tl-row.done::before { background:var(--gold-l); }
+.ch-tl-row.now .ch-tl-dot { background:var(--green-600); border-color:var(--green-600); }
+.ch-tl-row.now .ch-tl-dot::after { content:''; position:absolute; inset:-5px; border-radius:50%; border:2px solid var(--green-600); opacity:.45; animation:chBreathe 2.1s var(--ease-out) infinite; }
+@keyframes chBreathe { 0%,100% { transform:scale(.85); opacity:.5; } 50% { transform:scale(1.25); opacity:0; } }
+.ch-tl-t { font-size:14px; font-weight:500; }
+.ch-tl-row.now .ch-tl-t { font-weight:700; }
+.ch-tl-row:not(.done):not(.now) .ch-tl-t { color:var(--muted); }
+
+/* Profil kartasi */
+.ch-prof { display:flex; align-items:center; gap:14px; margin:6px 0 16px; background:var(--card); border:1px solid var(--line); border-radius:var(--r-lg); padding:17px; box-shadow:var(--shadow-sm); }
+.ch-avatar { width:56px; height:56px; border-radius:50%; flex:none; display:grid; place-items:center; background:var(--green-50); color:var(--green-800); border:1.5px solid var(--green-100); font-family:'Sora',sans-serif; font-weight:700; font-size:20px; }
+.ch-prof-n { font-family:'Sora',sans-serif; font-weight:700; font-size:17px; letter-spacing:-.015em; }
+.ch-prof-p { font-size:13px; color:var(--muted); margin-top:2px; font-variant-numeric:tabular-nums; }
+.ch-tier { display:inline-flex; align-items:center; gap:5px; margin-top:7px; background:var(--paper); border:1px solid var(--line); color:var(--ink-2); font-size:11.5px; font-weight:700; padding:3px 10px 3px 6px; border-radius:99px; }
+.ch-tier[hidden] { display:none; }
+
+/* Bonus promo — yorug' variant (to'q yashil fon o'rniga oq karta, oltin urg'u) */
+.bonus-promo { background:var(--card); color:var(--ink); border:1px solid var(--line); box-shadow:var(--shadow); }
+.bonus-promo::before { background:linear-gradient(115deg,transparent 30%,rgba(201,162,39,.12) 45%,transparent 60%); background-size:250% 250%; }
+.bonus-promo .bp-badge { background:var(--gold-l); color:#8A6A12; }
+.bonus-promo .bp-ic { background:var(--gold-l); color:#B08A16; }
+.bonus-promo h3 { color:var(--ink); }
+.bonus-promo p { color:var(--ink-2); opacity:1; }
+.bonus-promo .ac-arrow { color:var(--green-700); }
+.bonus-promo .bp-steps { border-top-color:var(--line); }
+.bonus-promo .bp-step { color:var(--ink-2); }
+.bonus-promo .bp-step .bp-num { background:var(--green-50); color:var(--green-800); }
+.bonus-promo .bp-step.bp-key { background:var(--gold-l); color:#6B5410; }
+.bonus-promo .bp-step.bp-key .bp-num { background:var(--gold); color:#fff; }
+.bonus-promo .bp-step.bp-key b { color:#6B5410; }
+
+@media (prefers-reduced-motion: reduce) {
+  .ch-tl-row.now .ch-tl-dot::after, .ch-mature[data-s="4"] .ch-stamp { animation:none; }
+  .ch-aperture .blade, .ch-ring .val { transition:none; }
+}
+@media (max-width:380px) {
+  .ch-plate-num { font-size:19px; padding:4px 9px 5px; }
+  .ch-aperture { width:58px; height:58px; }
+}
