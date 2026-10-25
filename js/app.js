@@ -299,9 +299,13 @@ const App = {
     const table = via === 'direct' ? cfg.direct_rates : cfg.rates;
     const zone = document.getElementById('bcZone').value;   // tsh | bsh
     const veh  = document.getElementById('bcVeh').value;     // yengil | yuk
-    const rate = (table && table[`${zone}_${veh}`]) || { mode:'percent', value:0 };
+    const limEl = document.getElementById('bcLim');
+    const lim  = limEl ? limEl.value : 'cheklovli';           // cheklovli | cheklovsiz
+    // Stavka jadvali hudud × avto × muddat turi bo'yicha (masalan bsh_yuk_cheklovsiz).
+    // Eski ikki qismli kalit faqat zaxira: backend yangilanmagan holat uchun.
+    const rate = (table && (table[`${zone}_${veh}_${lim}`] || table[`${zone}_${veh}`])) || { mode:'percent', value:0 };
     const region = zone === 'tsh' ? 'Toshkent shahri' : 'Samarqand';
-    const price = getPrice(veh, region, '1 yil cheklovli') || 0;
+    const price = getPrice(veh, region, `1 yil ${lim}`) || 0;
     let amount = rate.mode === 'fixed' ? (+rate.value||0) : Math.round(price * (+rate.value||0) / 100);
     const out = document.getElementById('bcResult');
     if (!out) return;
@@ -310,7 +314,7 @@ const App = {
     const lab = via === 'direct' ? "Bu turdagi sug'urta uchun taxminan" : "Har bir do'st uchun taxminan";
     const sub = via === 'direct'
       ? "To'g'ridan-to'g'ri sug'urta qilib bersangiz"
-      : `1 yillik polisdan${rate.mode==='percent' ? ` (${rate.value}%)` : ''}`;
+      : `1 yillik ${lim} polisdan${rate.mode==='percent' ? ` (${rate.value}%)` : ''}`;
     out.innerHTML = `
       <div class="bonus-amount-card ${themeClass}">
         <div class="dbc-badge">${badge}</div>
@@ -441,6 +445,9 @@ const App = {
             <div class="bx-calc-row">
               <select class="inp" id="bcZone" onchange="App.refCalc()"><option value="bsh">Viloyat</option><option value="tsh">Toshkent</option></select>
               <select class="inp" id="bcVeh" onchange="App.refCalc()"><option value="yengil">Yengil avto</option><option value="yuk">Yuk avto</option></select>
+            </div>
+            <div class="bx-calc-row">
+              <select class="inp" id="bcLim" onchange="App.refCalc()"><option value="cheklovli">Cheklovli</option><option value="cheklovsiz">Cheklovsiz</option></select>
             </div>
             <div class="bx-calc-result" id="bcResult"></div>
           </div>
