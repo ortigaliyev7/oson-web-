@@ -232,9 +232,12 @@ const App = {
   pingDraftServer() {
     if (!this.draft || !this.user || !this.user.phone) return;
     const now = Date.now();
-    if (this._lastDraftPing && now - this._lastDraftPing < 60000) return;
-    this._lastDraftPing = now;
     const step = (location.hash.match(/\/new\/(\w+)/) || [])[1] || '';
+    // Qadam o'zgarsa darhol yuboramiz (voronka har bir qadamni ko'rishi uchun),
+    // bir xil qadamda esa daqiqada bir martadan ko'p emas
+    if (step === this._lastDraftStep && this._lastDraftPing && now - this._lastDraftPing < 60000) return;
+    this._lastDraftPing = now;
+    this._lastDraftStep = step;
     ClientAPI.saveDraftServer(this.user.phone, step).catch(() => {});
   },
 
@@ -268,7 +271,7 @@ const App = {
       case undefined: case '': return this.viewLanding();
       case 'login':    return this.viewLogin();
       case 'dashboard':return this.viewDashboard();
-      case 'new':      return this.viewFlow(rest[0] || 'type');
+      case 'new':      return this.viewFlow(rest[0] || 'tex');
       case 'apps':     return this.viewMyApps();
       case 'status':   return this.viewStatus(rest[0]);
       case 'chat':     return this.viewChat(rest[0]);
@@ -1110,29 +1113,65 @@ const App = {
         <div class="modal-actions"><button class="btn btn-primary btn-block" onclick="closeModal()">Albatta</button></div>`);
       return;
     }
-    this.draft = { app_type: 'new', drivers: [] };
+    this.draft = this.newDraft('new');
     this.saveDraft();
-    // Manzil allaqachon #/new/type bo'lsa hashchange chiqmaydi — ekranni o'zimiz chizamiz
-    if (location.hash === '#/new/type') this.route();
-    else this.go('/new/type');
+    // "Yangi polis / yangilash" savoli yo'q: yangi ariza texpasport rasmidan boshlanadi,
+    // yangilash esa bosh sahifadagi "Polisni yangilash" orqali (yoki texpasport ekranidagi havola).
+    // Manzil allaqachon #/new/tex bo'lsa hashchange chiqmaydi — ekranni o'zimiz chizamiz
+    if (location.hash === '#/new/tex') this.route();
+    else this.go('/new/tex');
     // Takroriy mijoz — oldingi arizadagi ma'lumotlardan foydalanish taklifi.
-    // Tarmoq so'rovi FONDA ketadi — tugma bosilganda darhol keyingi ekranga
-    // o'tiladi, sekin internetda ham "bosilmayapti" degan taassurot bo'lmasin.
+    // Tarmoq so'rovi FONDA ketadi; javob kelgach texpasport ekranining tepasida karta chiqadi.
+    this._prefillOffer = null;
     this.offerPrefillFromLastApp();
+  },
+  // Yangi qoralama. Oxirgi marta ishlatilgan to'lov usuli oldindan tanlanadi
+  // (to'lov qadami o'tkazib yuboriladi, tasdiq ekranida o'zgartirish mumkin).
+  newDraft(type) {
+    const d = { app_type: type, drivers: [] };
+    let last = '';
+    try { last = localStorage.getItem('oson_last_pay') || ''; } catch (e) {}
+    if (PAY_METHODS.some(p => p.id === last)) { d.pay_method = last; d.payAuto = last; }
+    return d;
   },
   async offerPrefillFromLastApp() {
     try {
       const last = await this.getLastAppFull();
+      if (!this.draft || this.draft.app_type !== 'new' || this.draft._prefilled) return;
       if (last && (last.tex_plate || (Array.isArray(last.drivers) && last.drivers.length))) {
-        const info = last.tex_plate ? `\nAvto: ${last.tex_plate}` : '';
-        if (confirm(`Oldingi arizangizdagi ma'lumotlardan foydalanasizmi?${info}`)) {
-          this.prefillDraftFrom(last);
-          this.saveDraft();
-          toast('Oldingi ma\'lumotlar to\'ldirildi — tekshiring', 'success');
-          if (location.hash.startsWith('#/new/')) this.route();
-        }
+        this._prefillOffer = last;
+        this.renderPrefillOffer();
       }
     } catch (e) { /* prefill ixtiyoriy */ }
+  },
+  // Texpasport ekranining tepasidagi "oldingi ma'lumotlar bilan to'ldirish" kartasi
+  renderPrefillOffer() {
+    const slot = document.getElementById('prefillSlot');
+    const last = this._prefillOffer, d = this.draft;
+    if (!slot) return;
+    if (!last || !d || d._prefilled || d._prefillDismissed) { slot.innerHTML = ''; return; }
+    const what = last.tex_plate ? plateTag(last.tex_plate, true) : `<b>${esc(tt('Oldingi arizangiz'))}</b>`;
+    slot.innerHTML = `
+      <div class="prefill-card">
+        <div class="pf-top">${I.refresh}<span>${tt('Yana shu avtomobil uchunmi?')}</span></div>
+        <div class="pf-what">${what}${last.tex_model ? `<span>${esc(last.tex_model)}</span>` : ''}</div>
+        <p>${tt("Oldingi arizadagi ma'lumotlar to'ldiriladi — rasm qayta shart emas")}</p>
+        <div class="pf-acts">
+          <button class="btn btn-primary" onclick="App.applyPrefill()">${tt("Ha, to'ldirilsin")}</button>
+          <button class="btn btn-ghost" onclick="App.dismissPrefill()">${tt("Yo'q, boshqa avto")}</button>
+        </div>
+      </div>`;
+  },
+  applyPrefill() {
+    if (!this._prefillOffer || !this.draft) return;
+    this.prefillDraftFrom(this._prefillOffer);
+    this.saveDraft();
+    toast(tt("Oldingi ma'lumotlar to'ldirildi — tekshiring"), 'success');
+    if (location.hash === '#/new/tex') this.route();
+  },
+  dismissPrefill() {
+    if (this.draft) { this.draft._prefillDismissed = true; this.saveDraft(); }
+    this.renderPrefillOffer();
   },
 
   // Mijozning oxirgi arizasini to'liq ma'lumot bilan olish
@@ -1150,6 +1189,7 @@ const App = {
   // Draftni oldingi arizadan to'ldirish (rasm/muddat/narx qayta tanlanadi)
   prefillDraftFrom(a) {
     this.draft.vehicle = a.vehicle || null;
+    if (a.vehicle) this.draft.vehicleAuto = a.vehicle;
     if (a.region) { this.draft.region = a.region; this.draft.regionAuto = a.region; }
     this.draft.owner_doc = a.owner_doc || null;
     this.draft.tex = {
@@ -1164,7 +1204,7 @@ const App = {
     this.draft._prefilled = true;
   },
   startRenew() {
-    this.draft = { app_type: 'renew', drivers: [] };
+    this.draft = this.newDraft('renew');
     this.saveDraft();
     this.go('/new/oldpolicy');
   },
@@ -1177,27 +1217,59 @@ const App = {
     // faqat eski polis rasmi (1 ta) so'raladi; haydovchi qo'shish ixtiyoriy.
     // Yangi arizada tex (texpassport rasmi) eng oldinda — OCR raqamni o'qib
     // viloyatni avtomatik aniqlaydi; keyin avto turi, hudud (tasdiq), muddat/narx.
-    const base = this.draft && this.draft.app_type === 'renew'
+    return this.draft && this.draft.app_type === 'renew'
       ? ['oldpolicy','vehicle','region','duration','drivers','payment','confirm']
-      : ['type','tex','vehicle','region','duration','drivers','payment','confirm'];
-    return base;
+      : ['tex','vehicle','region','duration','drivers','payment','confirm'];
+  },
+
+  // Avtomatik aniqlangan qadamlar so'ralmaydi: avto turi va hudud texpasportdan
+  // (yoki oldingi arizadan), to'lov usuli — oxirgi tanlovdan. Mijoz ularni
+  // tasdiq ekranidagi "o'zgartirish" orqali ochishi mumkin.
+  stepSkipped(step) {
+    const d = this.draft || {};
+    if (step === 'vehicle') return !!d.vehicleAuto && d.vehicle === d.vehicleAuto;
+    if (step === 'region')  return !!d.regionAuto && d.region === d.regionAuto;
+    if (step === 'payment') return !!d.payAuto && d.pay_method === d.payAuto;
+    return false;
+  },
+  visibleSteps(current) {
+    return this.flowSteps().filter(s => s === current || !this.stepSkipped(s));
   },
 
   flowProgress(step) {
-    const steps = this.flowSteps();
+    const steps = this.visibleSteps(step);
     const idx = steps.indexOf(step);
     const total = steps.length;
     const pct = Math.round(((idx+1) / total) * 100);
     return { idx, total, pct };
   },
 
+  // Tasdiq (yoki muddat) ekranidan bitta qadamni tahrirlash — tanlangach o'sha ekranga qaytadi
+  editStep(step, back) {
+    if (!this.draft) return;
+    this.draft._back = back || 'confirm';
+    this.saveDraft();
+    this.go('/new/' + step);
+  },
   flowNext(step) {
-    const steps = this.flowSteps();
+    const d = this.draft;
+    if (d && d._back && d._back !== step) {
+      const back = d._back;
+      delete d._back; this.saveDraft();
+      return this.go('/new/' + back);
+    }
+    const steps = this.visibleSteps(step);
     const idx = steps.indexOf(step);
     if (idx < steps.length - 1) this.go('/new/' + steps[idx+1]);
   },
   flowPrev(step) {
-    const steps = this.flowSteps();
+    const d = this.draft;
+    if (d && d._back && d._back !== step) {
+      const back = d._back;
+      delete d._back; this.saveDraft();
+      return this.go('/new/' + back);
+    }
+    const steps = this.visibleSteps(step);
     const idx = steps.indexOf(step);
     if (idx > 0) this.go('/new/' + steps[idx-1]);
     else this.go('/dashboard');
@@ -1226,7 +1298,7 @@ const App = {
     window.scrollTo(0, 0);
     this.hideTransition();
     switch (step) {
-      case 'type':      return this.flowType();
+      case 'type':      return this.go('/new/' + this.flowSteps()[0]);   // eski havolalar
       case 'vehicle':   return this.flowVehicle();
       case 'region':    return this.flowRegion();
       case 'duration':  return this.flowDuration();
@@ -1235,30 +1307,10 @@ const App = {
       case 'drivers':   return this.flowDrivers();
       case 'payment':   return this.flowPayment();
       case 'confirm':   return this.flowConfirm();
-      default:          return this.flowType();
+      default:          return this.go('/new/' + this.flowSteps()[0]);
     }
   },
 
-  // 1. Ariza turi
-  flowType() {
-    const d = this.draft;
-    this.root.innerHTML = this.flowHeader('type', 'Ariza turi') + `
-      <h2 class="flow-q">${tt('Qanday ariza?')}</h2>
-      <p class="flow-sub">${tt('Yangi polis yoki mavjudini yangilash')}</p>
-      <div class="choice-list">
-        <div class="choice ${d.app_type==='new'?'sel':''}" onclick="App.selectAndGo(this,'app_type','new','/new/tex')">
-          <div class="choice-ic" style="background:var(--green-100);color:var(--green-700)">${I.plus}</div>
-          <div class="choice-txt"><h4>${tt('Yangi polis')}</h4><p>${tt('Birinchi marta rasmiylashtirish')}</p></div>
-          <div class="choice-rad"></div>
-        </div>
-        <div class="choice ${d.app_type==='renew'?'sel':''}" onclick="App.selectAndGo(this,'app_type','renew','/new/oldpolicy')">
-          <div class="choice-ic" style="background:#DBEAFE;color:#1E40AF">${I.refresh}</div>
-          <div class="choice-txt"><h4>${tt('Polisni yangilash')}</h4><p>${tt('Eski polis asosida tez yangilash')}</p></div>
-          <div class="choice-rad"></div>
-        </div>
-      </div>
-      </div></div>`;
-  },
   pick(field, val, next) {
     this.draft[field] = val;
     this.saveDraft();
@@ -1345,20 +1397,17 @@ const App = {
     const r = REGIONS[i];
     if (!r) return;
     const el = document.querySelector('.region-chip[data-i="' + i + '"]');
-    this.selectAndGo(el, 'region', r.name, '/new/duration');
+    this.selectAndNext(el, 'region', r.name, 'region');
   },
 
   // 4. Muddat
   flowDuration() {
     const d = this.draft;
     if (!d.vehicle || !d.region) { this.go('/new/vehicle'); return; }
-    this.root.innerHTML = this.flowHeader('duration', 'Muddat') + `
-      <h2 class="flow-q">${tt("Sug'urta muddati")}</h2>
-      <p class="flow-sub">${tt("Muddat va qoplamani tanlang")}</p>
-      <div class="dur-list">
-        ${DURATIONS.map(dur => {
-          const price = getPrice(d.vehicle, d.region, dur.id);
-          return `
+    const vehicleName = (VEHICLES.find(v => v.id === d.vehicle) || {}).name || '';
+    const card = dur => {
+      const price = getPrice(d.vehicle, d.region, dur.id);
+      return `
           <div class="dur-card ${d.duration===dur.id?'sel':''}" onclick="App.selectAndNext(this,'duration','${dur.id}','duration')">
             ${dur.popular?`<span class="dur-pop">${tt('Mashhur')}</span>`:''}
             <div class="dur-main">
@@ -1368,8 +1417,22 @@ const App = {
             <div class="dur-price">${fmtSom(price)}</div>
             <div class="choice-rad"></div>
           </div>`;
-        }).join('')}
+    };
+    // Ko'pchilik 1 yillik polis oladi — qisqa muddatlar yashirin, bitta tugma bilan ochiladi
+    const main = DURATIONS.filter(x => x.label === '1 yil');
+    const other = DURATIONS.filter(x => x.label !== '1 yil');
+    const otherOpen = other.some(x => x.id === d.duration);
+    this.root.innerHTML = this.flowHeader('duration', 'Muddat') + `
+      <div class="flow-ctx">
+        <button onclick="App.editStep('vehicle','duration')">${d.vehicle==='yuk'?I.truck:I.car}<span>${esc(tt(vehicleName))}</span></button>
+        <button onclick="App.editStep('region','duration')">${I.pin}<span>${esc(tt(d.region))}</span></button>
+        <em>${tt("o'zgartirish uchun bosing")}</em>
       </div>
+      <h2 class="flow-q">${tt("Sug'urta muddati")}</h2>
+      <p class="flow-sub">${tt("Cheklovsiz — istalgan haydovchi boshqarishi mumkin")}</p>
+      <div class="dur-list">${main.map(card).join('')}</div>
+      <div class="dur-list dur-other" id="durOther" ${otherOpen ? '' : 'hidden'}>${other.map(card).join('')}</div>
+      ${otherOpen ? '' : `<button class="flow-alt" id="durMore" onclick="document.getElementById('durOther').hidden=false;this.remove()">${I.clock}<span>${tt('Qisqa muddat kerakmi? 6 oy yoki 20 kun')}</span></button>`}
       </div></div>`;
   },
 
@@ -1377,9 +1440,13 @@ const App = {
   flowTex() {
     const d = this.draft;
     d.tex = d.tex || {};
+    const prefilled = d._prefilled && d.tex.plate;
     this.root.innerHTML = this.flowHeader('tex', 'Texpassport') + `
+      <div id="prefillSlot"></div>
       <h2 class="flow-q">${tt("Avtomobil ma'lumotlari")}</h2>
-      <p class="flow-sub">${tt("Texpassport rasmini oling — ma'lumotlar avtomatik aniqlanadi")}</p>
+      <p class="flow-sub">${tt(prefilled
+        ? "Oldingi arizadan to'ldirildi — tekshirib, davom eting. Rasm shart emas"
+        : "Texpassport rasmini oling — ma'lumotlar avtomatik aniqlanadi")}</p>
 
       <div class="tex-uploads">
         <div class="upload-zone tex-up" id="texUpload" onclick="document.getElementById('texFile').click()">
@@ -1439,7 +1506,9 @@ const App = {
       </div>
 
       <button class="btn btn-primary btn-block btn-lg" style="margin-top:24px" onclick="App.texNext()">Davom etish</button>
+      ${d.app_type === 'new' ? `<button class="flow-alt" onclick="App.startRenew()">${I.refresh}<span>${tt('Eski polisni yangilaysizmi? Eski polis rasmi bilan tezroq')}</span></button>` : ''}
       </div></div>`;
+    this.renderPrefillOffer();
     if (d.texPhotoData) this.showTexPreview('front', d.texPhotoData);
     if (d.texBackPhotoData) this.showTexPreview('back', d.texBackPhotoData);
     if (d.owner && d.owner.photo) this.showOwnerPreview(d.owner.photo);
@@ -1550,6 +1619,13 @@ const App = {
           }
         }
       });
+      // Texpasportdagi toifa/turdan avto turini aniqlash (faqat ishonchli bo'lsa keladi)
+      let vehicleMsg = '';
+      if (f.tex_vehicle && VEHICLES.some(v => v.id === f.tex_vehicle) && (!this.draft.vehicle || this.draft.vehicle === this.draft.vehicleAuto)) {
+        this.draft.vehicle = f.tex_vehicle;
+        this.draft.vehicleAuto = f.tex_vehicle;
+        vehicleMsg = ` · ${tt((VEHICLES.find(v => v.id === f.tex_vehicle) || {}).name || '')}`;
+      }
       // Davlat raqamidan viloyatni avtomatik aniqlash
       let regionMsg = '';
       if (this.draft.tex.plate) {
@@ -1564,7 +1640,7 @@ const App = {
       if (status) {
         if (filled > 0) {
           status.className = 'ocr-status ok';
-          status.innerHTML = `${I.check}<span>${filled} ta ma'lumot aniqlandi${regionMsg} — tekshiring</span>`;
+          status.innerHTML = `${I.check}<span>${filled} ta ma'lumot aniqlandi${vehicleMsg}${regionMsg} — tekshiring</span>`;
         } else {
           status.className = 'ocr-status warn';
           status.innerHTML = `<span>Ma'lumot aniqlanmadi — qo'lda kiriting</span>`;
@@ -1579,7 +1655,7 @@ const App = {
   },
 
   texNext() {
-    // Rasm asosiy: old tomon rasmi majburiy. Ammo takroriy mijozда (oldingi
+    // Rasm asosiy: old tomon rasmi majburiy. Ammo takroriy mijozda (oldingi
     // arizadan to'ldirilgan, raqam bor) rasm qayta talab qilinmaydi.
     const prefilled = this.draft._prefilled && this.draft.tex && this.draft.tex.plate;
     if (!this.draft.texPhotoData && !prefilled) {
@@ -1824,7 +1900,7 @@ const App = {
       <p class="flow-sub">${tt("Sug'urta kompaniyasiga to'lov")}</p>
       <div class="choice-list">
         ${PAY_METHODS.map(p => `
-          <div class="choice ${d.pay_method===p.id?'sel':''}" onclick="App.pick('pay_method','${p.id}','/new/confirm')">
+          <div class="choice ${d.pay_method===p.id?'sel':''}" onclick="App.selectAndNext(this,'pay_method','${p.id}','payment')">
             <div class="choice-ic" style="background:${p.color}1a;color:${p.color}">${I.card}</div>
             <div class="choice-txt"><h4>${p.label}</h4><p>${p.id==='card'?'Plastik karta orqali':'Ilova orqali tez to\'lov'}</p></div>
             <div class="choice-rad"></div>
@@ -1840,6 +1916,10 @@ const App = {
   // 8. Tasdiqlash
   flowConfirm() {
     const d = this.draft;
+    // Qadamlar o'tkazib yuborilishi mumkin — kerakli tanlov yo'q bo'lsa o'sha ekranga qaytamiz
+    if (!d.vehicle || !d.region) return this.go('/new/vehicle');
+    if (!d.duration) return this.go('/new/duration');
+    if (!PAY_METHODS.some(p => p.id === d.pay_method)) { delete d.payAuto; return this.go('/new/payment'); }
     const price = getPrice(d.vehicle, d.region, d.duration);
     const vehicleName = (VEHICLES.find(v=>v.id===d.vehicle)||{}).name || '';
     const durObj = DURATIONS.find(x=>x.id===d.duration) || {};
@@ -1850,6 +1930,7 @@ const App = {
     if (d.forSelf === false || d.pay_method !== 'card') d.bonus_used = 0;
     this.saveDraft();
     const myPhone = this.user.phone || '';
+    const edit = step => ` <button class="sum-edit" onclick="App.editStep('${step}')">${tt("o'zgartirish")}</button>`;
     this.root.innerHTML = this.flowHeader('confirm', 'Tasdiqlash') + `
       <h2 class="flow-q">${tt('Arizani tasdiqlang')}</h2>
       <p class="flow-sub">${tt("Ma'lumotlarni tekshiring")}</p>
@@ -1880,12 +1961,12 @@ const App = {
 
       <div class="summary-card">
         <div class="sum-row"><span>${tt('Ariza turi')}</span><b>${d.app_type==='renew'?tt('Yangilash'):tt('Yangi polis')}</b></div>
-        <div class="sum-row"><span>${tt('Avtomobil')}</span><b>${esc(vehicleName)}</b></div>
-        <div class="sum-row"><span>${tt('Hudud')}</span><b>${esc(tt(d.region||''))}</b></div>
-        <div class="sum-row"><span>${tt('Muddat')}</span><b>${durObj.label||''} · ${durObj.sub||''}</b></div>
-        <div class="sum-row"><span>${tt('Davlat raqami')}</span><b>${esc((d.tex&&d.tex.plate)||'')}</b></div>
+        <div class="sum-row"><span>${tt('Avtomobil')}</span><b>${esc(tt(vehicleName))}${edit('vehicle')}</b></div>
+        <div class="sum-row"><span>${tt('Hudud')}</span><b>${esc(tt(d.region||''))}${edit('region')}</b></div>
+        <div class="sum-row"><span>${tt('Muddat')}</span><b>${tt(durObj.label||'')} · ${tt(durObj.sub||'')}${edit('duration')}</b></div>
+        <div class="sum-row"><span>${tt('Davlat raqami')}</span><b>${esc(fmtPlate((d.tex&&d.tex.plate)||''))}</b></div>
         <div class="sum-row"><span>${this.isUnlimited()?tt('Avtomobil egasi'):tt('Haydovchilar')}</span><b>${this.isUnlimited()?'1':(d.drivers||[]).length} ${tt('ta')}</b></div>
-        <div class="sum-row"><span>${tt("To'lov")}</span><b>${payObj.label||''}</b></div>
+        <div class="sum-row"><span>${tt("To'lov")}</span><b>${payObj.label||''}${edit('payment')}</b></div>
         ${d.bonus_used ? `<div class="sum-row"><span>${tt('Bonus chegirma')}</span><b style="color:var(--green-700)">−${fmtSom(d.bonus_used)}</b></div>` : ''}
         <div class="sum-divider"></div>
         <div class="sum-total"><span>${tt('Jami narx')}</span><b>${fmtSom(Math.max(0, price - (d.bonus_used||0)))}</b></div>
@@ -2042,6 +2123,7 @@ const App = {
       }
       const res = await ClientAPI.submitApp(fd);
       const appId = (res && (res.id || (res.app && res.app.id))) || null;
+      try { if (d.pay_method) localStorage.setItem('oson_last_pay', d.pay_method); } catch (e) {}
       this.clearDraft();
       this.go('/status/' + (appId || ''));
       setTimeout(()=>toast('Ariza muvaffaqiyatli yuborildi!', 'ok'), 300);

@@ -1416,3 +1416,24 @@ body.no-scroll{overflow:hidden}
   .ch-plate-num { font-size:19px; padding:4px 9px 5px; }
   .ch-aperture { width:58px; height:58px; }
 }
+
+/* ===== Soddalashtirilgan ariza oqimi ===== */
+.prefill-card{background:var(--card);border:1.5px solid var(--green-100);border-radius:var(--r-lg);padding:16px 18px;margin:4px 0 18px;box-shadow:var(--shadow-sm)}
+.prefill-card .pf-top{display:flex;align-items:center;gap:8px;font-size:12px;letter-spacing:.06em;text-transform:uppercase;color:var(--green-700);font-weight:700}
+.prefill-card .pf-top svg{width:16px;height:16px}
+.prefill-card .pf-what{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin:10px 0 6px}
+.prefill-card .pf-what span:not(.ch-plate):not(.ch-plate-uz):not(.ch-plate-num){font-size:13.5px;color:var(--ink-2)}
+.prefill-card p{font-size:13px;color:var(--muted);margin-bottom:12px}
+.prefill-card .pf-acts{display:flex;gap:8px;flex-wrap:wrap}
+.prefill-card .pf-acts .btn{flex:1;min-width:140px}
+.flow-alt{display:flex;align-items:center;justify-content:center;gap:8px;width:100%;margin-top:14px;padding:12px;border:0;background:none;color:var(--green-700);font:inherit;font-size:14px;font-weight:600;cursor:pointer;border-radius:var(--r)}
+.flow-alt:hover{background:var(--green-50)}
+.flow-alt svg{width:17px;height:17px;flex:none}
+.flow-ctx{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin:2px 0 16px}
+.flow-ctx button{display:inline-flex;align-items:center;gap:6px;padding:6px 11px;border-radius:99px;border:1px solid var(--line);background:var(--card);color:var(--ink-2);font:inherit;font-size:13px;font-weight:600;cursor:pointer}
+.flow-ctx button:hover{border-color:var(--green-300);color:var(--green-700)}
+.flow-ctx button svg{width:15px;height:15px;color:var(--green-700)}
+.flow-ctx em{font-style:normal;font-size:11.5px;color:var(--muted)}
+.dur-other{margin-top:12px}
+.sum-edit{border:0;background:none;padding:0 0 0 8px;color:var(--green-700);font:inherit;font-size:12.5px;font-weight:600;cursor:pointer;text-decoration:underline;text-underline-offset:2px}
+.dur-other[hidden]{display:none}

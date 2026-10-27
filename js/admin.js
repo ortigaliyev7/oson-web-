@@ -446,9 +446,37 @@ const Admin = {
         <h3 class="adm-card-title">Konversiya voronkasi</h3>
         ${funnelRows}
       </div>
+      ${this.renderReachCard(f)}
       <div class="adm-card">
         <h3 class="adm-card-title">Qaysi bosqichda ko'p tashlab ketishadi (${f.abandoned_in_progress||0} ta jarayonda)</h3>
         ${stepRows}
+      </div>`;
+  },
+
+  // Har bir qadamga nechta mijoz yetdi — qayerda ko'p to'xtashayotgani shu yerdan ko'rinadi
+  renderReachCard(f) {
+    const rows = f.reached_by_step || [];
+    const top = (rows[0] && rows[0].count) || 0;
+    if (!top) return `
+      <div class="adm-card">
+        <h3 class="adm-card-title">Qadamlar bo'yicha (so'nggi ${f.reached_days || 30} kun)</h3>
+        <p class="muted-text">Hali ma'lumot yig'ilmagan — mijozlar ariza to'ldira boshlagach shu yerda ko'rinadi.</p>
+      </div>`;
+    let prev = top;
+    const html = rows.map((r) => {
+      const pct = Math.round((r.count / top) * 100);
+      const lost = prev > 0 && r !== rows[0] ? Math.round(((prev - r.count) / prev) * 100) : 0;
+      prev = r.count;
+      return `<div class="funnel-row">
+        <div class="funnel-lab"><span>${esc(r.label)}</span><b>${r.count} <span class="muted-text">(${pct}%)</span>${lost >= 20 ? ` <span class="reach-lost">−${lost}%</span>` : ''}</b></div>
+        <div class="funnel-track"><div class="funnel-fill" style="width:${pct}%"></div></div>
+      </div>`;
+    }).join('');
+    return `
+      <div class="adm-card">
+        <h3 class="adm-card-title">Qadamlar bo'yicha (so'nggi ${f.reached_days || 30} kun, noyob mijozlar)</h3>
+        ${html}
+        <p class="muted-text" style="margin-top:8px;font-size:12px">Qizil — oldingi qadamdan 20%+ yo'qotish: avval shu qadamni soddalashtiring.</p>
       </div>`;
   },
 
@@ -851,13 +879,14 @@ const Admin = {
     }
 
     // status o'zgartirish (qo'lda)
-    html += `<div class="status-change">
-      <label>Statusni qo'lda o'zgartirish</label>
+    // Odatda yuqoridagi asosiy tugma yetarli — qo'lda o'zgartirish faqat kerak bo'lsa ochiladi
+    html += `<details class="status-change">
+      <summary>Boshqa holatga o'tkazish (qo'lda)</summary>
       <select class="inp" id="stSelect" onchange="Admin.changeStatus(this.value)">
         ${Object.keys(STATUS_LABEL).filter(s=>s!=='pending').map(s=>
           `<option value="${s}" ${s===st?'selected':''}>${STATUS_LABEL[s]}</option>`).join('')}
       </select>
-    </div>`;
+    </details>`;
     return html;
   },
 
@@ -1670,7 +1699,7 @@ const Admin = {
           <div class="setting-row">
             <div class="setting-txt">
               <h3>Haydovchilik guvohnomasini so'rash</h3>
-              <p>Yoqilsa, ariza berishда mijozdan har bir haydovchining guvohnoma seriyasi ham so'raladi</p>
+              <p>Yoqilsa, ariza berishda mijozdan har bir haydovchining guvohnoma seriyasi ham so'raladi</p>
             </div>
             <button class="toggle ${reqLicense?'on':''}" id="tgLicense" onclick="Admin.toggleDriverLicense(${!reqLicense})">
               <span class="toggle-knob"></span>
@@ -1690,7 +1719,7 @@ const Admin = {
           </div>
           <div class="field" style="margin-top:14px">
             <label>Texnik xizmat xabari</label>
-            <input class="inp" id="maintMsg" value="${esc(s.maintenance_message||'')}" placeholder="Ilova vaqtincha texnik xizmatда...">
+            <input class="inp" id="maintMsg" value="${esc(s.maintenance_message||'')}" placeholder="Ilova vaqtincha texnik xizmatda...">
           </div>
         </div>
 
@@ -1981,10 +2010,22 @@ const Admin = {
         ['bsh_yengil', 'Viloyat · Yengil'],
         ['bsh_yuk', 'Viloyat · Yuk'],
       ];
+      // "Toshkent · " / "Viloyat · " qismi alohida — bir xil stavka rejimida yashiriladi
+      const zoneLab = (key, lab) => {
+        const [zone, ...rest] = lab.split(' · ');
+        return `<span class="brr-zone">${zone} · </span>${rest.join(' · ')}`;
+      };
+      const isBsh = key => key.startsWith('bsh_');
+      // Viloyat stavkalari Toshkentnikiga teng bo'lsa (hamma jadvalda) — bitta ro'yxat ko'rsatiladi
+      const tables = [cfg.rates, cfg.direct_rates, cfg.first_insurance_rates, cfg.direct_first_insurance_rates, cfg.self_rates];
+      const eq = (x, y) => { x = x || { mode:'percent', value:0 }; y = y || { mode:'percent', value:0 }; return x.mode === y.mode && +x.value === +y.value; };
+      const sameRates = tables.every(t => RATES.filter(([k]) => !isBsh(k)).every(([k]) => eq(t && t[k], t && t['bsh' + k.slice(3)])))
+        && LIMITS.filter(([k]) => !isBsh(k)).every(([k]) => +((cfg.link_limits||{})[k]||0) === +((cfg.link_limits||{})['bsh' + k.slice(3)]||0));
+      this._sameRates = sameRates;
       const rateRow = (table, prefix) => ([key, lab]) => {
         const r = (table && table[key]) || { mode:'percent', value:0 };
-        return `<div class="bonus-rate-row">
-          <span class="brr-lab">${lab}</span>
+        return `<div class="bonus-rate-row${isBsh(key) ? ' brr-bsh' : ''}">
+          <span class="brr-lab">${zoneLab(key, lab)}</span>
           <select class="inp brr-mode" id="${prefix}mode_${key}">
             <option value="percent" ${r.mode==='percent'?'selected':''}>Foiz %</option>
             <option value="fixed" ${r.mode==='fixed'?'selected':''}>So'm</option>
@@ -1994,8 +2035,8 @@ const Admin = {
       };
       const limitRow = ([key, lab]) => {
         const v = (cfg.link_limits && cfg.link_limits[key]) || 0;
-        return `<div class="bonus-limit-row">
-          <span class="brr-lab">${lab}</span>
+        return `<div class="bonus-limit-row${isBsh(key) ? ' brr-bsh' : ''}">
+          <span class="brr-lab">${zoneLab(key, lab)}</span>
           <input class="inp" id="rlimit_${key}" inputmode="numeric" value="${v}" placeholder="0 = cheklovsiz">
         </div>`;
       };
@@ -2005,7 +2046,7 @@ const Admin = {
 
         <div class="adm-card setting-card" style="max-width:640px">
           <div class="setting-row">
-            <div class="setting-txt"><h3>Bonus tizimi</h3><p>Mijoz do'stiga sug'urta qildirса bonus oladi</p></div>
+            <div class="setting-txt"><h3>Bonus tizimi</h3><p>Mijoz do'stiga sug'urta qildirsa bonus oladi</p></div>
             <button class="toggle ${cfg.enabled?'on':''}" id="tgBonus" onclick="Admin.bonusToggle('enabled',${!cfg.enabled})"><span class="toggle-knob"></span></button>
           </div>
           <div class="setting-row" style="margin-top:10px">
@@ -2013,11 +2054,18 @@ const Admin = {
             <button class="toggle ${cfg.first_insurance?'on':''}" id="tgFirst" onclick="Admin.bonusToggle('first_insurance',${!cfg.first_insurance})"><span class="toggle-knob"></span></button>
           </div>
           <div class="setting-row" style="margin-top:10px">
-            <div class="setting-txt"><h3>Bonusni chegirma sifatida ishlatish</h3><p>Mijoz bonusини keyingi sug'urtaga chegirma qiladi (faqat karta to'lovda)</p></div>
+            <div class="setting-txt"><h3>Bonusni chegirma sifatida ishlatish</h3><p>Mijoz bonusini keyingi sug'urtaga chegirma qiladi (faqat karta to'lovda)</p></div>
             <button class="toggle ${cfg.allow_discount?'on':''}" id="tgDisc" onclick="Admin.bonusToggle('allow_discount',${!cfg.allow_discount})"><span class="toggle-knob"></span></button>
           </div>
         </div>
 
+        <div id="bonusCfg" class="${sameRates ? 'same-rates' : ''}">
+        <div class="adm-card setting-card" style="max-width:640px">
+          <div class="setting-row">
+            <div class="setting-txt"><h3>Viloyatlar uchun ham Toshkent stavkalari</h3><p>Yoqilsa har bir jadvalda faqat bitta ro'yxat qoladi — saqlanganda viloyatga ham shu qiymatlar yoziladi</p></div>
+            <button class="toggle ${sameRates?'on':''}" id="tgSameRates" onclick="Admin.toggleSameRates()"><span class="toggle-knob"></span></button>
+          </div>
+        </div>
         <div class="adm-card setting-card" style="max-width:640px">
           <h3 class="adm-card-title">Taklif havolasi — bonus stavkalari (hudud × avto × muddat)</h3>
           <p style="color:var(--ink-2);font-size:13px;margin-bottom:12px">Mijoz o'z havolasini ulashib do'stini taklif qilsa. Har biri foiz (%) yoki qat'iy so'm summa</p>
@@ -2070,6 +2118,7 @@ const Admin = {
           ` : ''}
         </div>
 
+        </div>
         <div class="adm-card" style="max-width:640px">
           <div class="adm-card-title-row">
             <h3 class="adm-card-title">To'lanadigan bonuslar (<span id="bonusOvCount">${ov.items.length}</span>)</h3>
@@ -2086,7 +2135,7 @@ const Admin = {
 
         <div class="adm-card setting-card" style="max-width:640px">
           <h3 class="adm-card-title"><span class="ic-i">${I.levels}</span> Darajalar tizimi (viloyat oboroti bo'yicha)</h3>
-          <p style="color:var(--ink-2);font-size:13px;margin-bottom:12px">Mijoz darajasi u keltirgan <b>viloyat</b> oboroti bo'yicha ko'tariladi (Toshkent hisobga <b>olinmaydi</b>; taklif havolasi + do'stiga to'g'ridan-to'g'ri qilingan sug'urta <b>birga</b>). Har bir daraja uchun kerakli oborot va shu darajaga birinchi marta erishilganda beriladigan bonusни belgilang (so'm).</p>
+          <p style="color:var(--ink-2);font-size:13px;margin-bottom:12px">Mijoz darajasi u keltirgan <b>viloyat</b> oboroti bo'yicha ko'tariladi (Toshkent hisobga <b>olinmaydi</b>; taklif havolasi + do'stiga to'g'ridan-to'g'ri qilingan sug'urta <b>birga</b>). Har bir daraja uchun kerakli oborot va shu darajaga birinchi marta erishilganda beriladigan bonusni belgilang (so'm).</p>
           <div class="tier-cfg-head"><span>Daraja</span><span>Kerakli oborot</span><span>Daraja bonusi</span></div>
           ${(cfg.tiers||[]).map(t => `
             <div class="tier-cfg-row">
@@ -2177,6 +2226,13 @@ const Admin = {
       el.setAttribute('onclick', `Admin.bonusToggle('${key}',${!val})`);
     } catch (e) { toast(e.message, 'err'); }
   },
+  toggleSameRates() {
+    this._sameRates = !this._sameRates;
+    const box = document.getElementById('bonusCfg'), tg = document.getElementById('tgSameRates');
+    if (box) box.classList.toggle('same-rates', this._sameRates);
+    if (tg) tg.classList.toggle('on', this._sameRates);
+    toast(this._sameRates ? "Viloyat qatorlari yashirildi — «Saqlash»ni bosing" : "Viloyat stavkalari alohida ko'rsatildi", 'ok');
+  },
   async bonusSaveConfig() {
     // Stavkalar 8 kalit (hudud × avto × muddat turi), limitlar esa 4 kalit
     const keys = [
@@ -2184,11 +2240,14 @@ const Admin = {
       'bsh_yengil_cheklovli','bsh_yengil_cheklovsiz','bsh_yuk_cheklovli','bsh_yuk_cheklovsiz',
     ];
     const limitKeys = ['tsh_yengil','tsh_yuk','bsh_yengil','bsh_yuk'];
+    const same = !!this._sameRates;
+    // Bir xil stavka rejimida viloyat kaliti Toshkent maydonidan o'qiladi
+    const src = k => same && k.startsWith('bsh_') ? 'tsh' + k.slice(3) : k;
     const readRates = (prefix) => {
       const rates = {};
       keys.forEach(k => {
-        const modeEl = document.getElementById(prefix+'mode_'+k);
-        const valEl = document.getElementById(prefix+'val_'+k);
+        const modeEl = document.getElementById(prefix+'mode_'+src(k));
+        const valEl = document.getElementById(prefix+'val_'+src(k));
         if (!modeEl || !valEl) return;
         rates[k] = { mode: modeEl.value, value: Number(valEl.value) || 0 };
       });
@@ -2201,7 +2260,7 @@ const Admin = {
     const self_rates = readRates('sf');
     const link_limits = {};
     limitKeys.forEach(k => {
-      const el = document.getElementById('rlimit_' + k);
+      const el = document.getElementById('rlimit_' + src(k));
       if (el) link_limits[k] = Math.max(0, Number(el.value) || 0);
     });
     const payout_contact = document.getElementById('refContact').value.trim();
