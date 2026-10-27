@@ -69,7 +69,9 @@ const ClientAPI = {
   myApps:   (phone) => req(`/apps/client/${encodeURIComponent(phone)}`, { token: clientToken() }),
   appDetail:(id) => req(`/apps/${id}`, { token: clientToken() }),
   messages: (id) => req(`/apps/${id}/messages`, { token: clientToken() }),
-  sendMessage: (id, message) => req(`/apps/${id}/client-message`, { method:'POST', body:{ message }, token: clientToken() }),
+  // `text` + `client_phone` — eski backend (#64 gacha) shularni o'qiydi; yangisi `message` va
+  // tokenni ishlatadi (telefonni e'tiborsiz qoldiradi). Ikkalasi bilan ham ishlashi uchun hammasini yuboramiz.
+  sendMessage: (id, message, phone) => req(`/apps/${id}/client-message`, { method:'POST', body:{ text: message, message, client_phone: phone }, token: clientToken() }),
 
   // Referral bonus (mijoz) — bonus stavkasi muddat turiga (cheklovli/cheklovsiz) ham bog'liq
   refConfig:   () => req('/referral/config'),
@@ -103,7 +105,7 @@ const AdminAPI = {
   reject:   (id, reason) => req(`/apps/${id}/reject`, { method:'POST', body:{ reason }, token: adminToken() }),
   paymentLink: (id, payload) => req(`/apps/${id}/payment-link`, { method:'POST', body: payload, token: adminToken() }),
   setStatus: (id, status) => req(`/apps/${id}/status`, { method:'PATCH', body:{ status }, token: adminToken() }),
-  message:   (id, message) => req(`/apps/${id}/message`, { method:'POST', body:{ message }, token: adminToken() }),
+  message:   (id, message) => req(`/apps/${id}/message`, { method:'POST', body:{ text: message, message }, token: adminToken() }),
   // finalize multipart (policy_file)
   finalize:  (id, formData) => req(`/apps/${id}/finalize`, { method:'POST', body: formData, isForm:true, token: adminToken() }),
   messages:  (id) => req(`/apps/${id}/messages`, { token: adminToken() }),

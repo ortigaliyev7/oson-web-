@@ -1112,7 +1112,9 @@ const App = {
     }
     this.draft = { app_type: 'new', drivers: [] };
     this.saveDraft();
-    this.go('/new/type');
+    // Manzil allaqachon #/new/type bo'lsa hashchange chiqmaydi — ekranni o'zimiz chizamiz
+    if (location.hash === '#/new/type') this.route();
+    else this.go('/new/type');
     // Takroriy mijoz — oldingi arizadagi ma'lumotlardan foydalanish taklifi.
     // Tarmoq so'rovi FONDA ketadi — tugma bosilganda darhol keyingi ekranga
     // o'tiladi, sekin internetda ham "bosilmayapti" degan taassurot bo'lmasin.
@@ -1214,7 +1216,12 @@ const App = {
   },
 
   viewFlow(step) {
-    if (!this.draft) { this.startNewApp(); return; }
+    if (!this.draft) {
+      this.startNewApp();
+      // Ish vaqti tugagan bo'lsa qoralama ochilmaydi — bo'sh sahifada qolmaslik uchun bosh sahifaga
+      if (!this.draft) this.go('/dashboard');
+      return;
+    }
     document.body.className = '';
     window.scrollTo(0, 0);
     this.hideTransition();
@@ -2267,7 +2274,7 @@ const App = {
     if (!text) return;
     inp.value = '';
     try {
-      await ClientAPI.sendMessage(this.chatAppId, text);
+      await ClientAPI.sendMessage(this.chatAppId, text, this.user && this.user.phone);
       this.loadChat();
     } catch (e) { toast(e.message, 'err'); }
   },
@@ -2298,8 +2305,8 @@ const App = {
           <div class="notif-item ${n.is_read?'':'unread'}" ${appId?`onclick="App.go('/status/${appId}')"`:''}>
             <div class="ni-ic">${I.bell}</div>
             <div class="ni-body">
-              <h4>${esc(n.title||'Bildirishnoma')}</h4>
-              <p>${esc(n.message||n.body||'')}</p>
+              <h4>${esc(plainText(n.title)||'Bildirishnoma')}</h4>
+              <p>${esc(plainText(n.message||n.body||''))}</p>
               ${media}
               <span class="ni-time">${fmtDate(n.created_at||n.createdAt)}</span>
             </div>
