@@ -255,6 +255,20 @@ const UZ_RU = {
   '20 kun': '20 дней',
   'Cheklovli': 'С ограничением',
   'Cheklovsiz': 'Без ограничения',
+
+  // Soddalashtirilgan oqim
+  'Yana shu avtomobil uchunmi?': 'Снова для этого автомобиля?',
+  'Oldingi arizangiz': 'Ваша прошлая заявка',
+  "Oldingi arizadagi ma'lumotlar to'ldiriladi — rasm qayta shart emas": 'Данные заполнятся из прошлой заявки — фото заново не нужно',
+  "Ha, to'ldirilsin": 'Да, заполнить',
+  "Yo'q, boshqa avto": 'Нет, другой авто',
+  "Oldingi ma'lumotlar to'ldirildi — tekshiring": 'Данные из прошлой заявки заполнены — проверьте',
+  "Oldingi arizadan to'ldirildi — tekshirib, davom eting. Rasm shart emas": 'Заполнено из прошлой заявки — проверьте и продолжайте. Фото не обязательно',
+  'Eski polisni yangilaysizmi? Eski polis rasmi bilan tezroq': 'Продлеваете полис? Быстрее — по фото старого полиса',
+  "o'zgartirish uchun bosing": 'нажмите, чтобы изменить',
+  "o'zgartirish": 'изменить',
+  'Cheklovsiz — istalgan haydovchi boshqarishi mumkin': 'Без ограничения — управлять может любой водитель',
+  'Qisqa muddat kerakmi? 6 oy yoki 20 kun': 'Нужен короткий срок? 6 месяцев или 20 дней',
 };
 
 function getLang() {
