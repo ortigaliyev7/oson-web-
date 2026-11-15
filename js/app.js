@@ -2272,7 +2272,7 @@ const App = {
         (active.length ? `<p class="ch-sect">${tt('Jarayonda')}</p>${active.map(a => this.appListItem(a)).join('')}` : '') +
         (finished.length ? `<p class="ch-sect">${tt('Yakunlangan')}</p>${finished.map(a => this.appListItem(a)).join('')}` : '');
     } catch (e) {
-      document.getElementById('appsList').innerHTML = this.errorBlock(e.message);
+      setHTML('appsList', this.errorBlock(e.message));
     }
   },
   appListItem(a) {
@@ -2307,13 +2307,17 @@ const App = {
       <div class="app-shell"><div class="wrap app-main app-view">
         <div id="statusBox">${this.loadingBlock()}</div>
       </div></div>${this.bottomNav('apps')}`;
-    if (!id) { document.getElementById('statusBox').innerHTML = this.errorBlock('Ariza topilmadi'); return; }
+    if (!id) { setHTML('statusBox', this.errorBlock('Ariza topilmadi')); return; }
+    // Javob kelguncha mijoz boshqa sahifaga (yoki boshqa arizaga) o'tgan bo'lsa — chizmaymiz:
+    // aks holda element yo'qligidan xato chiqadi yoki boshqa ariza ma'lumoti ko'rinib qoladi
+    const stillHere = () => location.hash === `#/status/${id}`;
     try {
       const r = await ClientAPI.appDetail(id);
+      if (!stillHere()) return;
       const a = r.app || r;
       this.renderStatus(a);
     } catch (e) {
-      document.getElementById('statusBox').innerHTML = this.errorBlock(e.message);
+      if (stillHere()) setHTML('statusBox', this.errorBlock(e.message));
     }
   },
   renderStatus(a) {
@@ -2357,7 +2361,9 @@ const App = {
       return `<div class="ch-tl-row ${cls}"><span class="ch-tl-dot"></span><div class="ch-tl-t">${tt(STATUS_LABEL[s])}</div></div>`;
     }).join('');
 
-    document.getElementById('statusBox').innerHTML = `
+    const box = document.getElementById('statusBox');
+    if (!box) return;
+    box.innerHTML = `
       ${card}
 
       ${policyUrl && isReady ? `
@@ -2514,7 +2520,7 @@ const App = {
       ClientAPI.markRead(this.user.phone).catch(()=>{});
       this.notifCount = 0;
     } catch (e) {
-      document.getElementById('notifList').innerHTML = this.errorBlock(e.message);
+      setHTML('notifList', this.errorBlock(e.message));
     }
   },
 

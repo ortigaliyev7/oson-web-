@@ -689,16 +689,20 @@ const Admin = {
     this.root.innerHTML = this.shell('apps', `
       <div class="adm-detail-back" onclick="Admin.go('/apps')">${I.arrowLeft}<span>Arizalar ro'yxati</span></div>
       <div id="admDetail">${this.loadingBlock()}</div>`);
-    if (!id) { document.getElementById('admDetail').innerHTML = this.errorBlock('Ariza topilmadi'); return; }
+    if (!id) { setHTML('admDetail', this.errorBlock('Ariza topilmadi')); return; }
     this.curAppId = id;
+    // Javob kelguncha admin boshqa arizaga o'tgan bo'lsa — eski javobni chizmaymiz. Aks holda
+    // bir arizaning ma'lumoti ko'rinib, "Tasdiqlash" boshqasiga (curAppId) ta'sir qilardi.
+    const stillHere = () => this.curAppId === id && location.hash === `#/app/${id}`;
     try {
       const r = await AdminAPI.appDetail(id);
+      if (!stillHere()) return;
       this.curApp = r.app || r;
       this.renderAppDetail(this.curApp);
       // Maxfiylik auditi — kim mijoz hujjatlarini ochganini yozib qo'yamiz (fon)
       AdminAPI.logView(id).catch(() => {});
     } catch (e) {
-      document.getElementById('admDetail').innerHTML = this.errorBlock(e.message);
+      if (stillHere()) setHTML('admDetail', this.errorBlock(e.message));
     }
   },
 
@@ -713,7 +717,9 @@ const Admin = {
     const drivers = a.drivers || [];
     const photos = this.collectPhotos(a);
 
-    document.getElementById('admDetail').innerHTML = `
+    const box = document.getElementById('admDetail');
+    if (!box) return;
+    box.innerHTML = `
       <div class="adm-detail-head">
         <div>
           <div class="adh-num">${esc(String(num))}</div>
@@ -985,7 +991,7 @@ const Admin = {
     document.getElementById('finPreview').innerHTML =
       `<div class="uz-ic" style="color:var(--green-600)">${I.checkCircle}</div>
        <div class="uz-title">${esc(f.name)}</div>
-       <div class="uz-hint">${(f.size/1024).toFixed(0)} KB · almashtirsh uchun bosing</div>`;
+       <div class="uz-hint">${(f.size/1024).toFixed(0)} KB · almashtirish uchun bosing</div>`;
   },
   async doFinalize() {
     if (!this._finFile) return toast('Polis faylini tanlang', 'err');
@@ -1366,7 +1372,7 @@ const Admin = {
       if (!list.length) { box.innerHTML = this.emptyBlock(I.users, 'Xodimlar yo\'q', 'Birinchi xodimni qo\'shing'); return; }
       box.innerHTML = `<div class="staff-grid">${list.map(s=>this.staffCard(s)).join('')}</div>`;
     } catch (e) {
-      document.getElementById('staffList').innerHTML = this.errorBlock(e.message);
+      setHTML('staffList', this.errorBlock(e.message));
     }
   },
   // Xodimlar samaradorlik reytingi — yakunlangan polislar soni va o'rtacha vaqti bo'yicha
@@ -1499,7 +1505,7 @@ const Admin = {
       if (!list.length) { box.innerHTML = this.emptyBlock(I.card, 'To\'lov usullari yo\'q', 'Birinchisini qo\'shing'); return; }
       box.innerHTML = `<div class="pm-grid">${list.map(m=>this.pmCard(m)).join('')}</div>`;
     } catch (e) {
-      document.getElementById('pmList').innerHTML = this.errorBlock(e.message);
+      setHTML('pmList', this.errorBlock(e.message));
     }
   },
   pmCard(m) {
