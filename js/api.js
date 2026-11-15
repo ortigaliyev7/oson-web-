@@ -89,7 +89,8 @@ const ClientAPI = {
   markRead: (phone) => req(`/client/${encodeURIComponent(phone)}/notifications/mark-read`, { method:'POST', token: clientToken() }),
 
   // Ariza yuborish (multipart FormData)
-  submitApp: (formData) => req('/apps', { method:'POST', body: formData, isForm: true }),
+  // Token ixtiyoriy: backend uni ariza tizimga kirgan mijozdan kelganini bilish uchun ishlatadi (avto-rejimlar uchun)
+  submitApp: (formData) => req('/apps', { method:'POST', body: formData, isForm: true, token: clientToken() || null }),
 
   // Mijoz sharhi (polis tayyor bo'lgach)
   submitReview: (data) => req('/reviews', { method:'POST', body: data }),
