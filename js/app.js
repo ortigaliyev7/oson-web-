@@ -2383,10 +2383,14 @@ const App = {
           return `<div class="pay-sms-note">${I.phone}<span>${tt("To'lov uchun SMS orqali havola yuborildi — telefoningizni tekshiring")}</span></div>`;
         }
         if (!last.link) return '';
-        return `
-        <a class="pay-link-btn" href="${esc(last.link)}" target="_blank">
-          ${I.card}<span>${tt("To'lovni amalga oshirish")} — ${fmtSom(last.amount||a.price||0)}</span>
-        </a>`;
+        // Bir vaqtda berilgan havolalar (ERSP: Click + Payme) — har biri o'z tugmasi bilan
+        const batch = links.filter(l => l && l.link && l.sent_at === last.sent_at);
+        const group = batch.length > 1 ? batch : [last];
+        const NAMES = { click: 'Click', payme: 'Payme', paynet: 'Paynet' };
+        return group.map(l => `
+        <a class="pay-link-btn" href="${esc(l.link)}" target="_blank" rel="noopener">
+          ${I.card}<span>${group.length > 1 ? esc(NAMES[l.provider] || l.provider || '') + ' — ' : ''}${tt("To'lovni amalga oshirish")} — ${fmtSom(l.amount||a.price||0)}</span>
+        </a>`).join('');
       })()}
 
       <h3 class="section-h">${tt('Jarayon bosqichlari')}</h3>
