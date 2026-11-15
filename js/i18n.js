@@ -269,6 +269,11 @@ const UZ_RU = {
   "o'zgartirish": 'изменить',
   'Cheklovsiz — istalgan haydovchi boshqarishi mumkin': 'Без ограничения — управлять может любой водитель',
   'Qisqa muddat kerakmi? 6 oy yoki 20 kun': 'Нужен короткий срок? 6 месяцев или 20 дней',
+  'Raqamni ulash': 'Привязать номер',
+  // Telegram Mini App
+  "Telegram raqamingizni ulang — bir marta tasdiqlaysiz, keyin avtomatik kirasiz": 'Привяжите номер Telegram — подтвердите один раз, дальше вход автоматический',
+  "Raqamingiz faqat kirish va arizalaringizni sizga ko'rsatish uchun ishlatiladi.": 'Номер используется только для входа и показа ваших заявок.',
+  'Raqamingiz ulanmoqda...': 'Привязываем ваш номер...',
 };
 
 function getLang() {

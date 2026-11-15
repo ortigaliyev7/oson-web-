@@ -73,20 +73,105 @@ const App = {
   },
 
   // === TELEGRAM MINI APP — botda ulangan mijozni avtomatik kirg'izish ===
+  // Telegram Mini App ichida ochilganmi? (oddiy brauzerda initData bo'sh — null qaytadi)
+  tg() {
+    const tg = window.Telegram && window.Telegram.WebApp;
+    return tg && tg.initData ? tg : null;
+  },
+  tgAtLeast(v) {
+    try { return !!this.tg().isVersionAtLeast(v); } catch (e) { return false; }
+  },
+
   async initTelegramWebApp() {
     try {
-      const tg = window.Telegram && window.Telegram.WebApp;
-      if (!tg || !tg.initData) return; // oddiy brauzerda ochilgan — hech narsa qilmaymiz
+      const tg = this.tg();
+      if (!tg) return; // oddiy brauzerda ochilgan — hech narsa qilmaymiz
+      document.documentElement.classList.add('in-tg');
       tg.ready();
       tg.expand();
+      this.setupTelegramChrome(tg);
+
+      // Telegram'da bir nechta akkaunt bo'lsa, Mini App xotirasi ularga umumiy bo'lishi mumkin:
+      // saqlangan sessiya boshqa Telegram akkauntga tegishli bo'lsa — tozalab, qayta kiramiz
+      const tgUser = tg.initDataUnsafe && tg.initDataUnsafe.user;
+      if (this.isAuthed() && tgUser && this.user && this.user.telegram_id
+          && String(this.user.telegram_id) !== String(tgUser.id)) {
+        localStorage.removeItem(LS.CLIENT_TOKEN);
+        localStorage.removeItem(LS.CLIENT_USER);
+        this.user = null;
+        this.clearDraft();
+      }
       if (this.isAuthed()) return; // allaqachon kirgan
+
       const r = await ClientAPI.telegramWebApp(tg.initData);
       if (r && r.ok && r.token) {
         this.user = r.user;
         localStorage.setItem(LS.CLIENT_TOKEN, r.token);
         localStorage.setItem(LS.CLIENT_USER, JSON.stringify(this.user));
       }
+      // need_link — raqam hali ulanmagan: kirish ekranida "Raqamni ulash" tugmasi chiqadi
     } catch (e) { /* avtomatik kirish ixtiyoriy — muvaffaqiyatsiz bo'lsa oddiy login ekrani ko'rinadi */ }
+  },
+
+  // Telegram'ning o'z elementlari: sarlavha rangi, "Orqaga" tugmasi, havolalar
+  setupTelegramChrome(tg) {
+    const safe = (fn) => { try { fn(); } catch (e) {} };
+    safe(() => tg.setHeaderColor('#F6FAF8'));
+    safe(() => tg.setBackgroundColor('#F6FAF8'));
+    safe(() => tg.setBottomBarColor && tg.setBottomBarColor('#FFFFFF'));
+    // Sahifani pastga tortganda ilova yopilib/kichrayib ketmasin
+    safe(() => tg.disableVerticalSwipes && tg.disableVerticalSwipes());
+    if (tg.BackButton && this.tgAtLeast('6.1')) {
+      document.documentElement.classList.add('tg-backbtn');   // sahifadagi "Orqaga" yashiriladi
+      safe(() => tg.BackButton.onClick(() => this.tgBack()));
+      this.syncTgBackButton();
+    }
+    // Tashqi havolalar (to'lov, polis PDF, t.me) Telegram orqali ochiladi
+    document.addEventListener('click', (e) => {
+      const a = e.target && e.target.closest && e.target.closest('a[href]');
+      if (!a || e.defaultPrevented) return;
+      let url; try { url = new URL(a.href, location.href); } catch (err) { return; }
+      if (!/^https?:$/.test(url.protocol)) return;                         // tel:, mailto: — o'z holicha
+      if (url.origin === location.origin && !a.hasAttribute('download') && a.target !== '_blank') return; // ichki
+      e.preventDefault();
+      if (/^(t\.me|telegram\.me)$/i.test(url.hostname) && tg.openTelegramLink) safe(() => tg.openTelegramLink(url.href));
+      else safe(() => tg.openLink(url.href));
+    }, true);
+  },
+  // Har bir sahifa o'zgarganda: bosh sahifada "Orqaga" ko'rinmaydi, ichkarida ko'rinadi
+  syncTgBackButton() {
+    const tg = this.tg();
+    if (!tg || !tg.BackButton) return;
+    const path = (location.hash || '#/').slice(2).split('/')[0];
+    const root = ['', 'dashboard', 'login'].includes(path);
+    try { root ? tg.BackButton.hide() : tg.BackButton.show(); } catch (e) {}
+  },
+  // Telegram "Orqaga" tugmasi sahifadagi "Orqaga" bilan bir xil ishlaydi (tahrirdan qaytish va h.k.)
+  tgBack() {
+    const el = document.querySelector('.flow-back, .app-back');
+    if (el) return el.click();
+    if (history.length > 1) history.back(); else this.go('/dashboard');
+  },
+
+  // Mini App ichida raqamni ulash: ilovadan chiqib botga o'tmasdan, Telegram'ning o'z oynasi
+  async tgShareContact() {
+    const tg = this.tg();
+    if (!tg || !tg.requestContact) return;
+    tg.requestContact(async (ok) => {
+      if (!ok) { toast("Raqam ulanmadi — ulashishga ruxsat bering", 'err'); return; }
+      const box = document.getElementById('authBox');
+      if (box) box.innerHTML = `<div class="load-block"><div class="spinner"></div></div><p class="sub" style="text-align:center">${tt('Raqamingiz ulanmoqda...')}</p>`;
+      // Bot raqamni qabul qilgach, Mini App'ga avtomatik kiramiz (kod kiritish shart emas)
+      for (let i = 0; i < 12; i++) {
+        await new Promise(r => setTimeout(r, 1500));
+        try {
+          const r = await ClientAPI.telegramWebApp(tg.initData);
+          if (r && r.ok && r.token) return this.finishLogin(r, { toast: 'Raqam ulandi. Xush kelibsiz!' });
+        } catch (e) { /* keyingi urinishda */ }
+      }
+      toast("Ulanish kechikdi — qaytadan urinib ko'ring", 'err');
+      this.viewLogin();
+    });
   },
 
   // === REAL VAQT (Socket.io) — status/to'lov/polis/xabar darhol yangilanadi ===
@@ -136,6 +221,7 @@ const App = {
   // aks holda faqat ruxsat allaqachon berilgan bo'lsa obuna qilinadi.
   async setupWebPush(canPrompt) {
     try {
+      if (this.tg()) return;   // Mini App'da xabarnomalar bot orqali keladi
       if (!('serviceWorker' in navigator) || !('PushManager' in window) || !('Notification' in window)) return;
       if (!this.user || !this.user.phone) return;
       if (Notification.permission === 'denied') return;
@@ -163,6 +249,7 @@ const App = {
 
   // === PWA: ilovani o'rnatishni taklif qilish ===
   initPWA() {
+    if (this.tg()) return;   // Telegram ichida "ilovani o'rnatish" taklifi va brauzer bildirishnomasi kerak emas
     if ('serviceWorker' in navigator) {
       navigator.serviceWorker.register('sw.js').catch(() => {});
     }
@@ -266,6 +353,10 @@ const App = {
     }
 
     window.scrollTo(0, 0);
+    this.syncTgBackButton();
+
+    // Mini App ichida bosh (marketing) sahifa kerak emas — kirgan bo'lsa dashboard, aks holda kirish
+    if (this.tg() && (path === undefined || path === '')) return this.go(this.isAuthed() ? '/dashboard' : '/login');
 
     switch (path) {
       case undefined: case '': return this.viewLanding();
@@ -666,6 +757,20 @@ const App = {
   // YAGONA kirish usuli — Telegram orqali bir tugma bilan. Mijoz "Raqamni ulash"
   // tugmasini bosishi bilan avtomatik kirg'iziladi (kod kiritish shart emas).
   loginPhoneStep() {
+    // Telegram Mini App ichida: Telegram'ning o'z "raqamni ulash" oynasi (ilovadan chiqmaydi)
+    if (this.tg() && this.tgAtLeast('6.9')) {
+      return `
+      <h1>${tt('Tizimga kirish')}</h1>
+      <p class="sub">${tt("Telegram raqamingizni ulang — bir marta tasdiqlaysiz, keyin avtomatik kirasiz")}</p>
+      <div class="tg-login-hero">
+        <div class="tg-login-logo">${telegramLogoSVG()}</div>
+        <h3>${tt('Raqamni ulash')}</h3>
+        <p>${tt("Raqamingiz faqat kirish va arizalaringizni sizga ko'rsatish uchun ishlatiladi.")}</p>
+      </div>
+      <button class="btn btn-tg btn-block btn-lg" id="tgShareBtn" onclick="App.tgShareContact()">
+        <span class="ic-i">${I.phone}</span> <span>${tt('Raqamni ulash')}</span>
+      </button>`;
+    }
     return `
       <div class="app-back" onclick="App.go('/')" style="margin-bottom:20px">${I.arrowLeft}<span>${tt('Bosh sahifa')}</span></div>
       <h1>${tt('Tizimga kirish')}</h1>
@@ -691,6 +796,7 @@ const App = {
 
   // === TELEGRAM SESSION (bir tugma bilan kirish) ===
   async prepTelegramLogin() {
+    if (this.tg() && this.tgAtLeast('6.9')) return;   // Mini App: requestContact ishlatiladi
     try {
       const r = await ClientAPI.startSession();
       this.sessionToken = r.token;
