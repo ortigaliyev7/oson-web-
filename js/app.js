@@ -1658,7 +1658,8 @@ const App = {
       const f = (r && r.fields) || {};
       this.draft.owner = this.draft.owner || {};
       // Seriya (2 harf + 7 raqam) yoki JSHSHIR (14 raqam)
-      const seria = f.seria || f.passport_seria || '';
+      // Server seriyani `pasport` nomi bilan qaytaradi (eski nomlar ham qabul qilinadi)
+      const seria = f.pasport || f.seria || f.passport_seria || '';
       const jshshir = f.jshshir || '';
       if (seria && !this.draft.owner.seria) {
         this.draft.owner.seria = seria;
@@ -1668,7 +1669,8 @@ const App = {
       this.draft.owner._valid = isDocTextValid(r && r.text);
       this.saveDraft();
       if (status) {
-        if (this.draft.owner._valid) { status.className = 'ocr-status ok'; status.innerHTML = `${I.check}<span>Pasport ma'lumoti aniqlandi — tekshiring</span>`; }
+        if (seria || jshshir) { status.className = 'ocr-status ok'; status.innerHTML = `${I.check}<span>Pasport ma'lumoti aniqlandi — tekshiring</span>`; }
+        else if (this.draft.owner._valid) { status.className = 'ocr-status warn'; status.innerHTML = `<span>Seriya aniqlanmadi — qo'lda kiriting</span>`; }
         else { status.className = 'ocr-status warn'; status.innerHTML = `<span>Qayta suratga oling — yaxshi ko'rinmayapti (yoki seriyani qo'lda kiriting)</span>`; }
       }
     } catch (err) {
