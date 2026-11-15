@@ -113,6 +113,9 @@ const AdminAPI = {
   // finalize multipart (policy_file)
   finalize:  (id, formData) => req(`/apps/${id}/finalize`, { method:'POST', body: formData, isForm:true, token: adminToken() }),
   messages:  (id) => req(`/apps/${id}/messages`, { token: adminToken() }),
+  // ERSP robot (online.myinsurance.uz): holat va shartnoma yaratish. Robot 1-2 daqiqa ishlashi mumkin
+  erspStatus: () => req('/ersp/status', { token: adminToken() }),
+  erspCreate: (id, dryRun) => req(`/ersp/apps/${id}/create`, { method:'POST', body: dryRun ? { dryRun: true } : {}, token: adminToken(), timeout: 180000 }),
   logView:   (id) => req(`/apps/${id}/log-view`, { method:'POST', token: adminToken() }),
 
   // --- Xodimlar boshqaruvi ---
