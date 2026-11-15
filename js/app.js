@@ -306,7 +306,15 @@ const App = {
     try {
       if (this.draft && this.user && this.user.phone) this.draft._ownerPhone = this.user.phone;
       localStorage.setItem(LS.DRAFT, JSON.stringify(this.draft || {}));
-    } catch(e){}
+    } catch(e){
+      // Brauzer xotirasi (~5 MB) to'lsa (ko'p haydovchi rasmi): rasmlarsiz saqlaymiz —
+      // yozilgan ma'lumotlar yo'qolmaydi, rasmlar esa joriy sessiyada xotirada qoladi
+      try {
+        const strip = (v) => (typeof v === 'string' && v.startsWith('data:')) ? undefined : v;
+        const light = JSON.parse(JSON.stringify(this.draft || {}, (k, v) => strip(v)));
+        localStorage.setItem(LS.DRAFT, JSON.stringify(light));
+      } catch (e2) {}
+    }
     this.pingDraftServer();
   },
   saveDraftSoon() { clearTimeout(this._saveT); this._saveT = setTimeout(() => this.saveDraft(), 400); },
@@ -1646,7 +1654,7 @@ const App = {
     const status = document.getElementById('ownerOcrStatus');
     if (status) { status.style.display = 'flex'; status.className = 'ocr-status loading'; status.innerHTML = `<span class="spinner"></span><span>Pasport o'qilmoqda...</span>`; }
     try {
-      const r = await ClientAPI.ocr(dataUrl, 'auto');
+      const r = await ClientAPI.ocr(dataUrl, 'auto', 'owner_passport');
       const f = (r && r.fields) || {};
       this.draft.owner = this.draft.owner || {};
       // Seriya (2 harf + 7 raqam) yoki JSHSHIR (14 raqam)
@@ -1708,7 +1716,7 @@ const App = {
       status.innerHTML = `<span class="spinner"></span><span>Rasm o'qilmoqda...</span>`;
     }
     try {
-      const r = await ClientAPI.ocr(dataUrl, 'texpassport');
+      const r = await ClientAPI.ocr(dataUrl, 'texpassport', side === 'back' ? 'tex_back' : 'tex_front');
       const f = (r && r.fields) || {};
       const map = { tex_plate:'plate', tex_seria:'seria', tex_year:'year', tex_vin:'vin', tex_stir:'stir' };
       let filled = 0;
@@ -1819,7 +1827,7 @@ const App = {
     const status = document.getElementById('oldOcrStatus');
     if (status) { status.style.display='flex'; status.className='ocr-status loading'; status.innerHTML=`<span class="spinner"></span><span>Rasm tekshirilmoqda...</span>`; }
     try {
-      const r = await ClientAPI.ocr(dataUrl, 'auto');
+      const r = await ClientAPI.ocr(dataUrl, 'auto', 'old_policy');
       this.draft._oldPolicyValid = isDocTextValid(r && r.text);
       this.saveDraft();
       if (status) {
@@ -1945,7 +1953,7 @@ const App = {
     const status = document.getElementById('docStatus' + i);
     if (status) { status.style.display='flex'; status.className='ocr-status loading'; status.innerHTML=`<span class="spinner"></span><span>Rasm o'qilmoqda...</span>`; }
     try {
-      const r = await ClientAPI.ocr(dataUrl, 'id_card');
+      const r = await ClientAPI.ocr(dataUrl, 'id_card', 'driver_doc');
       const f = (r && r.fields) || {};
       let filled = 0;
       if (f.jshshir && !this.draft.drivers[i].jshshir) {

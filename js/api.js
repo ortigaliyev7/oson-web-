@@ -53,11 +53,14 @@ const ClientAPI = {
   startSession: () => req('/user-auth/start-session', { method:'POST', body:{} }),
   telegramWebApp: (initData) => req('/user-auth/telegram-webapp', { method:'POST', body:{ initData } }),
   checkSession: (token) => req('/user-auth/session/' + encodeURIComponent(token)),
-  ocr: (dataUrl, type) => {
+  // doc — qaysi hujjat (tex_front, owner_passport...): o'qilmay qolsa adminga aniq xabar borishi uchun.
+  // Token ixtiyoriy: mijoz kirgan bo'lsa, xabarda kimligi ko'rinadi.
+  ocr: (dataUrl, type, doc) => {
     const fd = new FormData();
     fd.append('image', dataURLtoBlob(dataUrl), 'photo.jpg');
     fd.append('type', type || 'texpassport');
-    return req('/ocr', { method:'POST', body: fd, isForm:true });
+    if (doc) fd.append('doc', doc);
+    return req('/ocr', { method:'POST', body: fd, isForm:true, token: clientToken() || null, timeout: 25000 });
   },
   settings: () => req('/settings'),
   statsPublic: () => req('/stats/public'),
