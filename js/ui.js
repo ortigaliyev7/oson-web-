@@ -303,6 +303,14 @@ function dataURLtoBlob(dataURL) {
   return new Blob([u8], { type: mime });
 }
 
+// Element hali sahifada bo'lsa uning ichini almashtiradi. Server javobi kelguncha
+// foydalanuvchi boshqa sahifaga o'tib ketgan bo'lsa element yo'q — xato bermaydi.
+function setHTML(id, html) {
+  const el = document.getElementById(id);
+  if (el) el.innerHTML = html;
+  return !!el;
+}
+
 // Modal oynasi
 function showModal(html) {
   let m = document.getElementById('modal-root');
