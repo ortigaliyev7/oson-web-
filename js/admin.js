@@ -699,6 +699,7 @@ const Admin = {
       if (!stillHere()) return;
       this.curApp = r.app || r;
       this.renderAppDetail(this.curApp);
+      if (this.erspVisible(this.curApp, this.curApp.status || 'new')) this.erspLoad();
       // Maxfiylik auditi — kim mijoz hujjatlarini ochganini yozib qo'yamiz (fon)
       AdminAPI.logView(id).catch(() => {});
     } catch (e) {
@@ -799,6 +800,8 @@ const Admin = {
             ${this.renderActions(a, st)}
           </div>
 
+          ${this.erspVisible(a, st) ? `<div class="adm-card" id="erspCard"><h3 class="adm-card-title">ERSP</h3><div id="erspBox">${this.renderErsp(a, st, this._erspSt)}</div></div>` : ''}
+
           <div class="adm-card">
             <h3 class="adm-card-title">Operator chat</h3>
             <div class="adm-chat" id="admChat">${this.loadingBlock()}</div>
@@ -894,6 +897,95 @@ const Admin = {
       </select>
     </details>`;
     return html;
+  },
+
+  // ============================================================
+  // ERSP robot (online.myinsurance.uz) — shartnomani portalda avtomatik yaratish
+  // Robot serverda ishlaydi (login/parol faqat u yerda); bu yerda faqat boshqaruv va natija ko'rinadi.
+  // ============================================================
+  erspVisible(a, st) {
+    if (!this.can('change_app_status')) return false;
+    return !!a.ersp_status || ['new', 'in_review', 'assigned', 'approved', 'payment_pending'].includes(st);
+  },
+  erspLoad() {
+    // Server rejimi (sozlanganmi / sinov / haqiqiy) — har safar yangi o'qiladi, so'ng blok qayta chiziladi
+    AdminAPI.erspStatus().then((s) => {
+      this._erspSt = s;
+      const box = document.getElementById('erspBox');
+      if (box && this.curApp) box.innerHTML = this.renderErsp(this.curApp, this.curApp.status || 'new', s);
+    }).catch(() => {});
+  },
+  renderErsp(a, st, srv) {
+    const cid = a.ersp_contract_id;
+    const ES = {
+      dry_run_ok:             ['ok',   "Sinov o'tdi — shartnoma yaratilmadi"],
+      dry_run_price_mismatch: ['warn', "Sinovda narx ariza narxiga mos kelmadi"],
+      created:                ['ok',   'Shartnoma yaratildi'],
+      created_no_links:       ['err',  "Shartnoma yaratildi, to'lov havolasi olinmadi"],
+      error:                  ['err',  'Xato'],
+    };
+    const [cls, label] = ES[a.ersp_status] || ['', 'Hali yuborilmagan'];
+    const oneYear = /^\s*1\s*yil/i.test(String(a.duration || ''));
+
+    let banner = '';
+    if (!srv) banner = `<div class="ersp-mode">Holat tekshirilmoqda…</div>`;
+    else if (!srv.configured) banner = `<div class="ersp-mode warn">ERSP sozlanmagan — Railway'da <b>ERSP_USER</b> va <b>ERSP_PASS</b> kiritilmagan.</div>`;
+    else if (srv.dryRun) banner = `<div class="ersp-mode">Sinov rejimi: robot hamma narsani tekshiradi, lekin <b>shartnomani saqlamaydi</b>.</div>`;
+    else banner = `<div class="ersp-mode live">Haqiqiy rejim: shartnoma ERSP da yaratiladi va mijozga to'lov havolasi yuboriladi.</div>`;
+    if (srv && srv.auto) banner += `<div class="ersp-mode">Avto-rejim yoqilgan: tizimga kirgan mijozning arizasi o'zi yuboriladi.</div>`;
+
+    const rows = [];
+    rows.push(`<div class="ersp-row"><span>Holat</span><b class="ersp-pill ${cls}">${esc(label)}</b></div>`);
+    if (cid) rows.push(`<div class="ersp-row"><span>Shartnoma ID</span><b>${esc(String(cid))}</b></div>`);
+    if (a.ersp_premium) rows.push(`<div class="ersp-row"><span>ERSP narxi</span><b>${esc(String(a.ersp_premium))}</b></div>`);
+    const links = a.ersp_links || {};
+    const linkHtml = Object.keys(links).map((k) => /^https:\/\//.test(links[k])
+      ? `<a class="btn btn-ghost btn-sm" href="${esc(links[k])}" target="_blank" rel="noopener">${esc(k === 'payme' ? 'Payme' : k === 'click' ? 'Click' : k)}</a>` : '').join('');
+    if (linkHtml) rows.push(`<div class="ersp-row"><span>To'lov havolalari</span><div class="ersp-links">${linkHtml}</div></div>`);
+    if (a.ersp_status === 'created_no_links') {
+      rows.push(`<div class="ersp-note err">Mijozga havola yuborilmadi. Shartnoma allaqachon yaratilgan — <b>qayta bosmang</b>, to'lov havolasini ERSP portalidan qo'lda oling.</div>`);
+    } else if (a.ersp_error) {
+      rows.push(`<div class="ersp-note err">${esc(String(a.ersp_error))}</div>`);
+    }
+    if (a.ersp_screenshot) rows.push(`<div class="ersp-row"><span>Robot skrinshoti</span><button class="btn btn-ghost btn-sm" onclick="Admin.erspShot('${esc(a.ersp_screenshot)}')">Ko'rish</button></div>`);
+    if (!oneYear) rows.push(`<div class="ersp-note">Robot hozircha faqat <b>1 yillik</b> polis uchun (bu arizada: ${esc(String(a.duration || '-'))}) — qo'lda rasmiylashtiring.</div>`);
+
+    // Tugmalar: sinov rejimida faqat "Sinov"; haqiqiy rejimda ikkalasi. Shartnoma bor bo'lsa — qayta yaratish yo'q.
+    const ready = !!(srv && srv.configured) && oneYear;
+    const dis = ready ? '' : 'disabled';
+    let btns = `<button class="btn btn-ghost btn-block" id="erspDry" ${dis} onclick="Admin.erspRun(true)">${I.shieldCheck} Sinov — saqlamasdan tekshirish</button>`;
+    if (srv && !srv.dryRun && !cid) {
+      btns += `<button class="btn btn-gross btn-block" id="erspReal" ${dis} onclick="Admin.erspRun(false)">${I.upload} ERSP ga yozish (shartnoma yaratish)</button>`;
+    }
+    return `${banner}<div class="ersp-rows">${rows.join('')}</div><div class="ersp-btns">${btns}</div><div id="erspWait"></div>`;
+  },
+  async erspRun(dry) {
+    const id = this.curAppId;
+    if (!dry && !confirm("ERSP da HAQIQIY shartnoma yaratiladi va mijozga to'lov havolasi yuboriladi.\n\nDavom etasizmi?")) return;
+    const wait = document.getElementById('erspWait');
+    document.querySelectorAll('#erspBox .ersp-btns button').forEach((b) => { b.disabled = true; });
+    if (wait) wait.innerHTML = `<div class="ersp-wait"><span class="spinner dark"></span><span>Robot ERSP da ishlayapti… (1–2 daqiqa, sahifani yopmang)</span></div>`;
+    try {
+      const r = await AdminAPI.erspCreate(id, dry);
+      if (r.busy) toast(r.error, 'err');
+      else if (r.partial) toast(r.error, 'err');
+      else if (!r.ok) toast(r.error || 'ERSP xatosi', 'err');
+      else if (r.dryRun) toast(r.priceOk === false ? 'Sinov o\'tdi, lekin narx ariza narxiga mos kelmadi' : `Sinov o'tdi${r.premium ? ' — narx ' + r.premium : ''}`, r.priceOk === false ? 'err' : 'ok');
+      else toast(r.duplicate ? 'Shartnoma allaqachon yaratilgan' : "Shartnoma yaratildi, mijozga to'lov havolasi yuborildi", 'ok');
+    } catch (e) {
+      toast(e.message, 'err');
+    }
+    if (this.curAppId === id && location.hash === `#/app/${id}`) this.viewAppDetail(id);
+  },
+  // Skrinshotda mijoz pasport ma'lumotlari ko'rinadi — shuning uchun u faqat admin tokeni bilan olinadi
+  async erspShot(name) {
+    try {
+      const res = await fetch(`${API}/ersp/screenshots/${encodeURIComponent(name)}`, { headers: { Authorization: `Bearer ${adminToken()}` } });
+      if (!res.ok) throw new Error(res.status === 404 ? "Skrinshot topilmadi (7 kundan keyin o'chiriladi)" : 'Skrinshotni ochib bo\'lmadi');
+      const url = URL.createObjectURL(await res.blob());
+      showModal(`<h3 class="modal-title">Robot skrinshoti</h3><div class="ersp-shot"><img src="${url}" alt="ERSP skrinshoti"></div>
+        <div class="modal-actions"><button class="btn btn-ghost btn-block" onclick="closeModal()">Yopish</button></div>`);
+    } catch (e) { toast(e.message, 'err'); }
   },
 
   async approveApp() {
